@@ -1,4 +1,4 @@
-import { Tldraw, TldrawApp, TldrawProps, useFileSystem } from '@tldraw/tldraw'
+import { Tldraw, TldrawApp, TldrawProps, useFileSystem, TDShapeType, ColorStyle } from '@tldraw/tldraw'
 import { useAccountHandlers } from 'hooks/useAccountHandlers'
 import React, { FC } from 'react'
 import { exportToImage } from 'utils/export'
@@ -70,7 +70,7 @@ const Editor: FC<EditorProps & Partial<TldrawProps>> = ({
         return
       }
 
-      const color = i % 2 ? ColorStyle.Green : ColorStyle.Red
+      const color = i % 2 ? ColorStyle.Black : ColorStyle.Green
 
       app.updateShapes({
         id: 'rect1', 
