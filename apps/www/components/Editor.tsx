@@ -70,7 +70,7 @@ const Editor: FC<EditorProps & Partial<TldrawProps>> = ({
         return
       }
 
-      const color = i % 2 ? ColorStyle.Green : ColorStyle.Red
+      const color = i % 2 ? ColorStyle.Black : ColorStyle.Green
 
       app.updateShapes({
         id: 'rect1', 
