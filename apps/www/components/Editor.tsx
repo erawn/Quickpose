@@ -1,4 +1,4 @@
-import { Tldraw, TldrawApp, TldrawProps, useFileSystem } from '@tldraw/tldraw'
+import { Tldraw, TldrawApp, TldrawProps, useFileSystem, TDShapeType } from '@tldraw/tldraw'
 import { useAccountHandlers } from 'hooks/useAccountHandlers'
 import { useUploadAssets } from 'hooks/useUploadAssets'
 import React, { FC } from 'react'
