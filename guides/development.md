@@ -15,3 +15,13 @@ Other scripts:
 - Run `yarn test` to execute unit tests via [Jest](https://jestjs.io).
 
 - Run `yarn docs` to build the docs via [ts-doc](https://typedoc.org/).
+
+
+yarn
+yarn start
+yarn start:core
+yarn start
+yarn start:www
+
+make sure react and react-dom are same version - "npm ls react" etc
+
