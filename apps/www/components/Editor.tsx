@@ -1,8 +1,9 @@
 import { Tldraw, TldrawApp, TldrawProps, useFileSystem, TDShapeType, ColorStyle } from '@tldraw/tldraw'
 import { useAccountHandlers } from 'hooks/useAccountHandlers'
-import React, { FC } from 'react'
+import React, { FC, useCallback, } from 'react'
 import { exportToImage } from 'utils/export'
 import * as gtag from 'utils/gtag'
+import { useAsync } from "react-async"
 
 declare const window: Window & { app: TldrawApp }
 
@@ -11,6 +12,12 @@ interface EditorProps {
   isUser?: boolean
   isSponsor?: boolean
 }
+
+const requestCurrentId = async () => {
+  const response = await fetch('http://127.0.0.1:8080/currentVersion');
+	const id = await response.json();
+}
+
 
 const Editor: FC<EditorProps & Partial<TldrawProps>> = ({
   id = 'home',
@@ -40,33 +47,40 @@ const Editor: FC<EditorProps & Partial<TldrawProps>> = ({
       }
     )
   }, [])
+  
+  const requestData = React.useCallback(async() => {
+      const response = await fetch('http://127.0.0.1:8080/versions.json')
+      let data =  await response.json()
+      data = JSON.stringify(data)
+      data = JSON.parse(data)
+      return data
+    }, [])
 
   React.useEffect(() => {
     let i = 0
     const interval = setInterval(() => {
       const app = window.app
       const rect1 = app.getShape('rect1')
-
-      fetch('http://127.0.0.1:8080/currentVersion').then( response => 
-
-        response.json()
-      ).then( data =>
-        console.log(data)
-        );
-
-
+      requestData().then(data => 
+        {
+          console.log(data)
+          const node0 = app.getShape('rect1')
+          if(!node0){
+            app.createShapes({
+              id: 'node0',
+              type: TDShapeType.Image, 
+              name: 'Image',
+              childIndex: 1,
+              point: [0, 0],
+              size: [100, 100],
+            })
+          }
+        })
 
 
 
       if (!rect1) {
-        app.createShapes({
-          id: 'rect1',
-          type: TDShapeType.Rectangle, 
-          name: 'Rectangle',
-          childIndex: 1,
-          point: [0, 0],
-          size: [100, 100],
-        })
+        
         return
       }
 
@@ -83,7 +97,7 @@ const Editor: FC<EditorProps & Partial<TldrawProps>> = ({
       i++
     }, 1000)
     return () => clearInterval(interval)
-  }, [])
+  }, [requestData])
 
   // Send events to gtag as actions.
   const handlePersist = React.useCallback((_app: TldrawApp, reason?: string) => {
@@ -96,6 +110,7 @@ const Editor: FC<EditorProps & Partial<TldrawProps>> = ({
   }, [])
 
   const fileSystemEvents = useFileSystem()
+  
 
   const { onSignIn, onSignOut } = useAccountHandlers()
 

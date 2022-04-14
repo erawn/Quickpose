@@ -24,7 +24,7 @@
     "start": "turbo run start --stream --parallel",
     "start:all": "turbo run start:all --stream --parallel",
     "start:core": "turbo run start:core --stream --parallel",
-    "start:www": "turbo run start --parallel & (cd apps/www && yarn dev)",
+    "start:www": "sensible-browser http://localhost:3000 & turbo run start --parallel & (cd apps/www && yarn dev)",
     "start:electron": "turbo run start:electron --stream --parallel",
     "start:vscode": "code apps/vscode/extension & turbo run start:vscode --parallel; ",
     "version": "yarn changeset version",
