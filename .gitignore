@@ -18,3 +18,5 @@ apps/www/public/sw.js.map
 .env
 firebase.config.*.turbo
 .turbo
+yarn.lock
+*.lock
