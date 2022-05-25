@@ -1,6 +1,6 @@
 {
   "name": "@tldraw/www",
-  "version": "1.6.2",
+  "version": "1.6.5",
   "private": true,
   "description": "A tiny little drawing app (site).",
   "repository": {
@@ -25,27 +25,23 @@
     "@sentry/react": "^6.13.2",
     "@sentry/tracing": "^6.13.2",
     "@stitches/react": "^1.2.5",
-    "@tldraw/core": "^1.9.1",
-    "@tldraw/tldraw": "^1.9.3",
-    "@types/next-auth": "^3.15.0",
+    "@tldraw/core": "*",
+    "@tldraw/tldraw": "*",
     "aws-sdk": "^2.1053.0",
+    "lz-string": "^1.4.4",
+    "nanoid": "^3.3.4",
     "next": "^12.0.7",
     "next-auth": "^4.0.5",
     "next-pwa": "^5.4.4",
     "next-themes": "^0.0.15",
-    "next-transpile-modules": "^9.0.0",
-    "chrome-aws-lambda": "8.0.2",
-    "puppeteer-core": "9.0.0",
-    "react": "17.0.2",
-    "react-dom": "17.0.2"
+    "react": "^17.0",
+    "react-dom": "^17.0"
   },
   "devDependencies": {
-    "@tldraw/core": "*",
-    "@tldraw/tldraw": "*",
+    "@types/next-auth": "^3.15.0",
     "@sentry/webpack-plugin": "^1.17.1",
     "@types/react": "^17.0.19",
     "@types/react-dom": "^17.0.9",
-    "cors": "^2.8.5",
     "eslint": "^8.8.0",
     "eslint-config-next": "^12.0.10",
     "typescript": "^4.5.2"

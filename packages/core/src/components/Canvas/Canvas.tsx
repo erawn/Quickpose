@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { observer } from 'mobx-react-lite'
 import * as React from 'react'
+import { observer } from 'mobx-react-lite'
 import {
   usePreventNavigationCss,
   useZoomEvents,
@@ -80,20 +80,24 @@ export const Canvas = observer(function _Canvas<
   hideRotateHandle,
   hideGrid,
   onBoundsChange,
-}: CanvasProps<T, M>): JSX.Element {
+}: CanvasProps<T, M>) {
   const rCanvas = React.useRef<HTMLDivElement>(null)
-  const rContainer = React.useRef<HTMLDivElement>(null)
-  const rLayer = React.useRef<HTMLDivElement>(null)
 
-  inputs.zoom = pageState.camera.zoom
+  const rZoomRef = React.useRef(pageState.camera.zoom)
+
+  rZoomRef.current = pageState.camera.zoom
+
+  useZoomEvents(rZoomRef, externalContainerRef || rCanvas)
 
   useResizeObserver(rCanvas, onBoundsChange)
-
-  useZoomEvents(pageState.camera.zoom, externalContainerRef || rCanvas)
 
   useSafariFocusOutFix()
 
   usePreventNavigationCss(rCanvas)
+
+  const rContainer = React.useRef<HTMLDivElement>(null)
+
+  const rLayer = React.useRef<HTMLDivElement>(null)
 
   useCameraCss(rLayer, rContainer, pageState)
 

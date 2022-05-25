@@ -5,8 +5,9 @@ import { useTldrawApp } from '~hooks'
 import { DMItem, DMContent, DMDivider, DMTriggerIcon } from '~components/Primitives/DropdownMenu'
 import { SmallIcon } from '~components/Primitives/SmallIcon'
 import { MultiplayerIcon } from '~components/Primitives/icons'
-import type { TDSnapshot } from '~types'
+import { TDAssetType, TDSnapshot } from '~types'
 import { TLDR } from '~state/TLDR'
+import { Utils } from '@tldraw/core'
 
 const roomSelector = (state: TDSnapshot) => state.room
 
@@ -23,7 +24,7 @@ export const MultiplayerMenu = React.memo(function MultiplayerMenu() {
     setTimeout(() => setCopied(false), 1200)
   }, [])
 
-  const handleCreateMultiplayerRoom = React.useCallback(async () => {
+  const handleCreateMultiplayerProject = React.useCallback(async () => {
     if (app.isDirty) {
       if (app.fileSystemHandle) {
         if (window.confirm('Do you want to save changes to your current project?')) {
@@ -41,21 +42,54 @@ export const MultiplayerMenu = React.memo(function MultiplayerMenu() {
     }
   }, [])
 
-  const handleCopyToMultiplayerRoom = React.useCallback(async () => {
-    const myHeaders = new Headers({
-      'Access-Control-Allow-Origin': '*',
-      'Content-Type': 'application/json',
-    })
+  const handleCopyToMultiplayerProject = React.useCallback(async () => {
+    const nextDocument = { ...app.document }
 
-    const res = await fetch('http://tldraw.com/api/create-multiplayer-room', {
-      headers: myHeaders,
-      method: 'POST',
-      mode: 'cors',
-      cache: 'no-cache',
-      body: JSON.stringify(app.document),
-    }).then((res) => res.json())
+    app.setIsLoading(true)
 
-    window.location.href = `http://tldraw.com/r/${res.roomId}`
+    try {
+      if (app.callbacks.onAssetUpload) {
+        for (const id in nextDocument.assets) {
+          const asset = nextDocument.assets[id]
+          if (asset.src.includes('base64')) {
+            const file = dataURLtoFile(
+              asset.src,
+              asset.fileName ?? asset.type === TDAssetType.Video ? 'image.png' : 'image.mp4'
+            )
+            const newSrc = await app.callbacks.onAssetUpload(app, file, id)
+            if (newSrc) {
+              asset.src = newSrc
+            } else {
+              asset.src = ''
+            }
+          }
+        }
+      }
+
+      const result = await fetch(`/api/create`, {
+        method: 'POST',
+        mode: 'no-cors',
+        headers: {
+          'Access-Control-Allow-Origin': '*',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          roomId: Utils.uniqueId(),
+          pageId: app.currentPageId,
+          document: nextDocument,
+        }),
+      }).then(d => d.json())
+
+      if (result?.url) {
+        window.location.href = result.url
+      } else {
+        TLDR.warn(result?.message)
+      }
+    } catch (e) {
+      TLDR.warn((e as any).message)
+    }
+
+    app.setIsLoading(false)
   }, [])
 
   return (
@@ -68,11 +102,33 @@ export const MultiplayerMenu = React.memo(function MultiplayerMenu() {
           Copy Invite Link<SmallIcon>{copied ? <CheckIcon /> : <ClipboardIcon />}</SmallIcon>
         </DMItem>
         <DMDivider id="TD-Multiplayer-CopyInviteLinkDivider" />
-        <DMItem id="TD-Multiplayer-CreateMultiplayerRoom" onClick={handleCreateMultiplayerRoom}>
+        <DMItem
+          id="TD-Multiplayer-CreateMultiplayerProject"
+          onClick={handleCreateMultiplayerProject}
+        >
           <a href="https://tldraw.com/r">Create a Multiplayer Project</a>
         </DMItem>
-        {/* <DMItem id="TD-Multiplayer-CopyToMultiplayerRoom" onClick={handleCopyToMultiplayerRoom}>Copy to Multiplayer Room</DMItem> */}
+        <DMItem
+          id="TD-Multiplayer-CopyToMultiplayerProject"
+          onClick={handleCopyToMultiplayerProject}
+        >
+          Copy to Multiplayer Project
+        </DMItem>
       </DMContent>
     </DropdownMenu.Root>
   )
 })
+
+function dataURLtoFile(dataurl: string, filename: string) {
+  const arr = dataurl.split(',')
+  const mime = arr[0]?.match(/:(.*?);/)?.[1]
+  const bstr = window.atob(arr[1])
+  let n = bstr.length
+  const u8arr = new Uint8Array(n)
+
+  while (n--) {
+    u8arr[n] = bstr.charCodeAt(n)
+  }
+
+  return new File([u8arr], filename, { type: mime })
+}

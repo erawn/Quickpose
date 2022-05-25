@@ -18,7 +18,7 @@ interface TopPanelProps {
   showStyles: boolean
   showZoom: boolean
   showMultiplayerMenu: boolean
-  showSponsorLink: boolean
+  sponsor?: boolean
 }
 
 export function TopPanel({
@@ -27,7 +27,7 @@ export function TopPanel({
   showMenu,
   showStyles,
   showZoom,
-  showSponsorLink,
+  sponsor,
   showMultiplayerMenu,
 }: TopPanelProps) {
   const app = useTldrawApp()
@@ -36,7 +36,7 @@ export function TopPanel({
     <StyledTopPanel>
       {(showMenu || showPages) && (
         <Panel side="left" id="TD-MenuPanel">
-          {showMenu && <Menu showSponsorLink={showSponsorLink} readOnly={readOnly} />}
+          {showMenu && <Menu sponsor={sponsor} readOnly={readOnly} />}
           {showMultiplayerMenu && <MultiplayerMenu />}
           {showPages && <PageMenu />}
         </Panel>
@@ -44,16 +44,14 @@ export function TopPanel({
       <StyledSpacer />
       {(showStyles || showZoom) && (
         <Panel side="right">
-          {showStyles && !readOnly && <StyleMenu />}
-          <MobileOnly bp={breakpoints}>
-            <ToolButton>
-              <UndoIcon onClick={app.undo} />
-            </ToolButton>
-            <ToolButton>
-              <RedoIcon onClick={app.redo} />
-            </ToolButton>
-          </MobileOnly>
+          <ToolButton>
+            <UndoIcon onClick={app.undo} />
+          </ToolButton>
+          <ToolButton>
+            <RedoIcon onClick={app.redo} />
+          </ToolButton>
           {showZoom && <ZoomMenu />}
+          {showStyles && !readOnly && <StyleMenu />}
         </Panel>
       )}
     </StyledTopPanel>
@@ -77,19 +75,4 @@ const StyledTopPanel = styled('div', {
 const StyledSpacer = styled('div', {
   flexGrow: 2,
   pointerEvents: 'none',
-})
-
-const MobileOnly = styled('div', {
-  display: 'flex',
-  flexDirection: 'row',
-  variants: {
-    bp: {
-      small: {
-        display: 'inherit',
-      },
-      large: {
-        display: 'none',
-      },
-    },
-  },
 })

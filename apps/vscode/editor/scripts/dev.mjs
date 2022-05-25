@@ -2,6 +2,7 @@
 import fs from 'fs'
 import esbuildServe from 'esbuild-serve'
 import dotenv from 'dotenv'
+import path from 'path'
 
 dotenv.config()
 
@@ -16,6 +17,16 @@ async function main() {
     })
   }
 
+  if (!fs.existsSync('./dist')) {
+    fs.mkdirSync('./dist')
+  }
+
+  fs.readdirSync('./src/public').forEach((file) =>
+    fs.copyFile(path.join('./src/public', file), path.join('./dist', file), (err) => {
+      if (err) throw err
+    })
+  )
+
   try {
     await esbuildServe(
       {
@@ -25,6 +36,8 @@ async function main() {
         bundle: true,
         incremental: true,
         target: 'es6',
+        jsxFactory: 'React.createElement',
+        jsxFragment: 'React.Fragment',
         define: {
           'process.env.NODE_ENV': '"production"',
         },

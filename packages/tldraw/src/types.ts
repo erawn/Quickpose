@@ -85,6 +85,7 @@ export interface TDSnapshot {
     isPenMode: boolean
     isReadonlyMode: boolean
     isZoomSnap: boolean
+    keepStyleMenuOpen: boolean
     nudgeDistanceSmall: number
     nudgeDistanceLarge: number
     isFocusMode: boolean
@@ -473,12 +474,14 @@ export enum TDAssetType {
 
 export interface TDImageAsset extends TLAsset {
   type: TDAssetType.Image
+  fileName: string
   src: string
   size: number[]
 }
 
 export interface TDVideoAsset extends TLAsset {
   type: TDAssetType.Video
+  fileName: string
   src: string
   size: number[]
 }
@@ -491,23 +494,18 @@ export type TDAssets = Record<string, TDAsset>
 /*                    Export                          */
 /* -------------------------------------------------- */
 
-export enum TDExportTypes {
+export enum TDExportType {
   PNG = 'png',
   JPG = 'jpeg',
   WEBP = 'webp',
-  PDF = 'pdf',
   SVG = 'svg',
   JSON = 'json',
 }
 
 export interface TDExport {
-  currentPageId: string
   name: string
-  shapes: TDShape[]
-  assets: TDAssets
-  type: TDExportTypes
-  size: number[]
-  serialized?: string
+  type: string
+  blob: Blob
 }
 
 /* -------------------------------------------------- */

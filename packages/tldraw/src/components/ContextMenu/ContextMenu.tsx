@@ -2,7 +2,7 @@ import * as React from 'react'
 import { styled } from '~styles'
 import * as RadixContextMenu from '@radix-ui/react-context-menu'
 import { useTldrawApp } from '~hooks'
-import { TDSnapshot, AlignType, DistributeType, StretchType, TDExportTypes } from '~types'
+import { TDSnapshot, AlignType, DistributeType, StretchType, TDExportType } from '~types'
 import {
   AlignBottomIcon,
   AlignCenterHorizontallyIcon,
@@ -41,7 +41,7 @@ interface ContextMenuProps {
   children: React.ReactNode
 }
 
-export const ContextMenu = ({ onBlur, children }: ContextMenuProps): JSX.Element => {
+export const ContextMenu = ({ onBlur, children }: ContextMenuProps) => {
   return (
     <RadixContextMenu.Root dir="ltr">
       <RadixContextMenu.Trigger dir="ltr">{children}</RadixContextMenu.Trigger>
@@ -102,10 +102,6 @@ const InnerMenu = React.memo(function InnerMenu({ onBlur }: InnerContextMenuProp
     app.delete()
   }, [app])
 
-  const handleCopyJson = React.useCallback(() => {
-    app.copyJson()
-  }, [app])
-
   const handleCut = React.useCallback(() => {
     app.cut()
   }, [app])
@@ -118,8 +114,12 @@ const InnerMenu = React.memo(function InnerMenu({ onBlur }: InnerContextMenuProp
     app.paste()
   }, [app])
 
-  const handleCopySvg = React.useCallback(() => {
-    app.copySvg()
+  const handleCopySVG = React.useCallback(() => {
+    app.copyImage(TDExportType.SVG, { scale: 1, quality: 1, transparentBackground: false })
+  }, [app])
+
+  const handleCopyPNG = React.useCallback(() => {
+    app.copyImage(TDExportType.PNG, { scale: 2, quality: 1, transparentBackground: true })
   }, [app])
 
   const handleUndo = React.useCallback(() => {
@@ -131,23 +131,27 @@ const InnerMenu = React.memo(function InnerMenu({ onBlur }: InnerContextMenuProp
   }, [app])
 
   const handleExportPNG = React.useCallback(async () => {
-    await app.exportSelectedShapesAs(TDExportTypes.PNG)
+    app.exportImage(TDExportType.PNG, { scale: 2, quality: 1, transparentBackground: true })
   }, [app])
 
   const handleExportJPG = React.useCallback(async () => {
-    await app.exportSelectedShapesAs(TDExportTypes.JPG)
+    app.exportImage(TDExportType.JPG, { scale: 2, quality: 1, transparentBackground: false })
   }, [app])
 
   const handleExportWEBP = React.useCallback(async () => {
-    await app.exportSelectedShapesAs(TDExportTypes.WEBP)
+    app.exportImage(TDExportType.WEBP, { scale: 2, quality: 1, transparentBackground: false })
   }, [app])
 
   const handleExportSVG = React.useCallback(async () => {
-    await app.exportSelectedShapesAs(TDExportTypes.SVG)
+    app.exportImage(TDExportType.SVG, { scale: 1, quality: 1, transparentBackground: false })
+  }, [app])
+
+  const handleCopyJSON = React.useCallback(async () => {
+    app.copyJson()
   }, [app])
 
   const handleExportJSON = React.useCallback(async () => {
-    await app.exportSelectedShapesAs(TDExportTypes.JSON)
+    app.exportJson()
   }, [app])
 
   const hasSelection = numberOfSelectedIds > 0
@@ -212,57 +216,6 @@ const InnerMenu = React.memo(function InnerMenu({ onBlur }: InnerContextMenuProp
             {hasTwoOrMore && (
               <AlignDistributeSubMenu hasTwoOrMore={hasTwoOrMore} hasThreeOrMore={hasThreeOrMore} />
             )}
-            {app.callbacks.onExport ? (
-              <>
-                <Divider />
-                <ContextMenuSubMenu label="Export" size="small" id="TD-ContextMenu-Export">
-                  <CMRowButton onClick={handleExportPNG} id="TD-ContextMenu-Export-PNG">
-                    PNG
-                  </CMRowButton>
-                  <CMRowButton onClick={handleExportJPG} id="TD-ContextMenu-Export-JPG">
-                    JPG
-                  </CMRowButton>
-                  <CMRowButton onClick={handleExportWEBP} id="TD-ContextMenu-Export-WEBP">
-                    WEBP
-                  </CMRowButton>
-                  <CMRowButton onClick={handleExportSVG} id="TD-ContextMenu-Export-SVG">
-                    SVG
-                  </CMRowButton>
-                  <CMRowButton onClick={handleExportJSON} id="TD-ContextMenu-Export-JSON">
-                    JSON
-                  </CMRowButton>
-                  <Divider />
-                  <CMRowButton
-                    onClick={handleCopySvg}
-                    kbd="#⇧C"
-                    id="TD-ContextMenu-Export-Copy_as_SVG"
-                  >
-                    Copy as SVG
-                  </CMRowButton>
-                  {isDebugMode && (
-                    <CMRowButton onClick={handleCopyJson} id="TD-ContextMenu-Export-Copy_as_JSON">
-                      Copy as JSON
-                    </CMRowButton>
-                  )}
-                </ContextMenuSubMenu>
-              </>
-            ) : (
-              <>
-                <Divider />
-                <CMRowButton
-                  onClick={handleCopySvg}
-                  kbd="#⇧C"
-                  id="TD-ContextMenu-Export-Copy_as_SVG"
-                >
-                  Copy as SVG
-                </CMRowButton>
-                {isDebugMode && (
-                  <CMRowButton onClick={handleCopyJson} id="TD-ContextMenu-Export-Copy_as_JSON">
-                    Copy as JSON
-                  </CMRowButton>
-                )}
-              </>
-            )}
             <Divider />
             <CMRowButton onClick={handleCut} kbd="#X" id="TD-ContextMenu-Cut">
               Cut
@@ -273,7 +226,39 @@ const InnerMenu = React.memo(function InnerMenu({ onBlur }: InnerContextMenuProp
             <CMRowButton onClick={handlePaste} kbd="#V" id="TD-ContextMenu-Paste">
               Paste
             </CMRowButton>
-
+            <Divider />
+            <ContextMenuSubMenu label="Copy as..." size="small" id="TD-ContextMenu-Copy-As">
+              <CMRowButton onClick={handleCopySVG} id="TD-ContextMenu-Copy-as-SVG">
+                SVG
+              </CMRowButton>
+              <CMRowButton onClick={handleCopyPNG} id="TD-ContextMenu-Copy-As-PNG">
+                PNG
+              </CMRowButton>
+              {isDebugMode && (
+                <CMRowButton onClick={handleCopyJSON} id="TD-ContextMenu-Copy_as_JSON">
+                  JSON
+                </CMRowButton>
+              )}
+            </ContextMenuSubMenu>
+            <ContextMenuSubMenu label="Export as..." size="small" id="TD-ContextMenu-Export">
+              <CMRowButton onClick={handleExportSVG} id="TD-ContextMenu-Export-SVG">
+                SVG
+              </CMRowButton>
+              <CMRowButton onClick={handleExportPNG} id="TD-ContextMenu-Export-PNG">
+                PNG
+              </CMRowButton>
+              <CMRowButton onClick={handleExportJPG} id="TD-ContextMenu-Export-JPG">
+                JPG
+              </CMRowButton>
+              <CMRowButton onClick={handleExportWEBP} id="TD-ContextMenu-Export-WEBP">
+                WEBP
+              </CMRowButton>
+              {isDebugMode && (
+                <CMRowButton onClick={handleExportJSON} id="TD-ContextMenu-Export-JSON">
+                  JSON
+                </CMRowButton>
+              )}
+            </ContextMenuSubMenu>
             <Divider />
             <CMRowButton onClick={handleDelete} kbd="⌫" id="TD-ContextMenu-Delete">
               Delete
@@ -432,7 +417,7 @@ const StyledGridContent = styled(MenuContent, {
 const currentPageIdSelector = (s: TDSnapshot) => s.appState.currentPageId
 const documentPagesSelector = (s: TDSnapshot) => s.document.pages
 
-function MoveToPageMenu(): JSX.Element | null {
+function MoveToPageMenu() {
   const app = useTldrawApp()
   const currentPageId = app.useStore(currentPageIdSelector)
   const documentPages = app.useStore(documentPagesSelector)
@@ -473,12 +458,7 @@ export interface ContextMenuSubMenuProps {
   id?: string
 }
 
-export function ContextMenuSubMenu({
-  children,
-  label,
-  size,
-  id,
-}: ContextMenuSubMenuProps): JSX.Element {
+export function ContextMenuSubMenu({ children, label, size, id }: ContextMenuSubMenuProps) {
   return (
     <span id={id}>
       <RadixContextMenu.Root dir="ltr">
@@ -502,7 +482,7 @@ const CMArrow = styled(RadixContextMenu.ContextMenuArrow, {
 
 /* ------------------- IconButton ------------------- */
 
-function CMIconButton({ onSelect, ...rest }: ToolButtonProps): JSX.Element {
+function CMIconButton({ onSelect, ...rest }: ToolButtonProps) {
   return (
     <RadixContextMenu.ContextMenuItem dir="ltr" onSelect={onSelect} asChild>
       <ToolButton {...rest} />

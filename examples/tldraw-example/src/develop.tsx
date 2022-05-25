@@ -4,7 +4,7 @@ import { TDShapeType, Tldraw, TldrawApp, useFileSystem } from '@tldraw/tldraw'
 
 declare const window: Window & { app: TldrawApp }
 
-export default function Develop(): JSX.Element {
+export default function Develop() {
   const rTldrawApp = React.useRef<TldrawApp>()
 
   const fileSystemEvents = useFileSystem()
@@ -42,7 +42,7 @@ export default function Develop(): JSX.Element {
         onSignIn={handleSignIn}
         onSignOut={handleSignOut}
         onPersist={handlePersist}
-        showSponsorLink={false}
+        showSponsorLink={true}
       />
     </div>
   )

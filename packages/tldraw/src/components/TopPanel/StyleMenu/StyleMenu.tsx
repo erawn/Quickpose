@@ -2,7 +2,12 @@ import * as React from 'react'
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu'
 import { strokes, fills, defaultTextStyle } from '~state/shapes/shared/shape-styles'
 import { useTldrawApp } from '~hooks'
-import { DMCheckboxItem, DMContent, DMRadioItem } from '~components/Primitives/DropdownMenu'
+import {
+  DMCheckboxItem,
+  DMContent,
+  DMDivider,
+  DMRadioItem,
+} from '~components/Primitives/DropdownMenu'
 import {
   CircleIcon,
   DashDashedIcon,
@@ -63,6 +68,8 @@ const ALIGN_ICONS = {
 
 const themeSelector = (s: TDSnapshot) => (s.settings.isDarkMode ? 'dark' : 'light')
 
+const keepOpenSelector = (s: TDSnapshot) => s.settings.keepStyleMenuOpen
+
 const optionsSelector = (s: TDSnapshot) => {
   const { activeTool, currentPageId: pageId } = s.appState
   switch (activeTool) {
@@ -99,14 +106,23 @@ const optionsSelector = (s: TDSnapshot) => {
   return false
 }
 
-export const StyleMenu = React.memo(function ColorMenu(): JSX.Element {
+export const StyleMenu = React.memo(function ColorMenu() {
   const app = useTldrawApp()
+
   const theme = app.useStore(themeSelector)
+
+  const keepOpen = app.useStore(keepOpenSelector)
+
   const options = app.useStore(optionsSelector)
+
   const currentStyle = app.useStore(currentStyleSelector)
+
   const selectedIds = app.useStore(selectedIdsSelector)
+
   const [displayedStyle, setDisplayedStyle] = React.useState(currentStyle)
+
   const rDisplayedStyle = React.useRef(currentStyle)
+
   React.useEffect(() => {
     const {
       appState: { currentStyle },
@@ -119,9 +135,9 @@ export const StyleMenu = React.memo(function ColorMenu(): JSX.Element {
     } else {
       const overrides = new Set<string>([])
       app.selectedIds
-        .map((id) => page.shapes[id])
-        .forEach((shape) => {
-          STYLE_KEYS.forEach((key) => {
+        .map(id => page.shapes[id])
+        .forEach(shape => {
+          STYLE_KEYS.forEach(key => {
             if (overrides.has(key)) return
             if (commonStyle[key] === undefined) {
               // eslint-disable-next-line @typescript-eslint/ban-ts-comment
@@ -144,29 +160,45 @@ export const StyleMenu = React.memo(function ColorMenu(): JSX.Element {
       setDisplayedStyle(commonStyle)
     }
   }, [currentStyle, selectedIds])
+
+  const handleToggleKeepOpen = React.useCallback((checked: boolean) => {
+    app.setSetting('keepStyleMenuOpen', checked)
+  }, [])
+
   const handleToggleFilled = React.useCallback((checked: boolean) => {
     app.style({ isFilled: checked })
   }, [])
+
   const handleDashChange = React.useCallback((value: string) => {
     app.style({ dash: value as DashStyle })
   }, [])
+
   const handleSizeChange = React.useCallback((value: string) => {
     app.style({ size: value as SizeStyle })
   }, [])
+
   const handleFontChange = React.useCallback((value: string) => {
     app.style({ font: value as FontStyle })
   }, [])
+
   const handleTextAlignChange = React.useCallback((value: string) => {
     app.style({ textAlign: value as AlignStyle })
   }, [])
+
   const handleMenuOpenChange = React.useCallback(
     (open: boolean) => {
       app.setMenuOpen(open)
     },
     [app]
   )
+
   return (
-    <DropdownMenu.Root dir="ltr" onOpenChange={handleMenuOpenChange}>
+    <DropdownMenu.Root
+      dir="ltr"
+      onOpenChange={handleMenuOpenChange}
+      open={keepOpen ? true : undefined}
+      modal={false}
+    >
       <DropdownMenu.Trigger asChild id="TD-Styles">
         <ToolButton variant="text">
           Styles
@@ -226,7 +258,7 @@ export const StyleMenu = React.memo(function ColorMenu(): JSX.Element {
         <StyledRow id="TD-Styles-Dash-Container">
           Dash
           <StyledGroup dir="ltr" value={displayedStyle.dash} onValueChange={handleDashChange}>
-            {Object.values(DashStyle).map((style) => (
+            {Object.values(DashStyle).map(style => (
               <DMRadioItem
                 key={style}
                 isActive={style === displayedStyle.dash}
@@ -243,7 +275,7 @@ export const StyleMenu = React.memo(function ColorMenu(): JSX.Element {
         <StyledRow id="TD-Styles-Size-Container">
           Size
           <StyledGroup dir="ltr" value={displayedStyle.size} onValueChange={handleSizeChange}>
-            {Object.values(SizeStyle).map((sizeStyle) => (
+            {Object.values(SizeStyle).map(sizeStyle => (
               <DMRadioItem
                 key={sizeStyle}
                 isActive={sizeStyle === displayedStyle.size}
@@ -263,7 +295,7 @@ export const StyleMenu = React.memo(function ColorMenu(): JSX.Element {
             <StyledRow id="TD-Styles-Font-Container">
               Font
               <StyledGroup dir="ltr" value={displayedStyle.font} onValueChange={handleFontChange}>
-                {Object.values(FontStyle).map((fontStyle) => (
+                {Object.values(FontStyle).map(fontStyle => (
                   <DMRadioItem
                     key={fontStyle}
                     isActive={fontStyle === displayedStyle.font}
@@ -285,7 +317,7 @@ export const StyleMenu = React.memo(function ColorMenu(): JSX.Element {
                   value={displayedStyle.textAlign}
                   onValueChange={handleTextAlignChange}
                 >
-                  {Object.values(AlignStyle).map((style) => (
+                  {Object.values(AlignStyle).map(style => (
                     <DMRadioItem
                       key={style}
                       isActive={style === displayedStyle.textAlign}
@@ -302,6 +334,15 @@ export const StyleMenu = React.memo(function ColorMenu(): JSX.Element {
             )}
           </>
         )}
+        <DMDivider />
+        <DMCheckboxItem
+          variant="styleMenu"
+          checked={keepOpen}
+          onCheckedChange={handleToggleKeepOpen}
+          id="TD-Styles-Keep-Open"
+        >
+          Keep Open
+        </DMCheckboxItem>
       </DMContent>
     </DropdownMenu.Root>
   )

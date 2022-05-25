@@ -12,13 +12,7 @@ export interface DMContentProps {
   id?: string
 }
 
-export function DMContent({
-  sideOffset = 8,
-  children,
-  align,
-  variant,
-  id,
-}: DMContentProps): JSX.Element {
+export function DMContent({ sideOffset = 8, children, align, variant, id }: DMContentProps) {
   return (
     <Content
       dir="ltr"
@@ -38,7 +32,7 @@ export const StyledContent = styled(MenuContent, {
   height: 'fit-content',
   minWidth: 0,
   maxHeight: '75vh',
-  overflowY: 'scroll',
+  overflowY: 'auto',
   '& *': {
     boxSizing: 'border-box',
   },

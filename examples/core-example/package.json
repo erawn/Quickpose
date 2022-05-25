@@ -1,5 +1,5 @@
 {
-  "version": "1.6.1",
+  "version": "1.7.0",
   "name": "@tldraw/core-example-simple",
   "description": "A simple example project for @tldraw/core.",
   "author": "@steveruizok",
@@ -15,8 +15,8 @@
   },
   "files": [],
   "devDependencies": {
-    "@tldraw/core": "^1.6.1",
-    "@tldraw/vec": "^1.6.1",
+    "@tldraw/core": "*",
+    "@tldraw/vec": "*",
     "@types/node": "^17.0.14",
     "@types/react": "^17.0.38",
     "@types/react-dom": "^17.0.11",
@@ -29,7 +29,7 @@
     "react": "^17.0.2",
     "react-dom": "^17.0.2",
     "rimraf": "^3.0.2",
-    "typescript": "^4.5.5"
+    "typescript": "^4.6.4"
   },
   "gitHead": "a7dac0f83ad998e205c2aab58182cb4ba4e099a6"
 }

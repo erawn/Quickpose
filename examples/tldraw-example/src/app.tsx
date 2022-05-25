@@ -1,6 +1,7 @@
 import * as React from 'react'
 import { Routes, Route, Link } from 'react-router-dom'
 import Basic from './basic'
+import DarkMode from './dark-mode'
 import ReadOnly from './readonly'
 import PropsControl from './props-control'
 import ApiControl from './api-control'
@@ -16,14 +17,17 @@ import UIOptions from './ui-options'
 import { Multiplayer } from './multiplayer'
 import { Multiplayer as MultiplayerWithImages } from './multiplayer-with-images'
 import './styles.css'
+import Export from '~export'
 
-export default function App(): JSX.Element {
+export default function App() {
   return (
     <main>
       <Routes>
         <Route path="/develop" element={<Develop />} />
 
         <Route path="/basic" element={<Basic />} />
+
+        <Route path="/dark-mode" element={<DarkMode />} />
 
         <Route path="/ui-options" element={<UIOptions />} />
 
@@ -47,6 +51,8 @@ export default function App(): JSX.Element {
 
         <Route path="/no-size-embedded" element={<NoSizeEmbedded />} />
 
+        <Route path="/export" element={<Export />} />
+
         <Route path="/multiplayer" element={<Multiplayer />} />
 
         <Route path="/multiplayer-with-images" element={MultiplayerWithImages} />
@@ -62,6 +68,9 @@ export default function App(): JSX.Element {
                 <hr />
                 <li>
                   <Link to="/basic">Basic</Link>
+                </li>
+                <li>
+                  <Link to="/dark-mode">Dark Mode</Link>
                 </li>
                 <li>
                   <Link to="/ui-options">UI Options</Link>
@@ -95,6 +104,9 @@ export default function App(): JSX.Element {
                 </li>
                 <li>
                   <Link to="/no-size-embedded">Embedded (without explicit size)</Link>
+                </li>
+                <li>
+                  <Link to="/export">Export</Link>
                 </li>
                 <li>
                   <Link to="/multiplayer">Multiplayer</Link>

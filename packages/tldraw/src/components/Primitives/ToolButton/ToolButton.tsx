@@ -213,7 +213,6 @@ export const StyledToolButton = styled('button', {
     },
     {
       isActive: true,
-      isSponsor: false,
       css: {
         [`${StyledToolButtonInner}`]: {
           backgroundColor: '$selected',
@@ -223,7 +222,6 @@ export const StyledToolButton = styled('button', {
     },
     {
       isActive: false,
-      isSponsor: false,
       bp: 'small',
       css: {
         [`&:hover:not(:disabled) ${StyledToolButtonInner}`]: {

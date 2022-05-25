@@ -1,5 +1,29 @@
 # Changelog
 
+## 1.12.0
+
+### Minor Changes
+
+- Fixes zooming and pinching bugs. Adds ErrorBoundary to Tldraw component. Cleans up sponosrship feature in menu.
+
+## 1.11.1
+
+### Patch Changes
+
+- Improve clipboard, SVG text.
+
+## 1.11.0
+
+### Minor Changes
+
+- Prevent clipboard events inside of text from reaching the document. Fix various clipboard-related bugs in tldraw.
+
+## 1.10.0
+
+### Minor Changes
+
+- This update changes how clipboard actions (cut, copy, paste) and exports work. Significantly, image exports are no longer handled via a server-side integration, and are instead handled locally on the client. This allows now for exports in the VS Code extension, as well as greatly simplifying exports for apps that embed the Tldraw React component.
+
 ## 1.9.1
 
 ### Patch Changes

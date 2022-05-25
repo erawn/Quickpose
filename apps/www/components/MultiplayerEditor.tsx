@@ -1,12 +1,12 @@
 import { createClient } from '@liveblocks/client'
 import { LiveblocksProvider, RoomProvider } from '@liveblocks/react'
-import { Tldraw, useFileSystem } from '@tldraw/tldraw'
+import { Tldraw, TldrawApp, useFileSystem } from '@tldraw/tldraw'
 import { useAccountHandlers } from 'hooks/useAccountHandlers'
 import { useMultiplayerAssets } from 'hooks/useMultiplayerAssets'
 import { useMultiplayerState } from 'hooks/useMultiplayerState'
-import { FC } from 'react'
+import { useUploadAssets } from 'hooks/useUploadAssets'
+import React, { FC } from 'react'
 import { styled } from 'styles'
-import { exportToImage } from 'utils/export'
 
 const client = createClient({
   publicApiKey: process.env.NEXT_PUBLIC_LIVEBLOCKS_PUBLIC_API_KEY || '',
@@ -44,6 +44,7 @@ function Editor({ roomId, isUser, isSponsor }: Props) {
   const { onSignIn, onSignOut } = useAccountHandlers()
   const { error, ...events } = useMultiplayerState(roomId)
   const { onAssetCreate, onAssetDelete } = useMultiplayerAssets()
+  const { onAssetUpload } = useUploadAssets()
 
   if (error) return <LoadingScreen>Error: {error.message}</LoadingScreen>
 
@@ -56,9 +57,9 @@ function Editor({ roomId, isUser, isSponsor }: Props) {
         showSponsorLink={!isSponsor}
         onSignIn={isSponsor ? undefined : onSignIn}
         onSignOut={isUser ? onSignOut : undefined}
-        onExport={exportToImage}
         onAssetCreate={onAssetCreate}
         onAssetDelete={onAssetDelete}
+        onAssetUpload={onAssetUpload}
         {...fileSystemEvents}
         {...events}
       />
