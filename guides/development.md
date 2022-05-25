@@ -25,3 +25,5 @@ yarn start:www
 
 make sure react and react-dom are same version - "npm ls react" etc
 
+nvm use 16 
+

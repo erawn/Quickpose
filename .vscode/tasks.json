@@ -14,7 +14,11 @@
 			"script": "start:www",
 			"problemMatcher": [],
 			"label": "npm: start:www",
-			"detail": "turbo run start:www --parallel & (cd apps/www && yarn dev)"
+			"detail": "turbo run start:www --parallel & (cd apps/www && yarn dev)",
+			"group": {
+				"kind": "build",
+				"isDefault": true
+			}
 		},
 		{
 			"label": "openBrowser",
@@ -23,10 +27,7 @@
 			"args": [
 				"http://localhost:3000"
 			],
-			"group": {
-				"kind": "build",
-				"isDefault": true
-			},
+			"group": "build",
 			"dependsOrder": "parallel",
 			"dependsOn": [
 				"npm: start:www"
