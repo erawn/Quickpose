@@ -8,7 +8,11 @@ import ForceGraph2D from 'react-force-graph-2d'
 import ForceGraphInstance from 'force-graph'
 import ForceGraph from 'force-graph'
 import * as d3 from 'd3'
+import { SimulationNodeDatum } from 'd3'
 declare const window: Window & { app: TldrawApp }
+
+const D3_RADIUS = 5;
+const TL_DRAW_RADIUS = 80;
 
 interface EditorProps {
   id?: string
@@ -16,62 +20,14 @@ interface EditorProps {
   isSponsor?: boolean
 }
 
+
 const requestCurrentId = async () => {
   const response = await fetch('http://127.0.0.1:8080/currentVersion');
 	const id = await response.json();
 }
-function updateSimulation(simulation,linkGroup,nodeGroup,links,nodes) {
-  //https://stackoverflow.com/questions/18206231/saving-and-reloading-a-force-layout-using-d3-js
-  let radius = 5
-  let canvasWidth = window.innerWidth
-  let canvasHeight = window.innerHeight
-  let linkElements = linkGroup.selectAll('line')
-    .data(links, function (link) {
-      return link.target.id + link.source.id
-    })
 
-  linkElements.exit().remove()
-
-  var linkEnter = linkElements
-    .enter().append('line')
-    .attr('stroke-width', 3)
-    .attr('stroke', 'rgba(50, 50, 50, 0.2)')
-
-  linkElements = linkEnter.merge(linkElements)
-
-  // nodes
-  let nodeElements = nodeGroup.selectAll('.node')
-    .data(nodes, function (node) { return node.id })
-
-  var nodeEnter = nodeElements
-    .enter()
-    .append("svg:image")
-    .attr("class", "node")
-    .attr("height", 40)
-    .attr("width", 40)
-    .attr("x", function (d) { return -25; })
-    .attr("y", function (d) { return -25; })
-
-  nodeElements.exit().remove()
-
-  nodeElements = nodeElements.merge(nodeEnter)
-  simulation.nodes(nodes).on('tick', () => {
-    nodeElements
-      .attr('cx', function (node) { return node.x = Math.max(radius, Math.min(canvasWidth - radius, node.x)); })
-      .attr('cy', function (node) { return node.y = Math.max(radius, Math.min(canvasHeight - radius, node.y)); })
-      .attr("transform", function (node) {
-        return "translate(" +
-          Math.max(radius, Math.min(canvasWidth - radius, node.x)) + "," +
-          Math.max(radius, Math.min(canvasHeight - radius, node.y)) + ")";
-      })
-    linkElements
-      .attr('x1', function (link) { return link.source.x })
-      .attr('y1', function (link) { return link.source.y })
-      .attr('x2', function (link) { return link.target.x })
-      .attr('y2', function (link) { return link.target.y })
-  })
-
-  simulation.force('link').links(links)
+function d3toTldrawCoords(x,y){
+    return [ (x * 100) - TL_DRAW_RADIUS, (y * 100) - TL_DRAW_RADIUS]
 }
 
 const Editor: FC<EditorProps & Partial<TldrawProps>> = ({
@@ -80,48 +36,46 @@ const Editor: FC<EditorProps & Partial<TldrawProps>> = ({
   isSponsor = false,
   ...rest
 }) => {
-  const [data, setData] = React.useState(null);
-  const forceRef: React.RefObject<typeof ForceGraphInstance> = React.useRef();
-  const forceRefInstance = React.useRef(null);
-  const containerRef = React.useRef(null);
-  const svg = d3
-    .select(containerRef.current)
-    .append("svg")
-  //const elem = React.useRef()//document.getElementById("graph");
-  const graphtestdata = {
+  const [incomingData, setIncomingData] = React.useState(null);
+  const [nodeData, setNodeData] = React.useState(null);
+  const [linkData, setLinkData] = React.useState(null);
+
+
+  const [simData, setSimData] = React.useState([])
+
+
+
+  let graphtestdata = {
     nodes: [
-      { id: "A" },
-      { id: "B" },
-      { id: "C" },
-      { id: "D" },
-      { id: "E" },
-      { id: "F" }
+      { "id": "A" },
+      { "id": "B" },
+      { "id": "C" },
+      { "id": "D" },
+      { "id": "E" },
+      { "id": "F" }
     ],
     links: [
-      { source: "A", target: "B", value: 5 },
-      { source: "B", target: "C", value: 5 },
-      { source: "C", target: "D", value: 5 },
-      { source: "D", target: "E", value: 5 },
-      { source: "E", target: "F", value: 5 },
-      { source: "C", target: "F", value: 5 }
+      {"source": "A", "target": "B", "value": 5 },
+      {"source": "B", "target": "C", "value": 5 },
+      {"source": "C", "target": "D", "value": 5 },
+      {"source": "D", "target": "E", "value": 5 },
+      {"source": "E", "target": "F", "value": 5 },
+      {"source": "C", "target": "F", "value": 5 }
     ]
   };
-  var linkGroup = svg.append('g').attr('class', 'links')
-  var nodeGroup = svg.append('g').attr('class', 'nodes')
-
-  var linkForce = d3
-      .forceLink()
-      .id(link => link.id)
-      .strength(link => link.strength)
-      .distance(30)
-
-  const simulation = d3.forceSimulation(graphtestdata.nodes)
-    .force('link', linkForce)
-    .force('charge', d3.forceManyBody().strength(-100))
-    .force('center', d3.forceCenter(window.innerWidth / 2, window.innerHeight / 2))
-    .force('collision', d3.forceCollide().radius(60))
-    .velocityDecay(.90)
-    .alphaTarget(.01);
+  
+  const simulation = d3
+  .forceSimulation()
+  .force("center", d3.forceCenter(50,50))
+  .force('charge', d3.forceManyBody().strength(-100))
+  .force('collision', d3.forceCollide().radius(D3_RADIUS*10))
+  .force('link', d3.forceLink()
+    .id(function(d,i) {
+      return d.id
+    })
+    .distance(20)
+    .strength(1)
+  );
 
 
   const handleMount = React.useCallback((app: TldrawApp) => {
@@ -150,44 +104,80 @@ const Editor: FC<EditorProps & Partial<TldrawProps>> = ({
     let i = 0
     const interval = setInterval(() => {
       const app = window.app
-      const rect1 = app.getShape('rect1')
-      //console.log("forcerefinstance",forceRefInstance.current.state)
-      //console.log("forceref",forceRef.current)
-      // axios('http://127.0.0.1:8080/versions.json')
+      // axios('http://127.0.0.1:8080/versions.json', {timeout: 1000})
       //   .then(response => {
-      //     setData(response.data)
+      //     setIncomingData(response.data)
       //   })
       //   .catch(error => {
       //     console.error("error fetching: ", error);
       //   })
     
-      const node0 = app.getShape('node0')
-        if(!node0){
-          app.createShapes({
-            id: 'node0',
-            type: TDShapeType.Image, 
-            name: 'Image',
-            childIndex: 1,
-            point: [0, 0],
-            size: [100, 100],
-          })
-        }
+      const rect1 = app.getShape('rect1')
+      if(!rect1){
+        app.createShapes({
+          id: 'rect1',
+          type: TDShapeType.Rectangle,
+          name: 'Rectangle',
+          childIndex: 1,
+          point: [0, 0],
+          size: [100, 100],
+        })
+      }else{
+        const color = i % 2 ? ColorStyle.Black : ColorStyle.Green
+
+        app.updateShapes({
+          id: 'rect1', 
+          style: {
+            ...rect1.style, 
+            color,
+          },
+        })
+      }
       
       //console.log(data)
-      const color = i % 2 ? ColorStyle.Black : ColorStyle.Green
+      
 
-      app.updateShapes({
-        id: 'rect1', 
-        style: {
-          ...rect1.style, 
-          color,
-        },
+      simulation.on("tick", () => {
+        setNodeData([...simulation.nodes()]);
+      });
+      //console.log(graphtestdata.nodes)
+      //console.log(nodeData)
+      simulation.nodes(graphtestdata.nodes);
+      simulation.force('link').links(graphtestdata.links)
+      simulation.alpha(0.1).restart();
+
+      graphtestdata.nodes.forEach(function(node: SimulationNodeDatum){
+        const tlDrawNode = app.getShape('node'+node.id)
+        console.log(tlDrawNode)
+        if(!tlDrawNode){
+          app.createShapes({
+            id: 'node'+node.id,
+            type: TDShapeType.Rectangle,
+            name: 'node',
+            point: d3toTldrawCoords(node.x ,node.y),
+            size: [TL_DRAW_RADIUS,TL_DRAW_RADIUS],
+          })
+        }else{
+          app.updateShapes({
+            id: 'node'+node.id, 
+            style: {
+              ...tlDrawNode.style, 
+              color,
+            },
+            point: d3toTldrawCoords(node.x ,node.y),
+            size: [TL_DRAW_RADIUS,TL_DRAW_RADIUS],
+          })
+        }
       })
-
+      
+     
+      
       i++
     }, 1000)
     return () => clearInterval(interval)
-  })
+  },[]);
+
+ 
 
   // Send events to gtag as actions.
   const handlePersist = React.useCallback((_app: TldrawApp, reason?: string) => {
@@ -208,16 +198,6 @@ const Editor: FC<EditorProps & Partial<TldrawProps>> = ({
 
   return (
     <div className="tldraw">
-      <div className="forcegraph" ref={forceRefInstance}>
-      <ForceGraph2D
-          graphData={graphtestdata}
-          width={window.innerWidth}
-          height={window.innerHeight}
-          backgroundColor="aliceblue"
-          nodeLabel="id"
-          ref={forceRef}
-        />
-      </div>
       <Tldraw
         id={id}
         autofocus
