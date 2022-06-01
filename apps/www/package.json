@@ -27,6 +27,7 @@
     "@stitches/react": "^1.2.5",
     "@tldraw/core": "*",
     "@tldraw/tldraw": "*",
+    "@types/d3": "^7.4.0",
     "aws-sdk": "^2.1053.0",
     "axios": "^0.27.2",
     "d3": "^7.4.4",
