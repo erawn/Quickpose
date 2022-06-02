@@ -1,15 +1,15 @@
+/* eslint-disable @typescript-eslint/no-non-null-assertion */
 import { Tldraw, TldrawApp, TldrawProps, useFileSystem, TDShapeType, ColorStyle } from '@tldraw/tldraw'
 import { useAccountHandlers } from 'hooks/useAccountHandlers'
 import { useUploadAssets } from 'hooks/useUploadAssets'
 import React, { FC } from 'react'
 import * as gtag from 'utils/gtag'
 import axios from 'axios'
-import ForceGraph2D from 'react-force-graph-2d'
-import ForceGraphInstance from 'force-graph'
-import ForceGraph from 'force-graph'
 import * as d3 from 'd3'
 import { SimulationNodeDatum } from 'd3'
-declare const window: Window & { app: TldrawApp }
+
+//declare const window: Window & { app: TldrawApp }
+
 
 const D3_RADIUS = 5;
 const TL_DRAW_RADIUS = 80;
@@ -20,16 +20,29 @@ interface EditorProps {
   isSponsor?: boolean
 }
 
+interface dataNode extends SimulationNodeDatum {
+  id: string;
+}
+
 
 const requestCurrentId = async () => {
   const response = await fetch('http://127.0.0.1:8080/currentVersion');
 	const id = await response.json();
 }
 
-function d3toTldrawCoords(x,y){
-    return [ (x * 100) - TL_DRAW_RADIUS, (y * 100) - TL_DRAW_RADIUS]
+function d3toTldrawCoords(x,y): number[]{
+    return [ Math.round((x * 10) - TL_DRAW_RADIUS), Math.round((y * 10) - TL_DRAW_RADIUS)]
 }
 
+function requestData(setData: (arg0: any) => void){
+  axios('http://127.0.0.1:8080/versions.json', {timeout: 1000})
+        .then(response => {
+          setData(response.data)
+        })
+        .catch(error => {
+          console.error("error fetching: ", error);
+        })
+}
 const Editor: FC<EditorProps & Partial<TldrawProps>> = ({
   id = 'home',
   isUser = false,
@@ -39,13 +52,13 @@ const Editor: FC<EditorProps & Partial<TldrawProps>> = ({
   const [incomingData, setIncomingData] = React.useState(null);
   const [nodeData, setNodeData] = React.useState(null);
   const [linkData, setLinkData] = React.useState(null);
-
+  const rTldrawApp = React.useRef<TldrawApp>()
 
   const [simData, setSimData] = React.useState([])
 
 
 
-  let graphtestdata = {
+  const graphtestdata = {
     nodes: [
       { "id": "A" },
       { "id": "B" },
@@ -70,7 +83,7 @@ const Editor: FC<EditorProps & Partial<TldrawProps>> = ({
   .force('charge', d3.forceManyBody().strength(-100))
   .force('collision', d3.forceCollide().radius(D3_RADIUS*10))
   .force('link', d3.forceLink()
-    .id(function(d,i) {
+    .id(function(d: dataNode,i) {
       return d.id
     })
     .distance(20)
@@ -79,7 +92,8 @@ const Editor: FC<EditorProps & Partial<TldrawProps>> = ({
 
 
   const handleMount = React.useCallback((app: TldrawApp) => {
-    window.app = app
+    rTldrawApp.current = app
+    app.deleteAll()
     app.createShapes( 
       {
         id: 'rect1',
@@ -102,17 +116,18 @@ const Editor: FC<EditorProps & Partial<TldrawProps>> = ({
   
   React.useEffect(() => {
     let i = 0
-    const interval = setInterval(() => {
-      const app = window.app
-      // axios('http://127.0.0.1:8080/versions.json', {timeout: 1000})
-      //   .then(response => {
-      //     setIncomingData(response.data)
-      //   })
-      //   .catch(error => {
-      //     console.error("error fetching: ", error);
-      //   })
     
+    const interval = setInterval(() => {
+      
+      
+      const color = i % 2 ? ColorStyle.Black : ColorStyle.Green
+      const app = rTldrawApp.current!
+      requestData(setIncomingData)
+
       const rect1 = app.getShape('rect1')
+
+     
+
       if(!rect1){
         app.createShapes({
           id: 'rect1',
@@ -123,7 +138,6 @@ const Editor: FC<EditorProps & Partial<TldrawProps>> = ({
           size: [100, 100],
         })
       }else{
-        const color = i % 2 ? ColorStyle.Black : ColorStyle.Green
 
         app.updateShapes({
           id: 'rect1', 
@@ -142,11 +156,11 @@ const Editor: FC<EditorProps & Partial<TldrawProps>> = ({
       });
       //console.log(graphtestdata.nodes)
       //console.log(nodeData)
-      simulation.nodes(graphtestdata.nodes);
+      simulation.nodes(graphtestdata.nodes as dataNode[]);
       simulation.force('link').links(graphtestdata.links)
       simulation.alpha(0.1).restart();
 
-      graphtestdata.nodes.forEach(function(node: SimulationNodeDatum){
+      graphtestdata.nodes.forEach(function(node: dataNode){
         const tlDrawNode = app.getShape('node'+node.id)
         console.log(tlDrawNode)
         if(!tlDrawNode){
@@ -154,7 +168,7 @@ const Editor: FC<EditorProps & Partial<TldrawProps>> = ({
             id: 'node'+node.id,
             type: TDShapeType.Rectangle,
             name: 'node',
-            point: d3toTldrawCoords(node.x ,node.y),
+            point: d3toTldrawCoords(node.x,node.y),
             size: [TL_DRAW_RADIUS,TL_DRAW_RADIUS],
           })
         }else{
@@ -197,7 +211,6 @@ const Editor: FC<EditorProps & Partial<TldrawProps>> = ({
   const { onAssetUpload } = useUploadAssets()
 
   return (
-    <div className="tldraw">
       <Tldraw
         id={id}
         autofocus
@@ -210,11 +223,6 @@ const Editor: FC<EditorProps & Partial<TldrawProps>> = ({
         {...fileSystemEvents}
         {...rest}
       />
-      <div className="forceGraph">
-        
-      </div>
-      
-    </div>
     
   )
 }
