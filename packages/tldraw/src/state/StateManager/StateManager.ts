@@ -1,3 +1,6 @@
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore
+
 import createVanilla, { StoreApi } from 'zustand/vanilla'
 import create, { UseBoundStore } from 'zustand'
 import * as idb from 'idb-keyval'

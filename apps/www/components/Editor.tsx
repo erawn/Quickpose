@@ -82,7 +82,7 @@ const Editor: FC<EditorProps & Partial<TldrawProps>> = ({
   .force("center", d3.forceCenter(50,50))
   .force('charge', d3.forceManyBody().strength(-100))
   .force('collision', d3.forceCollide().radius(D3_RADIUS*10))
-  .force('link', d3.forceLink()
+  .force("link", d3.forceLink()
     .id(function(d: dataNode,i) {
       return d.id
     })
@@ -157,7 +157,9 @@ const Editor: FC<EditorProps & Partial<TldrawProps>> = ({
       //console.log(graphtestdata.nodes)
       //console.log(nodeData)
       simulation.nodes(graphtestdata.nodes as dataNode[]);
-      simulation.force('link').links(graphtestdata.links)
+
+      const forceLink = simulation.force("link") as d3.ForceLink<d3.SimulationNodeDatum, d3.SimulationLinkDatum<d3.SimulationNodeDatum>>;
+      forceLink.links(graphtestdata.links)
       simulation.alpha(0.1).restart();
 
       graphtestdata.nodes.forEach(function(node: dataNode){
