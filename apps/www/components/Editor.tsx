@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
-import { Tldraw, TldrawApp, TldrawProps, useFileSystem, TDShapeType, ColorStyle } from '@tldraw/tldraw'
+import { Tldraw, TldrawApp, TldrawProps, useFileSystem, TDShapeType, ColorStyle, TDShape } from '@tldraw/tldraw'
 import { useAccountHandlers } from 'hooks/useAccountHandlers'
 import { useUploadAssets } from 'hooks/useUploadAssets'
 import React, { FC } from 'react'
@@ -23,6 +23,7 @@ interface EditorProps {
 interface dataNode extends SimulationNodeDatum {
   id: string;
 }
+type inputShape = { id: string; type: TDShapeType } & Partial<TDShape>
 
 
 const requestCurrentId = async () => {
@@ -102,27 +103,32 @@ const Editor: FC<EditorProps & Partial<TldrawProps>> = ({
         childIndex: 1,
         point: [0, 0],
         size: [100, 100],
-      },
+      } as inputShape,
       {
         id: 'rect2',
         name: 'Rectangle',
         type: TDShapeType.Rectangle,
         point: [200, 200],
         size: [100, 100],
-      }
+      } as inputShape
     )
 
   }, [])
   
   React.useEffect(() => {
     let i = 0
-    
+
+    const dataInterval = setInterval(() => {
+      requestData(setIncomingData)
+    }, 1000)
+
+
     const interval = setInterval(() => {
       
       
       const color = i % 2 ? ColorStyle.Black : ColorStyle.Green
       const app = rTldrawApp.current!
-      requestData(setIncomingData)
+      
 
       const rect1 = app.getShape('rect1')
 
@@ -136,7 +142,7 @@ const Editor: FC<EditorProps & Partial<TldrawProps>> = ({
           childIndex: 1,
           point: [0, 0],
           size: [100, 100],
-        })
+        } as inputShape)
       }else{
 
         app.updateShapes({
@@ -172,17 +178,18 @@ const Editor: FC<EditorProps & Partial<TldrawProps>> = ({
             name: 'node',
             point: d3toTldrawCoords(node.x,node.y),
             size: [TL_DRAW_RADIUS,TL_DRAW_RADIUS],
-          })
+          } as inputShape)
         }else{
           app.updateShapes({
             id: 'node'+node.id, 
+            type: TDShapeType.Rectangle,
             style: {
               ...tlDrawNode.style, 
               color,
             },
             point: d3toTldrawCoords(node.x ,node.y),
             size: [TL_DRAW_RADIUS,TL_DRAW_RADIUS],
-          })
+          } as inputShape)
         }
       })
       
@@ -190,7 +197,10 @@ const Editor: FC<EditorProps & Partial<TldrawProps>> = ({
       
       i++
     }, 1000)
-    return () => clearInterval(interval)
+    return () => {
+      clearInterval(interval)
+      clearInterval(dataInterval)
+    }
   },[]);
 
  
