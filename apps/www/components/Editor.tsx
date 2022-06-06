@@ -7,8 +7,8 @@ import * as gtag from 'utils/gtag'
 import axios from 'axios'
 import * as d3 from 'd3'
 import { SimulationNodeDatum } from 'd3'
-
-//declare const window: Window & { app: TldrawApp }
+import { isBrowser, isNode} from "browser-or-node";
+declare const window: Window & { app: TldrawApp }
 
 
 const D3_RADIUS = 5;
@@ -93,7 +93,16 @@ const Editor: FC<EditorProps & Partial<TldrawProps>> = ({
 
 
   const handleMount = React.useCallback((app: TldrawApp) => {
-    rTldrawApp.current = app
+    if(isBrowser){
+      console.log("im a browser!")
+      rTldrawApp.current = app
+    }
+    if(isNode){
+      console.log("im a node!")
+      rTldrawApp.current = window.app
+    }
+    
+    if (window.app )
     app.deleteAll()
     app.createShapes( 
       {
@@ -124,7 +133,12 @@ const Editor: FC<EditorProps & Partial<TldrawProps>> = ({
 
 
     const interval = setInterval(() => {
-      
+      if(isBrowser){
+        console.log("im a browser!")
+      }
+      if(isNode){
+        console.log("im a node!")
+      }
       
       const color = i % 2 ? ColorStyle.Black : ColorStyle.Green
       const app = rTldrawApp.current!
@@ -170,7 +184,7 @@ const Editor: FC<EditorProps & Partial<TldrawProps>> = ({
 
       graphtestdata.nodes.forEach(function(node: dataNode){
         const tlDrawNode = app.getShape('node'+node.id)
-        console.log(tlDrawNode)
+        //console.log(tlDrawNode)
         if(!tlDrawNode){
           app.createShapes({
             id: 'node'+node.id,
