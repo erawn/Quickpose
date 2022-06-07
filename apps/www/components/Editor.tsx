@@ -185,6 +185,18 @@ const Editor: FC<EditorProps & Partial<TldrawProps>> = ({
         //https://medium.com/ninjaconcept/interactive-dynamic-force-directed-graphs-with-d3-da720c6d7811
         if(netData.current){
 
+          netData.current[0].forEach(function(netNode){
+            if(!graphData.current.nodes.some(graphNode => graphNode.id === netNode.id)){
+              graphData.current.nodes = [...graphData.current.nodes,netNode]
+            }
+          })
+          netData.current[1].forEach(function(netLink){
+            if(!graphData.current.links.some(graphLink => (graphLink.source === netLink.source) && 
+                                                            (graphLink.target === netLink.target))){
+              graphData.current.links = [...graphData.current.links,netLink]
+            }
+          })
+
           //graphData.current.nodes = netData.current[0]
           //graphData.current.links = netData.current[1]
           //only adding nodes and links, so we can just append new incoming data to graphData
