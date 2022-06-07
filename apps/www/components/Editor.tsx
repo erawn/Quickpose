@@ -7,6 +7,8 @@ import * as gtag from 'utils/gtag'
 import axios from 'axios'
 import * as d3 from 'd3'
 import { SimulationNodeDatum } from 'd3'
+import deepEqual from "deep-equal"
+
 //declare const window: Window & { app: TldrawApp }
 
 
@@ -21,6 +23,8 @@ interface EditorProps {
 
 interface dataNode extends SimulationNodeDatum {
   id: string;
+  x: number;
+  y: number;
 }
 type inputShape = { id: string; type: TDShapeType } & Partial<TDShape>
 
@@ -34,29 +38,15 @@ function d3toTldrawCoords(x,y): number[]{
     return [ Math.round((x * 10) - TL_DRAW_RADIUS), Math.round((y * 10) - TL_DRAW_RADIUS)]
 }
 
-function requestData(setData: (arg0: any) => void){
-  axios('http://127.0.0.1:8080/versions.json', {timeout: 1000})
-        .then(response => {
-          setData(response.data)
-        })
-        .catch(error => {
-          console.error("error fetching: ", error);
-        })
-}
 const Editor: FC<EditorProps & Partial<TldrawProps>> = ({
   id = 'home',
   isUser = false,
   isSponsor = false,
   ...rest
 }) => {
-  const [incomingData, setIncomingData] = React.useState(null);
-  const [nodeData, setNodeData] = React.useState(null);
-  const [linkData, setLinkData] = React.useState(null);
+  
   const rTldrawApp = React.useRef<TldrawApp>()
-
-  const [simData, setSimData] = React.useState([])
-
-
+  const netData = React.useRef<any>();
 
   const graphtestdata = {
     nodes: [
@@ -76,7 +66,9 @@ const Editor: FC<EditorProps & Partial<TldrawProps>> = ({
       {"source": "C", "target": "F", "value": 5 }
     ]
   };
-  
+  const graphData = React.useRef<any>();
+  graphData.current = graphtestdata
+
   const simulation = d3
   .forceSimulation()
   .force("center", d3.forceCenter(50,50))
@@ -123,14 +115,31 @@ const Editor: FC<EditorProps & Partial<TldrawProps>> = ({
     )
 
   }, [])
+
   
   React.useEffect(() => {
+
+    const abortController = new AbortController();
     let i = 0
 
     const dataInterval = setInterval(() => {
-      requestData(setIncomingData)
-      console.log("requesting data...")
-    }, 3000)
+        console.log("requesting data...")
+        axios.get('http://127.0.0.1:8080/versions.json', {
+          timeout: 1000,
+          signal: abortController.signal
+        })
+        .then(response => {
+          if(!deepEqual(response.data,netData.current)){
+            netData.current = response.data
+            console.log("newdata",response.data)
+          }else{
+            console.log("samedata",response.data)
+          }
+        })
+        .catch(error => {
+          console.error("error fetching: ", error);
+        })
+    }, 5000)
 
 
     const interval = setInterval(() => {
@@ -143,11 +152,10 @@ const Editor: FC<EditorProps & Partial<TldrawProps>> = ({
       //   app = rTldrawApp.current!
       // }
       const app = rTldrawApp.current!
-      console.log("vercal env v:", process.env["VERCEL"])
       if(!(app === undefined)){
         
         
-        const color = i % 2 ? ColorStyle.Black : ColorStyle.Green
+        const color = i % 2 ? ColorStyle.Black : ColorStyle.Black
         //const app = rTldrawApp.current!
         
 
@@ -175,53 +183,55 @@ const Editor: FC<EditorProps & Partial<TldrawProps>> = ({
           })
         }
         
-        //console.log(data)
-        
+        if(netData.current){
 
-        simulation.on("tick", () => {
-          setNodeData([...simulation.nodes()]);
-        });
-        //console.log(graphtestdata.nodes)
-        //console.log(nodeData)
-        simulation.nodes(graphtestdata.nodes as dataNode[]);
+          //graphData.current.nodes = netData.current[0]
+          //graphData.current.links = netData.current[1]
+        }
+        if(graphData.current){
+          const data = graphData.current
+          console.log(data)
+          simulation.nodes(data.nodes);
+          const forceLink = simulation.force("link") as d3.ForceLink<d3.SimulationNodeDatum, d3.SimulationLinkDatum<d3.SimulationNodeDatum>>;
+          forceLink.links(data.links)
 
-        const forceLink = simulation.force("link") as d3.ForceLink<d3.SimulationNodeDatum, d3.SimulationLinkDatum<d3.SimulationNodeDatum>>;
-        forceLink.links(graphtestdata.links)
-        simulation.alpha(0.1).restart();
+          simulation.on("tick", () => {
+            graphData.current.nodes = [...simulation.nodes()];
+          });
 
-        graphtestdata.nodes.forEach(function(node: dataNode){
-          const tlDrawNode = app.getShape('node'+node.id)
-          //console.log(tlDrawNode)
-          if(!tlDrawNode){
-            app.createShapes({
-              id: 'node'+node.id,
-              type: TDShapeType.Rectangle,
-              name: 'node',
-              point: d3toTldrawCoords(node.x,node.y),
-              size: [TL_DRAW_RADIUS,TL_DRAW_RADIUS],
-            } as inputShape)
-          }else{
-            app.updateShapes({
-              id: 'node'+node.id, 
-              type: TDShapeType.Rectangle,
-              style: {
-                ...tlDrawNode.style, 
-                color,
-              },
-              point: d3toTldrawCoords(node.x ,node.y),
-              size: [TL_DRAW_RADIUS,TL_DRAW_RADIUS],
-            } as inputShape)
-          }
-        })
-        
-        
-        
+          
+          
+          graphData.current.nodes.forEach(function(node: dataNode){
+            const tlDrawNode = app.getShape('node'+node.id)
+            if(!tlDrawNode){
+              app.createShapes({
+                id: 'node'+node.id,
+                type: TDShapeType.Rectangle,
+                name: 'node',
+                point: d3toTldrawCoords(node.x,node.y),
+                size: [TL_DRAW_RADIUS,TL_DRAW_RADIUS],
+              } as inputShape)
+            }else{
+              app.updateShapes({
+                id: 'node'+node.id, 
+                type: TDShapeType.Rectangle,
+                style: {
+                  ...tlDrawNode.style, 
+                  color,
+                },
+                point: d3toTldrawCoords(node.x ,node.y),
+                size: [TL_DRAW_RADIUS,TL_DRAW_RADIUS],
+              } as inputShape)
+            }
+          })
+        }
         i++
       }
     }, 50)
     return () => {
       clearInterval(interval)
       clearInterval(dataInterval)
+      abortController.abort();
     }
   },[]);
 
