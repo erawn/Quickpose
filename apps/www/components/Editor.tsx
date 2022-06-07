@@ -7,7 +7,7 @@ import * as gtag from 'utils/gtag'
 import axios from 'axios'
 import * as d3 from 'd3'
 import { SimulationNodeDatum } from 'd3'
-declare const window: Window & { app: TldrawApp }
+//declare const window: Window & { app: TldrawApp }
 
 
 const D3_RADIUS = 5;
@@ -93,13 +93,16 @@ const Editor: FC<EditorProps & Partial<TldrawProps>> = ({
 
   const handleMount = React.useCallback((app: TldrawApp) => {
     
-    if(process.env["NEXT_PUBLIC_VERCEL_EN"] == '1'){
-      console.log("im in vercel!")
-      app = window.app
-    }else{
-      console.log("im local!")
-      app = rTldrawApp.current!
-    }
+    // if(process.env["NEXT_PUBLIC_VERCEL_EN"] == '1'){
+    //   console.log("im in vercel!")
+    //   app = window.app
+    // }else{
+    //   console.log("im local!")
+    //   app = rTldrawApp.current!
+    // }
+
+    rTldrawApp.current = app
+
     app.deleteAll()
     app.createShapes( 
       {
@@ -131,17 +134,17 @@ const Editor: FC<EditorProps & Partial<TldrawProps>> = ({
 
 
     const interval = setInterval(() => {
-      let app
-      if(process.env["NEXT_PUBLIC_VERCEL_EN"] == '1'){
-        console.log("im in vercel!")
-        app = window.app
-      }else{
-        console.log("im local!")
-        app = rTldrawApp.current!
-      }
       
+      // if(process.env["NEXT_PUBLIC_VERCEL_EN"] == '1'){
+      //   console.log("im in vercel!")
+      //   app = window.app
+      // }else{
+      //   console.log("im local!")
+      //   app = rTldrawApp.current!
+      // }
+      const app = rTldrawApp.current!
       console.log("vercal env v:", process.env["VERCEL"])
-      if(app != null){
+      if(!(app === undefined)){
         
         
         const color = i % 2 ? ColorStyle.Black : ColorStyle.Green
@@ -242,6 +245,7 @@ const Editor: FC<EditorProps & Partial<TldrawProps>> = ({
   const { onAssetUpload } = useUploadAssets()
 
   return (
+    <div className="tldraw">
       <Tldraw
         id={id}
         autofocus
@@ -254,7 +258,7 @@ const Editor: FC<EditorProps & Partial<TldrawProps>> = ({
         {...fileSystemEvents}
         {...rest}
       />
-    
+    </div>
   )
 }
 

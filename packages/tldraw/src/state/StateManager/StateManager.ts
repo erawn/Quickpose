@@ -148,7 +148,7 @@ export class StateManager<T extends Record<string, any>> {
    * @param patch The patch to apply.
    * @param id (optional) An id for the patch.
    */
-  private applyPatch = (patch: Patch<T>, id?: string) => {
+  private applyPatch = (patch: any, id?: string) => {
     const prev = this._state
     const next = Utils.deepMerge(this._state, patch)
     const final = this.cleanup(next, prev, patch, id)
