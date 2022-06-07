@@ -129,88 +129,95 @@ const Editor: FC<EditorProps & Partial<TldrawProps>> = ({
 
     const dataInterval = setInterval(() => {
       requestData(setIncomingData)
-    }, 1000)
+      console.log("requesting data...")
+    }, 3000)
 
 
     const interval = setInterval(() => {
-      if(isBrowser){
-        console.log("im a browser!")
-      }
-      if(isNode){
-        console.log("im a node!")
-      }
-      
-      const color = i % 2 ? ColorStyle.Black : ColorStyle.Green
-      const app = rTldrawApp.current!
-      
-
-      const rect1 = app.getShape('rect1')
-
-     
-
-      if(!rect1){
-        app.createShapes({
-          id: 'rect1',
-          type: TDShapeType.Rectangle,
-          name: 'Rectangle',
-          childIndex: 1,
-          point: [0, 0],
-          size: [100, 100],
-        } as inputShape)
+      let app
+      if(process.env.VERCEL == '1'){
+        console.log("im in vercel!")
+        app = window.app
       }else{
-
-        app.updateShapes({
-          id: 'rect1', 
-          style: {
-            ...rect1.style, 
-            color,
-          },
-        })
+        console.log("im local!")
+        app = rTldrawApp.current!
       }
       
-      //console.log(data)
-      
+      if(app != null){
+        
+        
+        const color = i % 2 ? ColorStyle.Black : ColorStyle.Green
+        //const app = rTldrawApp.current!
+        
 
-      simulation.on("tick", () => {
-        setNodeData([...simulation.nodes()]);
-      });
-      //console.log(graphtestdata.nodes)
-      //console.log(nodeData)
-      simulation.nodes(graphtestdata.nodes as dataNode[]);
+        const rect1 = app.getShape('rect1')
 
-      const forceLink = simulation.force("link") as d3.ForceLink<d3.SimulationNodeDatum, d3.SimulationLinkDatum<d3.SimulationNodeDatum>>;
-      forceLink.links(graphtestdata.links)
-      simulation.alpha(0.1).restart();
+        
 
-      graphtestdata.nodes.forEach(function(node: dataNode){
-        const tlDrawNode = app.getShape('node'+node.id)
-        //console.log(tlDrawNode)
-        if(!tlDrawNode){
+        if(!rect1){
           app.createShapes({
-            id: 'node'+node.id,
+            id: 'rect1',
             type: TDShapeType.Rectangle,
-            name: 'node',
-            point: d3toTldrawCoords(node.x,node.y),
-            size: [TL_DRAW_RADIUS,TL_DRAW_RADIUS],
+            name: 'Rectangle',
+            childIndex: 1,
+            point: [0, 0],
+            size: [100, 100],
           } as inputShape)
         }else{
+
           app.updateShapes({
-            id: 'node'+node.id, 
-            type: TDShapeType.Rectangle,
+            id: 'rect1', 
             style: {
-              ...tlDrawNode.style, 
+              ...rect1.style, 
               color,
             },
-            point: d3toTldrawCoords(node.x ,node.y),
-            size: [TL_DRAW_RADIUS,TL_DRAW_RADIUS],
-          } as inputShape)
+          })
         }
-      })
-      
-     
-      
-      i++
-    }, 1000)
+        
+        //console.log(data)
+        
+
+        simulation.on("tick", () => {
+          setNodeData([...simulation.nodes()]);
+        });
+        //console.log(graphtestdata.nodes)
+        //console.log(nodeData)
+        simulation.nodes(graphtestdata.nodes as dataNode[]);
+
+        const forceLink = simulation.force("link") as d3.ForceLink<d3.SimulationNodeDatum, d3.SimulationLinkDatum<d3.SimulationNodeDatum>>;
+        forceLink.links(graphtestdata.links)
+        simulation.alpha(0.1).restart();
+
+        graphtestdata.nodes.forEach(function(node: dataNode){
+          const tlDrawNode = app.getShape('node'+node.id)
+          //console.log(tlDrawNode)
+          if(!tlDrawNode){
+            app.createShapes({
+              id: 'node'+node.id,
+              type: TDShapeType.Rectangle,
+              name: 'node',
+              point: d3toTldrawCoords(node.x,node.y),
+              size: [TL_DRAW_RADIUS,TL_DRAW_RADIUS],
+            } as inputShape)
+          }else{
+            app.updateShapes({
+              id: 'node'+node.id, 
+              type: TDShapeType.Rectangle,
+              style: {
+                ...tlDrawNode.style, 
+                color,
+              },
+              point: d3toTldrawCoords(node.x ,node.y),
+              size: [TL_DRAW_RADIUS,TL_DRAW_RADIUS],
+            } as inputShape)
+          }
+        })
+        
+        
+        
+        i++
+      }
+    }, 50)
     return () => {
       clearInterval(interval)
       clearInterval(dataInterval)
