@@ -182,11 +182,12 @@ const Editor: FC<EditorProps & Partial<TldrawProps>> = ({
             },
           })
         }
-        
+        //https://medium.com/ninjaconcept/interactive-dynamic-force-directed-graphs-with-d3-da720c6d7811
         if(netData.current){
 
           //graphData.current.nodes = netData.current[0]
           //graphData.current.links = netData.current[1]
+          //only adding nodes and links, so we can just append new incoming data to graphData
         }
         if(graphData.current){
           const data = graphData.current
