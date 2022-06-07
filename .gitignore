@@ -18,7 +18,4 @@ apps/www/public/sw.js.map
 .env
 firebase.config.*.turbo
 .turbo
-yarn.lock
-*.lock
-*.lock
 apps/www/components/test.tldr
