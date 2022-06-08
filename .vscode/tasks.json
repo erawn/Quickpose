@@ -1,38 +1,16 @@
 {
 	"version": "2.0.0",
-	"windows": {
-        "options": {
-          "shell": {
-            "executable": "bash.exe",
-            "args": ["-c"]
-          }
-        }
-    },
+
 	"tasks": [
 		{
-			"type": "npm",
-			"script": "start:www",
+			"type": "shell",
 			"problemMatcher": [],
 			"label": "npm: start:www",
-			"detail": "turbo run start:www --parallel & (cd apps/www && yarn dev)",
+			"command":"nvm use 16.13.0 && turbo run start:www --parallel & (cd apps/www && yarn dev)",
 			"group": {
 				"kind": "build",
 				"isDefault": true
 			}
 		},
-		{
-			"label": "openBrowser",
-			"type": "shell",
-			"command": "sensible-browser",
-			"args": [
-				"http://localhost:3000"
-			],
-			"group": "build",
-			"dependsOrder": "parallel",
-			"dependsOn": [
-				"npm: start:www"
-			],
-			"problemMatcher": []
-		}
 	]
 }
