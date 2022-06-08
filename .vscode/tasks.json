@@ -4,13 +4,14 @@
 	"tasks": [
 		{
 			"type": "shell",
-			"problemMatcher": [],
-			"label": "npm: start:www",
-			"command":"nvm use 16.13.0 && turbo run start:www --parallel & (cd apps/www && yarn dev)",
+			"label": "build",
+			
+			"command": "nvm use 16.13.0 && yarn start:www",
 			"group": {
 				"kind": "build",
 				"isDefault": true
-			}
+			},
 		},
+		
 	]
 }
