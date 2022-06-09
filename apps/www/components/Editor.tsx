@@ -50,20 +50,10 @@ const Editor: FC<EditorProps & Partial<TldrawProps>> = ({
 
   const graphtestdata = {
     nodes: [
-      { "id": "A" },
-      { "id": "B" },
-      { "id": "C" },
-      { "id": "D" },
-      { "id": "E" },
-      { "id": "F" }
+
     ],
     links: [
-      {"source": "A", "target": "B", "value": 5 },
-      {"source": "B", "target": "C", "value": 5 },
-      {"source": "C", "target": "D", "value": 5 },
-      {"source": "D", "target": "E", "value": 5 },
-      {"source": "E", "target": "F", "value": 5 },
-      {"source": "C", "target": "F", "value": 5 }
+
     ]
   };
   const graphData = React.useRef<any>();
@@ -121,7 +111,7 @@ const Editor: FC<EditorProps & Partial<TldrawProps>> = ({
 
     const abortController = new AbortController();
     let i = 0
-
+    let newData = false;
     const dataInterval = setInterval(() => {
         console.log("requesting data...")
         axios.get('http://127.0.0.1:8080/versions.json', {
@@ -130,6 +120,7 @@ const Editor: FC<EditorProps & Partial<TldrawProps>> = ({
         })
         .then(response => {
           if(!deepEqual(response.data,netData.current)){
+            newData = true;
             netData.current = response.data
             console.log("newdata",response.data)
           }else{
@@ -183,67 +174,70 @@ const Editor: FC<EditorProps & Partial<TldrawProps>> = ({
           })
         }
         //https://medium.com/ninjaconcept/interactive-dynamic-force-directed-graphs-with-d3-da720c6d7811
-        if(netData.current){
+        if(newData){ //if we have new data come in
+          if(netData.current && graphData.current){ //and we have our datasources ready
 
-          netData.current[0].forEach(function(netNode){
-            if(!graphData.current.nodes.some(graphNode => graphNode.id === netNode.id)){
-              graphData.current.nodes = [...graphData.current.nodes,netNode]
-            }
-          })
-          netData.current[1].forEach(function(netLink){
-            if(!graphData.current.links.some(graphLink => (graphLink.source === netLink.source) && 
-                                                            (graphLink.target === netLink.target))){
-              graphData.current.links = [...graphData.current.links,netLink]
-            }
-          })
+            //add new links and nodes from netData into graphData
+            netData.current[0].forEach(function(netNode){
+              if(!graphData.current.nodes.some(graphNode => graphNode.id === netNode.id)){
+                graphData.current.nodes = [...graphData.current.nodes,netNode]
+              }
+            })
+            netData.current[1].forEach(function(netLink){
+              if(!graphData.current.links.some(graphLink => (graphLink.source === netLink.source) && 
+                                                              (graphLink.target === netLink.target))){
+                graphData.current.links = [...graphData.current.links,netLink]
+              }
+            })
 
-          //graphData.current.nodes = netData.current[0]
-          //graphData.current.links = netData.current[1]
+            
+            simulation.nodes(graphData.current.nodes);
+            const forceLink = simulation.force("link") as d3.ForceLink<d3.SimulationNodeDatum, d3.SimulationLinkDatum<d3.SimulationNodeDatum>>;
+            forceLink.links(graphData.current.links)
+        }
+        
+
           //only adding nodes and links, so we can just append new incoming data to graphData
         }
-        if(graphData.current){
-          const data = graphData.current
-          console.log(data)
-          simulation.nodes(data.nodes);
-          const forceLink = simulation.force("link") as d3.ForceLink<d3.SimulationNodeDatum, d3.SimulationLinkDatum<d3.SimulationNodeDatum>>;
-          forceLink.links(data.links)
-
-          simulation.on("tick", () => {
-            graphData.current.nodes = [...simulation.nodes()];
-          });
-
-          
-          
-          graphData.current.nodes.forEach(function(node: dataNode){
-            const tlDrawNode = app.getShape('node'+node.id)
-            if(!tlDrawNode){
-              app.createShapes({
-                id: 'node'+node.id,
-                type: TDShapeType.Rectangle,
-                name: 'node',
-                point: d3toTldrawCoords(node.x,node.y),
-                size: [TL_DRAW_RADIUS,TL_DRAW_RADIUS],
-              } as inputShape)
-            }else{
-              app.updateShapes({
-                id: 'node'+node.id, 
-                type: TDShapeType.Rectangle,
-                style: {
-                  ...tlDrawNode.style, 
-                  color,
-                },
-                point: d3toTldrawCoords(node.x ,node.y),
-                size: [TL_DRAW_RADIUS,TL_DRAW_RADIUS],
-              } as inputShape)
-            }
-          })
-        }
+        
         i++
       }
     }, 50)
+    const drawInterval = setInterval(() => {
+      const app = rTldrawApp.current!
+      if(graphData.current && !(app === undefined)){
+        graphData.current.nodes = [...simulation.nodes()]; //get simulation data out
+
+        //update tldraw circle positions
+        graphData.current.nodes.forEach(function(node: dataNode){
+          const tlDrawNode = app.getShape('node'+node.id)
+          if(!tlDrawNode){
+            app.createShapes({
+              id: 'node'+node.id,
+              type: TDShapeType.Rectangle,
+              name: 'node'+node.id,
+              point: d3toTldrawCoords(node.x,node.y),
+              size: [TL_DRAW_RADIUS,TL_DRAW_RADIUS],
+            } as inputShape)
+          }else{
+            app.updateShapes({
+              id: 'node'+node.id, 
+              type: TDShapeType.Rectangle,
+              style: {
+                ...tlDrawNode.style, 
+              },
+              point: d3toTldrawCoords(node.x ,node.y),
+              size: [TL_DRAW_RADIUS,TL_DRAW_RADIUS],
+            } as inputShape)
+          }
+        })
+      }
+
+    },10)
     return () => {
       clearInterval(interval)
       clearInterval(dataInterval)
+      clearInterval(drawInterval)
       abortController.abort();
     }
   },[]);

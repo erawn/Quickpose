@@ -28,6 +28,7 @@
     "@tldraw/core": "*",
     "@tldraw/tldraw": "*",
     "@types/d3": "^7.4.0",
+    "@types/deep-equal": "^1.0.1",
     "aws-sdk": "^2.1053.0",
     "axios": "^0.27.2",
     "d3": "^7.4.4",
