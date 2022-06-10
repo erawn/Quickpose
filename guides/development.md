@@ -27,3 +27,4 @@ make sure react and react-dom are same version - "npm ls react" etc
 
 nvm use 16 
 
+can't build from app
