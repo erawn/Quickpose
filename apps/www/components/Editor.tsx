@@ -48,7 +48,7 @@ interface dataNode extends SimulationNodeDatum {
   x: number;
   y: number;
 }
-type inputShape = { id: string; name?: string; type: TDShapeType } & Partial<TDShape>
+type inputShape = { id: string; name?: string; type: TDShapeType;} & Partial<TDShape>
 
 
 const requestCurrentId = async () => {
@@ -57,7 +57,10 @@ const requestCurrentId = async () => {
 }
 
 function d3toTldrawCoords(x,y): number[]{
-    return [ Math.round((x * 10) - TL_DRAW_RADIUS), Math.round((y * 10) - TL_DRAW_RADIUS)]
+    return [ (x * 10) - TL_DRAW_RADIUS, (y * 10) - TL_DRAW_RADIUS]
+}
+function tldrawCoordstod3(x,y):number[] {
+  return [ (x + TL_DRAW_RADIUS) / 10, (y + TL_DRAW_RADIUS) / 10]
 }
 
 const Editor: FC<EditorProps & Partial<TldrawProps>> = ({
@@ -70,6 +73,9 @@ const Editor: FC<EditorProps & Partial<TldrawProps>> = ({
   const rTldrawApp = React.useRef<TldrawApp>()
   const netData = React.useRef<any>();
   const newData = React.useRef<boolean>(false);
+  const rIsDragging = React.useRef(false);
+  const selectedNode = React.useRef<number>(0);
+
   const graphtestdata = {
     nodes: [],
     links: []
@@ -89,13 +95,70 @@ const Editor: FC<EditorProps & Partial<TldrawProps>> = ({
     .distance(20)
     .strength(1)
   );
+      //https://codesandbox.io/s/tldraw-context-menu-wen03q
+  const handlePatch = React.useCallback((app: TldrawApp, reason?: string) => {
 
+    const nodeRegex = new RegExp(/node\d/)
+    console.log(reason)
+    switch (reason) {
+          case "set_status:translating": {
+            // started translating...
+            rIsDragging.current = true;
 
-  onRightPointShape: TLPointerEventHandler = (info) => {
-    if (!this.app.isSelected(info.target)) {
-      this.app.select(info.target)
-    }
-  }
+            const bounds = Utils.getCommonBounds(
+              app.selectedIds.map((id) => app.getShapeBounds(id))
+            );
+
+            // elm.style.setProperty("opacity", "1");
+            // elm.style.setProperty("width", bounds.width + "px");
+            // elm.style.setProperty(
+            //   "transform",
+            //   `translate(${bounds.minX}px, ${bounds.minY - 64}px)`
+            // );
+            break;
+          }
+          case "session:TranslateSession": {
+            if (rIsDragging.current) {
+              // Dragging...
+              const bounds = Utils.getCommonBounds(
+                app.selectedIds.map((id) => app.getShapeBounds(id))
+                
+              );
+              // app.selectedIds.filter((id) => nodeRegex.test(id)).forEach((id) => {
+              //   let selectedNode = app.getShape(id)
+
+              //   if(selectedNode){
+              //     let d3Node = selectedNode.node
+              //     const d3Coords = tldrawCoordstod3(selectedNode.point[0],selectedNode.point[1])
+              //     d3Node.x = d3Coords[0]
+              //     d3Node.y = d3Coords[1]
+              //     d3Node.fx = d3Coords[0]
+              //     d3Node.fy = d3Coords[1]
+                  
+              //   }
+
+                
+
+              // })
+              // elm.style.setProperty("opacity", "1");
+              // elm.style.setProperty("width", bounds.width + "px");
+              // elm.style.setProperty(
+              //   "transform",
+              //   `translate(${bounds.minX}px, ${bounds.minY - 64}px)`
+              // );
+            }
+            break;
+          }
+          case "set_status:idle": {
+            if (rIsDragging.current) {
+              // stopped translating...
+              //elm.style.setProperty("opacity", "0");
+              rIsDragging.current = false;
+            }
+            break;
+          }
+        }
+      }, []);
 
 
   const handleMount = React.useCallback((app: TldrawApp) => {
@@ -120,11 +183,6 @@ const Editor: FC<EditorProps & Partial<TldrawProps>> = ({
     //     window['api'] = api
     //   }, [])
 
-    //app.onPatch = (app, reason) => console.log(reason)
-    //https://codesandbox.io/s/tldraw-context-menu-wen03q
-    app.onDragShape = (info,e) => console.log("dragging",info,e)
-    app.onPatch = (app, reason) => console.log("patch", reason)
-    app.onDoubleClickShape = (info,e) => console.log("dblclick",info,e)
     rTldrawApp.current = app
 
     //app.
@@ -153,17 +211,8 @@ const Editor: FC<EditorProps & Partial<TldrawProps>> = ({
             }
       } as inputShape,
     )
-
-    
-
   }, [])
 
-  // const onDragShape: TLPointerEventHandler = (e) => {
-  //   console.log(e)
-
-  // }
-  
-  
   React.useEffect(() => {
 
     const abortController = new AbortController();
@@ -224,7 +273,6 @@ const Editor: FC<EditorProps & Partial<TldrawProps>> = ({
           }
 
           if(netData.current && graphData.current){ //and we have our datasources ready
-
             //add new links and nodes from netData into graphData
             //only adding nodes and links, so we can just append new incoming data to graphData
             netData.current[0].forEach(function(netNode){
@@ -234,19 +282,14 @@ const Editor: FC<EditorProps & Partial<TldrawProps>> = ({
             })
             netData.current[1].forEach(function(netLink){
               if(!graphData.current.links.some(graphLink => (graphLink.source.id === netLink.source) && (graphLink.target.id === netLink.target))){
-                
                 graphData.current.links = [...graphData.current.links,{...netLink}]
-                //console.log("appending", netLink)
               }
             })
-            
-            //console.log("netdata", netData.current[1])
             simulation.nodes(graphData.current.nodes);
             const forceLink = simulation.force("link") as d3.ForceLink<d3.SimulationNodeDatum, d3.SimulationLinkDatum<d3.SimulationNodeDatum>>;
             forceLink.links(graphData.current.links)
           }
           newData.current = false
-          //console.log("graphdatanodes",graphData.current.nodes,graphData.current.links)
         }
       }
     }, 500)
@@ -260,18 +303,15 @@ const Editor: FC<EditorProps & Partial<TldrawProps>> = ({
         const addNodes = graphData.current.nodes.map(function(node: dataNode){
           const tlDrawNode = app.getShape('node'+node.id)
           if(!tlDrawNode){
-            let n = {
+            const n = {
             id: 'node'+node.id,
             isLocked: false,
             isGenerated: true,
             type: TDShapeType.Rectangle,
             name: 'node'+node.id,
             point: d3toTldrawCoords(node.x,node.y),
-            size: [TL_DRAW_RADIUS,TL_DRAW_RADIUS]
+            size: [TL_DRAW_RADIUS,TL_DRAW_RADIUS],
            } as inputShape
-
-           
-
            return n
           }else{
             return null
@@ -283,7 +323,12 @@ const Editor: FC<EditorProps & Partial<TldrawProps>> = ({
         }                
         const updateNodes = graphData.current.nodes.map(function(node: dataNode){
           const tlDrawNode = app.getShape('node'+node.id)
-          if(tlDrawNode){
+          if(tlDrawNode){ 
+            if(app.selectedIds.includes(tlDrawNode.id)){ //If we have a node selected, update the d3 sim instead
+              const d3Coords = tldrawCoordstod3(tlDrawNode.point[0],tlDrawNode.point[1])
+              node.x = d3Coords[0]
+              node.y = d3Coords[1]
+            }
             const coords = d3toTldrawCoords(node.x ,node.y);
             if (Math.abs(tlDrawNode.point[0] - coords[0]) > .1 || 
               Math.abs(tlDrawNode.point[1] - coords[1]) > .1){
@@ -292,10 +337,9 @@ const Editor: FC<EditorProps & Partial<TldrawProps>> = ({
                     point: coords,
                     size: [TL_DRAW_RADIUS,TL_DRAW_RADIUS],
                 }
-            }else{
-              return null
-            }
+            } 
           }
+          return null
         }).filter(entry => entry !== null)
         if(updateNodes.length > 0){
           app.updateShapes(...updateNodes)
@@ -381,10 +425,13 @@ const Editor: FC<EditorProps & Partial<TldrawProps>> = ({
             }
           }
           return null
-        }).filter(entry => entry !== null)
+        }).filter(entry => entry !== null) as TDShape[]
 
         if(newLinks.length > 0){
           app.createShapes(...newLinks) 
+          //deselect created links
+          const newIds: string[] = newLinks.map((link) => link.id)
+          app.select(...app.selectedIds.filter((id) => !newIds.includes(id)))
         }
       }
     },100)
@@ -422,6 +469,7 @@ const Editor: FC<EditorProps & Partial<TldrawProps>> = ({
         id={id}
         autofocus
         onMount={handleMount}
+        onPatch={handlePatch}
         onPersist={handlePersist}
         showSponsorLink={!isSponsor}
         onSignIn={isSponsor ? undefined : onSignIn}
