@@ -1,6 +1,27 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
-import { Tldraw, TldrawApp, TldrawProps, useFileSystem, TDShapeType, ColorStyle, TDShape, shapeUtils, ArrowBinding} from '@tldraw/tldraw'
-import {TLPointerEventHandler, TLBinding} from '@tldraw/core'
+import { 
+  Tldraw, 
+  TldrawApp, 
+  TldrawProps, 
+  useFileSystem, 
+  TDShapeType, 
+  ColorStyle, 
+  TDShape, 
+  shapeUtils, 
+  ArrowBinding
+} from '@tldraw/tldraw'
+import {
+  TLBoundsCorner,
+  TLBoundsEdge,
+  TLBoundsEventHandler,
+  TLBoundsHandleEventHandler,
+  TLCanvasEventHandler,
+  TLPointerEventHandler,
+  TLKeyboardEventHandler,
+  TLShapeCloneHandler,
+  Utils,
+  TLBinding
+} from '@tldraw/core'
 import { useAccountHandlers } from 'hooks/useAccountHandlers'
 import { useUploadAssets } from 'hooks/useUploadAssets'
 import React, { FC } from 'react'
@@ -9,16 +30,12 @@ import axios from 'axios'
 import * as d3 from 'd3'
 import { SimulationNodeDatum, SimulationLinkDatum } from 'd3'
 import deepEqual from "deep-equal"
-import { nanoid } from 'nanoid'
+
 //declare const window: Window & { app: TldrawApp }
 
 
 const D3_RADIUS = 5;
 const TL_DRAW_RADIUS = 80;
-
-interface CustomBinding extends TLBinding {
-  handleId: 'start' | 'end'
-}
 
 interface EditorProps {
   id?: string
@@ -74,6 +91,13 @@ const Editor: FC<EditorProps & Partial<TldrawProps>> = ({
   );
 
 
+  onRightPointShape: TLPointerEventHandler = (info) => {
+    if (!this.app.isSelected(info.target)) {
+      this.app.select(info.target)
+    }
+  }
+
+
   const handleMount = React.useCallback((app: TldrawApp) => {
     
     // if(process.env["NEXT_PUBLIC_VERCEL_EN"] == '1'){
@@ -102,6 +126,8 @@ const Editor: FC<EditorProps & Partial<TldrawProps>> = ({
     app.onPatch = (app, reason) => console.log("patch", reason)
     app.onDoubleClickShape = (info,e) => console.log("dblclick",info,e)
     rTldrawApp.current = app
+
+    //app.
     //app.camera.zoom =
     app.deleteAll()
     app.createShapes( 
@@ -175,7 +201,7 @@ const Editor: FC<EditorProps & Partial<TldrawProps>> = ({
           }
         }
         i++
-    }, 5000)
+    }, 500)
 
     //check for new data, if so, update graph data
     const interval = setInterval(() => {
@@ -223,7 +249,7 @@ const Editor: FC<EditorProps & Partial<TldrawProps>> = ({
           //console.log("graphdatanodes",graphData.current.nodes,graphData.current.links)
         }
       }
-    }, 5000)
+    }, 500)
     //const result = await this.callbacks.onAssetCreate(this, file, id)
     //^from tldrawapp.ts
     const drawInterval = setInterval(() => {
@@ -241,8 +267,10 @@ const Editor: FC<EditorProps & Partial<TldrawProps>> = ({
             type: TDShapeType.Rectangle,
             name: 'node'+node.id,
             point: d3toTldrawCoords(node.x,node.y),
-            size: [TL_DRAW_RADIUS,TL_DRAW_RADIUS],
+            size: [TL_DRAW_RADIUS,TL_DRAW_RADIUS]
            } as inputShape
+
+           
 
            return n
           }else{
@@ -278,139 +306,86 @@ const Editor: FC<EditorProps & Partial<TldrawProps>> = ({
           const tlDrawLink = app.getShape('link'+link.index)
           const sourceNode = link.source as dataNode
           const targetNode = link.target as dataNode
-          //console.log("link source and target",sourceNode,targetNode)
           const startNode: TDShape = app.getShape('node'+sourceNode.id)
           const endNode: TDShape = app.getShape('node'+targetNode.id)
-          //console.log("startnode,endnode",startNode,endNode)
-          if(!tlDrawLink && startNode && endNode){
 
-            const startBindingId = startNode.id.toString()
-            const endBindingId = endNode.id.toString()
-            //app.createShapes({ id: arrowId, type: TDShapeType.Arrow } as inputShape)
-            //console.log(updateArrowBindings(app.getPage(app.currentPageId), app.getShape(arrowId)))
-           
-            
-            const newArrow = shapeUtils.arrow.getShape({
-              id: 'link'+link.index,
-              name: 'link'+link.index,
-              type: TDShapeType.Arrow,
-              parentId: app.currentPageId,
-              isLocked: false,
-              isGenerated: true,
-              point: [100,100],
-              style: { ...app.appState.currentStyle },
-              handles: {
-                start: {
-                  canBind: true,
-                  id: "start",
-                  index: 0,
-                  point: [0, 0],
-                },
-                end: {
-                  canBind: true,
-                  index: 1,
-                  id: "end",
-                  point: [1, 1],
-                },
-                bend: {
-                  id: "bend",
-                  "index": 2,
-                  point: [.5, .5],
-                }
-              }
-            })
-
-            const startBinding: ArrowBinding = {
+          if(startNode && endNode){
+            const newStartBinding: ArrowBinding = {
               id: 'link'+link.index+'start',
-              fromId: newArrow.id,
+              fromId: 'link'+link.index,
               toId: startNode.id,
               handleId: 'start',
               distance: 16,
-              point: [
-                .5,
-                .5
-              ]
-
+              point: [.5,.5]
             }
-            const targetBinding: ArrowBinding = {
+            const newTargetBinding: ArrowBinding = {
               id: 'link'+link.index+'end',
-              fromId: newArrow.id,
+              fromId: 'link'+link.index,
               toId: endNode.id,
               handleId: 'end',
               distance: 16,
-              point: [
-                .5,
-                .5
-              ]
+              point: [.5,.5]
             }
-            // data.page.bindings[binding.id] = binding
-            newArrow.handles.start.bindingId = startBinding.id
-            newArrow.handles.end.bindingId = targetBinding.id
-            
-            app.page.bindings[startBinding.id] = startBinding
-            app.page.bindings[targetBinding.id] = targetBinding
-            return newArrow
-          }else{
-            return null
+
+            if(!tlDrawLink){
+              const newArrow = shapeUtils.arrow.getShape({
+                id: 'link'+link.index,
+                name: 'link'+link.index,
+                type: TDShapeType.Arrow,
+                parentId: app.currentPageId,
+                isLocked: false,
+                isGenerated: true,
+                point: [100,100],
+                style: { ...app.appState.currentStyle },
+                handles: {
+                  start: {
+                    canBind: true,
+                    bindingId: 'link'+link.index+'start',
+                    id: "start",
+                    index: 0,
+                    point: [0, 0],
+                  },
+                  end: {
+                    canBind: true,
+                    bindingId: 'link'+link.index+'end',
+                    index: 1,
+                    id: "end",
+                    point: [1, 1],
+                  },
+                  bend: {
+                    id: "bend",
+                    "index": 2,
+                    point: [.5, .5],
+                  }
+                }
+              })
+              return newArrow
+            }else{
+              let startBinding = app.getBinding('link'+link.index+'start')
+              let endBinding = app.getBinding('link'+link.index+'end')
+
+              if(!startBinding){
+                startBinding = newStartBinding
+              }
+              if(!endBinding){
+                endBinding = newTargetBinding
+              }
+
+              tlDrawLink.handles.start.bindingId = 'link'+link.index+'start'
+              tlDrawLink.handles.end.bindingId = 'link'+link.index+'end'
+
+              app.updateShapes(tlDrawLink)
+              
+              app.page.bindings[startBinding.id] = startBinding
+              app.page.bindings[endBinding.id] = endBinding
+            }
           }
+          return null
         }).filter(entry => entry !== null)
 
         if(newLinks.length > 0){
           app.createShapes(...newLinks) 
         }
-        
-        graphData.current.links.forEach(function(link: SimulationLinkDatum<SimulationNodeDatum> ){
-          const tlDrawLink = app.getShape('link'+link.index)
-          const sourceNode = link.source as dataNode
-          const targetNode = link.target as dataNode
-          const startNode: TDShape = app.getShape('node'+sourceNode.id)
-          const endNode: TDShape = app.getShape('node'+targetNode.id)
-          
-          if(tlDrawLink && startNode && endNode){
-            let startBinding = app.getBinding('link'+link.index+'end')
-            let endBinding = app.getBinding('link'+link.index+'end')
-
-            if(!startBinding){
-              startBinding = {
-                id: 'link'+link.index+'start',
-                fromId: tlDrawLink.id,
-                toId: startNode.id,
-                handleId: 'start',
-                distance: 16,
-                point: [
-                  .5,
-                  .5
-                ]
-              } as ArrowBinding
-            }
-
-            if(!endBinding){
-               endBinding = {
-                id: 'link'+link.index+'end',
-                fromId: tlDrawLink.id,
-                toId: endNode.id,
-                handleId: 'end',
-                distance: 16,
-                point: [
-                  .5,
-                  .5
-                ]
-              } as ArrowBinding
-            }
-             
-            tlDrawLink.handles.start.bindingId = startBinding.id
-            tlDrawLink.handles.end.bindingId = endBinding.id
-
-            startBinding.fromId = tlDrawLink.id
-            startBinding.toId = startNode.id
-            endBinding.fromId = tlDrawLink.id
-            endBinding.toId = endNode.id
-            
-            app.page.bindings[startBinding.id] = startBinding
-            app.page.bindings[endBinding.id] = endBinding
-          }
-        })
-        app.forceUpdate()
       }
     },100)
 
