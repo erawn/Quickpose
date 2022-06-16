@@ -6,6 +6,7 @@ import {
   useFileSystem, 
   TDShapeType, 
   ColorStyle, 
+  SizeStyle,
   TDShape, 
   shapeUtils, 
   ArrowBinding
@@ -74,7 +75,10 @@ const Editor: FC<EditorProps & Partial<TldrawProps>> = ({
   const netData = React.useRef<any>();
   const newData = React.useRef<boolean>(false);
   const rIsDragging = React.useRef(false);
-  const selectedNode = React.useRef<number>(0);
+  const selectedNode = React.useRef<string>();
+  const lastSelection = React.useRef<string[]>()
+
+  const nodeRegex = new RegExp(/node\d/);
 
   const graphtestdata = {
     nodes: [],
@@ -98,7 +102,7 @@ const Editor: FC<EditorProps & Partial<TldrawProps>> = ({
       //https://codesandbox.io/s/tldraw-context-menu-wen03q
   const handlePatch = React.useCallback((app: TldrawApp, reason?: string) => {
 
-    const nodeRegex = new RegExp(/node\d/)
+    
     console.log(reason)
     switch (reason) {
           case "set_status:translating": {
@@ -156,6 +160,22 @@ const Editor: FC<EditorProps & Partial<TldrawProps>> = ({
               rIsDragging.current = false;
             }
             break;
+          }
+          case "selected": {
+            //Select Node
+            if(app.selectedIds.length == 1 && nodeRegex.test(app.selectedIds[0])){
+              console.log("selected Node")
+              selectedNode.current = app.selectedIds[0]
+              //const node = app.getShape(app.selectedIds[0])
+              //single click
+              //double click
+              //clear selection
+
+            }
+
+
+            lastSelection.current = app.selectedIds
+            break
           }
         }
       }, []);
@@ -330,14 +350,26 @@ const Editor: FC<EditorProps & Partial<TldrawProps>> = ({
               node.y = d3Coords[1]
             }
             const coords = d3toTldrawCoords(node.x ,node.y);
-            if (Math.abs(tlDrawNode.point[0] - coords[0]) > .1 || 
-              Math.abs(tlDrawNode.point[1] - coords[1]) > .1){
-                return {
-                    ...tlDrawNode,
-                    point: coords,
-                    size: [TL_DRAW_RADIUS,TL_DRAW_RADIUS],
-                }
-            } 
+            // if (Math.abs(tlDrawNode.point[0] - coords[0]) > .1 || 
+            //   Math.abs(tlDrawNode.point[1] - coords[1]) > .1){
+            let style = { ...tlDrawNode.style, color: "black", size:"small", isFilled: false}
+            //console.log(tlDrawNode.id,selectedNode.current, tlDrawNode.id === selectedNode.current)
+            if(tlDrawNode.id === selectedNode.current){
+              style = { 
+                ...style,
+                color: ColorStyle.Green,
+                size: SizeStyle.Large,
+                isFilled: true
+                
+              }
+              console.log(style)
+            }
+            return {
+                ...tlDrawNode,
+                style:{...style},
+                point: coords,
+                size: [TL_DRAW_RADIUS,TL_DRAW_RADIUS],
+            }
           }
           return null
         }).filter(entry => entry !== null)
