@@ -57,6 +57,43 @@ const requestCurrentId = async () => {
 	const id = await response.json();
 }
 
+  async function requestTestImg(app: TldrawApp){ 
+  axios.get('https://via.placeholder.com/150',{headers: {
+    "Access-Control-Allow-Origin": '*'
+  }}
+).then(response => {
+      const f = new File([response.data()], 'test.jpg', {type: 'image/png'})
+      app.addMediaFromFile(f,[200,200])
+    })
+    }
+
+async function uploadFile(app: TldrawApp, file: File, id: string): Promise<string | false>{
+  const filename = encodeURIComponent(file.name)
+
+  const fileType = encodeURIComponent(file.type)
+
+  const res = await fetch(`/api/upload?file=${filename}&fileType=${fileType}`)
+
+  const { url, fields } = await res.json()
+
+  const formData = new FormData()
+
+  Object.entries({ ...fields, file }).forEach(([key, value]) => {
+    formData.append(key, value as any)
+  })
+
+  const upload = await fetch(url, {
+    method: 'POST',
+    body: formData,
+  })
+
+  if (!upload.ok) return false
+
+  console.log(url + '/' + filename)
+
+  return url + '/' + filename
+}
+
 function d3toTldrawCoords(x,y): number[]{
     return [ (x * 10) - TL_DRAW_RADIUS, (y * 10) - TL_DRAW_RADIUS]
 }
@@ -205,7 +242,12 @@ const Editor: FC<EditorProps & Partial<TldrawProps>> = ({
 
     rTldrawApp.current = app
 
+    //app.addMediaFromFile('https://via.placeholder.com/150')
+
+    
     //app.
+    //requestTestImg(app)
+    
     //app.camera.zoom =
     app.deleteAll()
     app.createShapes( 
@@ -230,6 +272,49 @@ const Editor: FC<EditorProps & Partial<TldrawProps>> = ({
               "textAlign": "middle"
             }
       } as inputShape,
+      // {
+      //   "assetId": "assetId",
+      //   "childIndex": 1,
+      //   "id": "image",
+      //   "name": "Image",
+      //   "parentId": "page",
+      //   "point": Array [
+      //     0,
+      //     0,
+      //   ],
+      //   "rotation": 0,
+      //   "size": Array [
+      //     1,
+      //     1,
+      //   ],
+      //   "style": Object {
+      //     "color": "black",
+      //     "dash": "draw",
+      //     "isFilled": true,
+      //     "scale": 1,
+      //     "size": "small",
+      //   },
+      //   "type": "image",
+      // }
+      {
+        id: 'image',
+        name: 'image',
+        type: TDShapeType.VersionNode,
+        parentId: 'page',
+        "point": [
+          934.62,
+          -369.35
+        ],
+        "radius": [
+          405.5954998873435,
+          405.5954998873435
+        ],
+        style:{
+          isFilled:true,
+          color: "black"
+        }
+
+      } as inputShape
     )
   }, [])
 
@@ -253,13 +338,13 @@ const Editor: FC<EditorProps & Partial<TldrawProps>> = ({
           }
         })
         .catch(error => {
-          console.error("error fetching: ", error);
+          //console.error("error fetching: ", error);
         })
 
         //update loading sticky
         if(graphData.current == graphtestdata){
           const app = rTldrawApp.current!
-          if(app.getShape('loading')){
+          if(app && app.getShape('loading')){
             if(!(app === undefined)){
               const loadingDot = "."
               app.updateShapes({
@@ -362,7 +447,6 @@ const Editor: FC<EditorProps & Partial<TldrawProps>> = ({
                 isFilled: true
                 
               }
-              console.log(style)
             }
             return {
                 ...tlDrawNode,

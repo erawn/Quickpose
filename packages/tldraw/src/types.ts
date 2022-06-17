@@ -288,6 +288,7 @@ export enum TDShapeType {
   Group = 'group',
   Image = 'image',
   Video = 'video',
+  VersionNode = 'versionNode'
 }
 
 export enum Decoration {
@@ -322,6 +323,12 @@ export interface RectangleShape extends TDBaseShape {
 
 export interface EllipseShape extends TDBaseShape {
   type: TDShapeType.Ellipse
+  radius: number[]
+  label?: string
+  labelPoint?: number[]
+}
+export interface VersionNodeShape extends TDBaseShape {
+  type: TDShapeType.VersionNode
   radius: number[]
   label?: string
   labelPoint?: number[]
@@ -406,6 +413,7 @@ export type TDShape =
   | StickyShape
   | ImageShape
   | VideoShape
+  | VersionNodeShape
 
 /* ------------------ Shape Styles ------------------ */
 
