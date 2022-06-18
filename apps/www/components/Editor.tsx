@@ -91,8 +91,9 @@ const Editor: FC<EditorProps & Partial<TldrawProps>> = ({
   const netData = React.useRef<any>();
   const newData = React.useRef<boolean>(false);
   const rIsDragging = React.useRef(false);
-  const selectedNode = React.useRef<string>();
-  const lastSelection = React.useRef<string[]>()
+  const selectedNode = React.useRef<string>(null);
+  const lastSelection = React.useRef<string>(null)
+  const graphData = React.useRef<any>();
 
   const nodeRegex = new RegExp(/node\d/);
 
@@ -100,8 +101,8 @@ const Editor: FC<EditorProps & Partial<TldrawProps>> = ({
     nodes: [],
     links: []
   };
-  const graphData = React.useRef<any>();
   graphData.current = graphtestdata
+  
 
   const simulation = d3
   .forceSimulation()
@@ -178,8 +179,11 @@ const Editor: FC<EditorProps & Partial<TldrawProps>> = ({
             break;
           }
           case "selected": {
+
             //Select Node
-            if(app.selectedIds.length == 1 && nodeRegex.test(app.selectedIds[0])){
+            lastSelection.current = selectedNode.current
+            if(app.selectedIds.length == 1 && 
+              app.getShape(app.selectedIds[0]).type === TDShapeType.VersionNode){
               console.log("selected Node")
               selectedNode.current = app.selectedIds[0]
               //const node = app.getShape(app.selectedIds[0])
@@ -190,7 +194,7 @@ const Editor: FC<EditorProps & Partial<TldrawProps>> = ({
             }
 
 
-            lastSelection.current = app.selectedIds
+            
             break
           }
         }
@@ -206,30 +210,10 @@ const Editor: FC<EditorProps & Partial<TldrawProps>> = ({
     //   console.log("im local!")
     //   app = rTldrawApp.current!
     // }
-    // interface AppProps {
-    //   onMount?: (api: Api) => void
-    // }
-    
-    // export default function App({ onMount }: AppProps) {
-    //   const appState = useStateDesigner(machine)
-    
-    //   React.useEffect(() => {
-    //     const api = new Api(appState)
-    //     onMount?.(api)
-    //     window['api'] = api
-    //   }, [])
-
     rTldrawApp.current = app
     
     //app.camera.zoom =
-    // export interface TDImageAsset extends TLAsset {
-    //   type: TDAssetType.Image
-    //   fileName: string
-    //   src: string
-    //   size: number[]
-    // }
     app.deleteAll()
-
     app.createShapes( 
       {
         id: 'loading',
@@ -251,26 +235,6 @@ const Editor: FC<EditorProps & Partial<TldrawProps>> = ({
               "font": "script",
               "textAlign": "middle"
             }
-      } as inputShape,
-      {
-        id: 'image',
-        name: 'image',
-        type: TDShapeType.VersionNode,
-        parentId: 'page',
-        "point": [
-          934.62,
-          -369.35
-        ],
-        "radius": [
-          405.5954998873435,
-          405.5954998873435
-        ],
-        style:{
-          isFilled:true,
-          color: "black"
-        },
-        imgLink: getIconImageURL("1")
-
       } as inputShape
     )
   }, [])
@@ -297,6 +261,16 @@ const Editor: FC<EditorProps & Partial<TldrawProps>> = ({
         .catch(error => {
           //console.error("error fetching: ", error);
         })
+        const app = rTldrawApp.current!
+        if(!(app === undefined) && selectedNode.current){
+          //BUG = have to do this more slowly, or else firefox will get angry
+          //cant change url before last image has loaded - thats why its in the slower interval
+          const selectedShape = app.getShape(selectedNode.current)
+          if(selectedShape.type == TDShapeType.VersionNode){
+            const idInteger = selectedShape.id.replace(/\D/g,"")
+            selectedShape.imgLink = getIconImageURL(idInteger)//refresh the thumbnail image
+          }
+        }
     }, timeout*2)
 
     //check for new data, if so, update graph data
@@ -322,7 +296,7 @@ const Editor: FC<EditorProps & Partial<TldrawProps>> = ({
 
           if(netData.current && graphData.current){ //and we have our datasources ready
             //add new links and nodes from netData into graphData
-            //only adding nodes and links, so we can just append new incoming data to graphData
+            //only --adding-- nodes and links, so we can just append new incoming data to graphData
             netData.current[0].forEach(function(netNode){
               if(!graphData.current.nodes.some(graphNode => graphNode.id === netNode.id)){
                 graphData.current.nodes = [...graphData.current.nodes,{...netNode}]
@@ -354,28 +328,10 @@ const Editor: FC<EditorProps & Partial<TldrawProps>> = ({
       }
     }, 500)
 
-
-    // id: 'image',
-    // name: 'image',
-    // type: TDShapeType.VersionNode,
-    // parentId: 'page',
-    // "point": [
-    //   934.62,
-    //   -369.35
-    // ],
-    // "radius": [
-    //   405.5954998873435,
-    //   405.5954998873435
-    // ],
-    // style:{
-    //   isFilled:true,
-    //   color: "black"
-    // },
-    // imgLink: getIconImageURL("1")
     //Draw shapes
     const drawInterval = setInterval(() => {
-
       const app = rTldrawApp.current!
+
       if(graphData.current && !(app === undefined)){
         graphData.current.nodes = [...simulation.nodes()]; //get simulation data out
         const addNodes = graphData.current.nodes.map(function(node: dataNode){
@@ -386,13 +342,12 @@ const Editor: FC<EditorProps & Partial<TldrawProps>> = ({
             name: 'node'+node.id,
             type: TDShapeType.VersionNode,
             parentId: 'page',
-            radius: [100,100],
             style:{
               isFilled:true,
               color: "black"
             },
             point: d3toTldrawCoords(node.x,node.y),
-            //radius: [TL_DRAW_RADIUS,TL_DRAW_RADIUS],
+            radius: [TL_DRAW_RADIUS,TL_DRAW_RADIUS],
             imgLink: getIconImageURL(node.id.toString())
            } as inputShape
            return n
@@ -400,41 +355,30 @@ const Editor: FC<EditorProps & Partial<TldrawProps>> = ({
             return null
           }
         }).filter(entry => entry !== null)
-
         if(addNodes.length > 0){
           app.createShapes(...addNodes)
-        }                
+        }   
+
         const updateNodes = graphData.current.nodes.map(function(node: dataNode){
           const tlDrawNode = app.getShape('node'+node.id)
-          if(tlDrawNode){ 
+          if(tlDrawNode && tlDrawNode.type == TDShapeType.VersionNode){ 
             if(app.selectedIds.includes(tlDrawNode.id)){ //If we have a node selected, update the d3 sim instead
               const d3Coords = tldrawCoordstod3(tlDrawNode.point[0],tlDrawNode.point[1])
               node.x = d3Coords[0]
               node.y = d3Coords[1]
             }
-            const coords = d3toTldrawCoords(node.x ,node.y);
-            // if (Math.abs(tlDrawNode.point[0] - coords[0]) > .1 || 
-            //   Math.abs(tlDrawNode.point[1] - coords[1]) > .1){
-            let style = {
-               ...tlDrawNode.style, 
-               color: ColorStyle.Black, 
-               size: SizeStyle.Small, 
-              }
-            //console.log(tlDrawNode.id,selectedNode.current, tlDrawNode.id === selectedNode.current)
-            if(tlDrawNode.id === selectedNode.current){
-              style = { 
-                ...style,
-                color: ColorStyle.Green,
-                size: SizeStyle.Large,
-              }
+            if(tlDrawNode.id === selectedNode.current){ //If our node is the current version
+              tlDrawNode.style.color = ColorStyle.Green
+              tlDrawNode.style.size = SizeStyle.Large
+            }else{
+              tlDrawNode.style.color = ColorStyle.Black
+              tlDrawNode.style.size = SizeStyle.Small
             }
-            return {
-                ...tlDrawNode,
-                style:{...style},
-                point: coords,
-            }
+            tlDrawNode.point = d3toTldrawCoords(node.x ,node.y) //Update location either way
+            return tlDrawNode
+          }else{
+            return null
           }
-          return null
         }).filter(entry => entry !== null)
         if(updateNodes.length > 0){
           app.updateShapes(...updateNodes)
