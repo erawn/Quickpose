@@ -332,6 +332,8 @@ export interface VersionNodeShape extends TDBaseShape {
   radius: number[]
   label?: string
   labelPoint?: number[]
+  assetId?:string
+  imgLink:string
 }
 
 export interface TriangleShape extends TDBaseShape {

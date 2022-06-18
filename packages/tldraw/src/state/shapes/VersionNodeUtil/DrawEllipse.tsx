@@ -3,16 +3,15 @@ import { getShapeStyle } from '~state/shapes/shared'
 import type { ShapeStyles } from '~types'
 import { getEllipseIndicatorPath, getEllipsePath } from './ellipseHelpers'
 
-interface EllipseSvgProps {
+interface VersionNodeSvgProps {
   id: string
   radius: number[]
   style: ShapeStyles
   isSelected: boolean
   isDarkMode: boolean
+  imgLink:string
 }
-function getIconImageURL(id){
-	return 'http://127.0.0.1:8080' + "/image/" + id + "?" + ((new Date()).getTime()); //Add Time to avoid Caching so images update properly
-}
+
 
 export const DrawEllipse = React.memo(function DrawEllipse({
   id,
@@ -20,9 +19,11 @@ export const DrawEllipse = React.memo(function DrawEllipse({
   style,
   isSelected,
   isDarkMode,
-}: EllipseSvgProps) {
+  imgLink
+}: VersionNodeSvgProps) {
   const { stroke, strokeWidth, fill } = getShapeStyle(style, isDarkMode)
   const innerPath = getEllipsePath(id, radius, style)
+  const imgId = "img"+id.toString()
 
   return (
     <>
@@ -34,8 +35,8 @@ export const DrawEllipse = React.memo(function DrawEllipse({
         ry={radius[1]}
       />
       <defs>
-        <pattern id="img1" patternUnits="userSpaceOnUse" width="100" height="100">
-          <image href="http://127.0.0.1:8080/image/1" x="0" y="0" width="100" height="100" />
+        <pattern id={imgId} patternUnits="objectBoundingBox" width="1" height="1">
+          <image href={imgLink} x="0" y="0" width={radius[0]*2} height={radius[1]*2} />
         </pattern>
       </defs>
       {style.isFilled && (
@@ -44,7 +45,7 @@ export const DrawEllipse = React.memo(function DrawEllipse({
         <path
           d={getEllipseIndicatorPath(id, radius, style)}
           stroke="none"
-          fill={"url(#img1"}
+          fill={"url(#"+imgId+")"}
           pointerEvents="none"
         />
       )}

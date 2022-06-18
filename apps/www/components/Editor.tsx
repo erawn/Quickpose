@@ -9,7 +9,9 @@ import {
   SizeStyle,
   TDShape, 
   shapeUtils, 
-  ArrowBinding
+  ArrowBinding,
+  TDAssetType,
+  TDImageAsset
 } from '@tldraw/tldraw'
 import {
   TLBoundsCorner,
@@ -56,49 +58,26 @@ const requestCurrentId = async () => {
   const response = await fetch('http://127.0.0.1:8080/currentVersion');
 	const id = await response.json();
 }
-
-  async function requestTestImg(app: TldrawApp){ 
-  axios.get('https://via.placeholder.com/150',{headers: {
-    "Access-Control-Allow-Origin": '*'
-  }}
-).then(response => {
-      const f = new File([response.data()], 'test.jpg', {type: 'image/png'})
-      app.addMediaFromFile(f,[200,200])
-    })
-    }
-
-async function uploadFile(app: TldrawApp, file: File, id: string): Promise<string | false>{
-  const filename = encodeURIComponent(file.name)
-
-  const fileType = encodeURIComponent(file.type)
-
-  const res = await fetch(`/api/upload?file=${filename}&fileType=${fileType}`)
-
-  const { url, fields } = await res.json()
-
-  const formData = new FormData()
-
-  Object.entries({ ...fields, file }).forEach(([key, value]) => {
-    formData.append(key, value as any)
-  })
-
-  const upload = await fetch(url, {
-    method: 'POST',
-    body: formData,
-  })
-
-  if (!upload.ok) return false
-
-  console.log(url + '/' + filename)
-
-  return url + '/' + filename
-}
+//const result = await this.callbacks.onAssetCreate(this, file, id)
+//^from tldrawapp.ts
+//   async function requestTestImg(app: TldrawApp){ 
+//   axios.get('https://via.placeholder.com/150',{headers: {
+//     "Access-Control-Allow-Origin": '*'
+//   }}
+// ).then(response => {
+//       const f = new File([response.data()], 'test.jpg', {type: 'image/png'})
+//       app.addMediaFromFile(f,[200,200])
+//     })
+//     }
 
 function d3toTldrawCoords(x,y): number[]{
     return [ (x * 10) - TL_DRAW_RADIUS, (y * 10) - TL_DRAW_RADIUS]
 }
 function tldrawCoordstod3(x,y):number[] {
   return [ (x + TL_DRAW_RADIUS) / 10, (y + TL_DRAW_RADIUS) / 10]
+}
+function getIconImageURL(id:string){
+	return 'http://127.0.0.1:8080' + "/image/" + id + "?" + ((new Date()).getTime()); //Add Time to avoid Caching so images update properly
 }
 
 const Editor: FC<EditorProps & Partial<TldrawProps>> = ({
@@ -140,7 +119,7 @@ const Editor: FC<EditorProps & Partial<TldrawProps>> = ({
   const handlePatch = React.useCallback((app: TldrawApp, reason?: string) => {
 
     
-    console.log(reason)
+    //console.log(reason)
     switch (reason) {
           case "set_status:translating": {
             // started translating...
@@ -241,15 +220,16 @@ const Editor: FC<EditorProps & Partial<TldrawProps>> = ({
     //   }, [])
 
     rTldrawApp.current = app
-
-    //app.addMediaFromFile('https://via.placeholder.com/150')
-
-    
-    //app.
-    //requestTestImg(app)
     
     //app.camera.zoom =
+    // export interface TDImageAsset extends TLAsset {
+    //   type: TDAssetType.Image
+    //   fileName: string
+    //   src: string
+    //   size: number[]
+    // }
     app.deleteAll()
+
     app.createShapes( 
       {
         id: 'loading',
@@ -272,30 +252,6 @@ const Editor: FC<EditorProps & Partial<TldrawProps>> = ({
               "textAlign": "middle"
             }
       } as inputShape,
-      // {
-      //   "assetId": "assetId",
-      //   "childIndex": 1,
-      //   "id": "image",
-      //   "name": "Image",
-      //   "parentId": "page",
-      //   "point": Array [
-      //     0,
-      //     0,
-      //   ],
-      //   "rotation": 0,
-      //   "size": Array [
-      //     1,
-      //     1,
-      //   ],
-      //   "style": Object {
-      //     "color": "black",
-      //     "dash": "draw",
-      //     "isFilled": true,
-      //     "scale": 1,
-      //     "size": "small",
-      //   },
-      //   "type": "image",
-      // }
       {
         id: 'image',
         name: 'image',
@@ -312,7 +268,8 @@ const Editor: FC<EditorProps & Partial<TldrawProps>> = ({
         style:{
           isFilled:true,
           color: "black"
-        }
+        },
+        imgLink: getIconImageURL("1")
 
       } as inputShape
     )
@@ -321,11 +278,11 @@ const Editor: FC<EditorProps & Partial<TldrawProps>> = ({
   React.useEffect(() => {
 
     const abortController = new AbortController();
-    let i = 0
+    const timeout = 2000
     const dataInterval = setInterval(() => {
-        //console.log("requesting data...")
+        console.log("requesting data...")
         axios.get('http://127.0.0.1:8080/versions.json', {
-          timeout: 1000,
+          timeout: timeout,
           signal: abortController.signal
         })
         .then(response => {
@@ -340,24 +297,10 @@ const Editor: FC<EditorProps & Partial<TldrawProps>> = ({
         .catch(error => {
           //console.error("error fetching: ", error);
         })
-
-        //update loading sticky
-        if(graphData.current == graphtestdata){
-          const app = rTldrawApp.current!
-          if(app && app.getShape('loading')){
-            if(!(app === undefined)){
-              const loadingDot = "."
-              app.updateShapes({
-                id: 'loading',
-                text: " Quickpose is looking for a Processing Session" + loadingDot.repeat(i%6),
-              })
-            }
-          }
-        }
-        i++
-    }, 500)
+    }, timeout*2)
 
     //check for new data, if so, update graph data
+    let i = 0 //Counter for sticky loading dots
     const interval = setInterval(() => {
       
       // if(process.env["NEXT_PUBLIC_VERCEL_EN"] == '1'){
@@ -396,10 +339,40 @@ const Editor: FC<EditorProps & Partial<TldrawProps>> = ({
           }
           newData.current = false
         }
+         //update loading sticky
+         if(graphData.current == graphtestdata){
+          const app = rTldrawApp.current!
+          if(app.getShape('loading')){
+              const loadingDot = "."
+              app.updateShapes({
+                id: 'loading',
+                text: " Quickpose is looking for a Processing Session" + loadingDot.repeat(i%6),
+              })
+            }
+          }
+        i++
       }
     }, 500)
-    //const result = await this.callbacks.onAssetCreate(this, file, id)
-    //^from tldrawapp.ts
+
+
+    // id: 'image',
+    // name: 'image',
+    // type: TDShapeType.VersionNode,
+    // parentId: 'page',
+    // "point": [
+    //   934.62,
+    //   -369.35
+    // ],
+    // "radius": [
+    //   405.5954998873435,
+    //   405.5954998873435
+    // ],
+    // style:{
+    //   isFilled:true,
+    //   color: "black"
+    // },
+    // imgLink: getIconImageURL("1")
+    //Draw shapes
     const drawInterval = setInterval(() => {
 
       const app = rTldrawApp.current!
@@ -410,12 +383,17 @@ const Editor: FC<EditorProps & Partial<TldrawProps>> = ({
           if(!tlDrawNode){
             const n = {
             id: 'node'+node.id,
-            isLocked: false,
-            isGenerated: true,
-            type: TDShapeType.Rectangle,
             name: 'node'+node.id,
+            type: TDShapeType.VersionNode,
+            parentId: 'page',
+            radius: [100,100],
+            style:{
+              isFilled:true,
+              color: "black"
+            },
             point: d3toTldrawCoords(node.x,node.y),
-            size: [TL_DRAW_RADIUS,TL_DRAW_RADIUS],
+            //radius: [TL_DRAW_RADIUS,TL_DRAW_RADIUS],
+            imgLink: getIconImageURL(node.id.toString())
            } as inputShape
            return n
           }else{
@@ -437,22 +415,23 @@ const Editor: FC<EditorProps & Partial<TldrawProps>> = ({
             const coords = d3toTldrawCoords(node.x ,node.y);
             // if (Math.abs(tlDrawNode.point[0] - coords[0]) > .1 || 
             //   Math.abs(tlDrawNode.point[1] - coords[1]) > .1){
-            let style = { ...tlDrawNode.style, color: "black", size:"small", isFilled: false}
+            let style = {
+               ...tlDrawNode.style, 
+               color: ColorStyle.Black, 
+               size: SizeStyle.Small, 
+              }
             //console.log(tlDrawNode.id,selectedNode.current, tlDrawNode.id === selectedNode.current)
             if(tlDrawNode.id === selectedNode.current){
               style = { 
                 ...style,
                 color: ColorStyle.Green,
                 size: SizeStyle.Large,
-                isFilled: true
-                
               }
             }
             return {
                 ...tlDrawNode,
                 style:{...style},
                 point: coords,
-                size: [TL_DRAW_RADIUS,TL_DRAW_RADIUS],
             }
           }
           return null
@@ -524,12 +503,8 @@ const Editor: FC<EditorProps & Partial<TldrawProps>> = ({
               let startBinding = app.getBinding('link'+link.index+'start')
               let endBinding = app.getBinding('link'+link.index+'end')
 
-              if(!startBinding){
-                startBinding = newStartBinding
-              }
-              if(!endBinding){
-                endBinding = newTargetBinding
-              }
+              if(!startBinding){startBinding = newStartBinding}
+              if(!endBinding){endBinding = newTargetBinding}
 
               tlDrawLink.handles.start.bindingId = 'link'+link.index+'start'
               tlDrawLink.handles.end.bindingId = 'link'+link.index+'end'
@@ -560,8 +535,6 @@ const Editor: FC<EditorProps & Partial<TldrawProps>> = ({
     }
   },[]);
 
- 
-
   // Send events to gtag as actions.
   const handlePersist = React.useCallback((_app: TldrawApp, reason?: string) => {
     gtag.event({
@@ -573,10 +546,7 @@ const Editor: FC<EditorProps & Partial<TldrawProps>> = ({
   }, [])
 
   const fileSystemEvents = useFileSystem()
-  
-
   const { onSignIn, onSignOut } = useAccountHandlers()
-
   const { onAssetUpload } = useUploadAssets()
 
   return (

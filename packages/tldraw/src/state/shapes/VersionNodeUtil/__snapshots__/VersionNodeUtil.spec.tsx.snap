@@ -1,3 +1,4 @@
+
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
 exports[`Image shape Creates a shape: image 1`] = `
@@ -12,9 +13,9 @@ Object {
     0,
   ],
   "rotation": 0,
-  "size": Array [
-    1,
-    1,
+  "radius": [
+          405.5954998873435,
+          405.5954998873435
   ],
   "style": Object {
     "color": "black",
@@ -23,6 +24,7 @@ Object {
     "scale": 1,
     "size": "small",
   },
-  "type": "image",
+  imgLink: getIconImageURL("1")
+  "type": "VersionNode",
 }
 `;

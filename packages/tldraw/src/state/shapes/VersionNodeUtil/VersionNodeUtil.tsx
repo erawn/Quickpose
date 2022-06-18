@@ -25,9 +25,14 @@ export class VersionNodeUtil extends TDShapeUtil<T, E> {
 
   canBind = true
 
-  canClone = true
+  canClone = false
 
-  canEdit = true
+  canEdit = false
+
+  isAspectRatioLocked = true
+
+  hideResizeHandles = false
+
 
   getShape = (props: Partial<T>): T => {
     return Utils.deepMerge<T>(
@@ -43,6 +48,7 @@ export class VersionNodeUtil extends TDShapeUtil<T, E> {
         style: defaultStyle,
         label: '',
         labelPoint: [0.5, 0.5],
+        imgLink: ''
       },
       props
     )
@@ -64,14 +70,14 @@ export class VersionNodeUtil extends TDShapeUtil<T, E> {
       },
       ref
     ) => {
-      const { id, radius, style, label = '', labelPoint = LABEL_POINT } = shape
+      const { id, radius, style, label = '', labelPoint = LABEL_POINT, imgLink } = shape
       const font = getFontStyle(shape.style)
       const styles = getShapeStyle(style, meta.isDarkMode)
       const strokeWidth = styles.strokeWidth
       const sw = 1 + strokeWidth * 1.618
       const rx = Math.max(0, radius[0] - sw / 2)
       const ry = Math.max(0, radius[1] - sw / 2)
-      const Component = style.dash === DashStyle.Draw ? DrawEllipse : DashedEllipse
+      const Component = DrawEllipse
       const handleLabelChange = React.useCallback(
         (label: string) => onShapeChange?.({ id, label }),
         [onShapeChange]
@@ -105,6 +111,7 @@ export class VersionNodeUtil extends TDShapeUtil<T, E> {
               style={style}
               isSelected={isSelected}
               isDarkMode={meta.isDarkMode}
+              imgLink={imgLink}
             />
           </SVGContainer>
         </FullWrapper>
