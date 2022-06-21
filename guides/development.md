@@ -28,3 +28,9 @@ make sure react and react-dom are same version - "npm ls react" etc
 nvm use 16 
 
 can't build from app
+
+
+yarn build:packages
+yarn build:core
+yarn build:apps
+yarn start:www

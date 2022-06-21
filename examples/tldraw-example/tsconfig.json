@@ -21,6 +21,12 @@
     },
     {
       "path": "../../packages/tldraw"
+    },
+    {
+      "path": "../../packages/vec"
+    },
+    {
+      "path": "../../packages/intersect"
     }
   ],
   "typedocOptions": {

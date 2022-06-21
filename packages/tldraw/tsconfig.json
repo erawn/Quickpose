@@ -11,7 +11,9 @@
       "~*": ["./src/*"],
       "*": ["./*"],
       "@tldraw/core": ["../../packages/core"],
-      "@tldraw/tldraw": ["../../packages/tldraw"]
+      "@tldraw/tldraw": ["../../packages/tldraw"],
+      "@tldraw/vec": ["../../packages/vec"],
+      "@tldraw/intersect": ["../../packages/intersect"]
     }
   },
   "references": [{ "path": "../vec" }, { "path": "../intersect" }, { "path": "../core" }],

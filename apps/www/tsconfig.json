@@ -1,7 +1,7 @@
 {
   "compilerOptions": {
-    "composite": false,
-    "incremental": false,
+    "composite": true,
+    "incremental": true,
     "resolveJsonModule": true,
     "target": "es6",
     "lib": ["dom", "esnext"],
