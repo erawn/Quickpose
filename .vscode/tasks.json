@@ -7,7 +7,7 @@
 			"label": "build",
 
 			"linux": {"command": "sensible-browser http://localhost:3000 & nvm use 16.13.0 && yarn start:www"},
-			"osx": {"command": "open http://localhost:3000 & nvm use 16.13.0 && yarn start:www"},
+			"osx": {"command": "(/usr/bin/open -a '/Applications/Google Chrome.app' 'http://localhost:3000') & nvm use 16.13.0 && yarn start:www"},
 			"group": {
 				"kind": "build",
 				"isDefault": true

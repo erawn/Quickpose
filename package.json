@@ -40,6 +40,9 @@
     "pretty-quick": "pretty-quick",
     "clean": "turbo run clean"
   },
+  "engines": {
+    "node": "16.13.0"
+   },
   "devDependencies": {
     "@swc-node/jest": "^1.4.3",
     "@testing-library/jest-dom": "^5.16.2",
