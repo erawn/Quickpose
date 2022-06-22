@@ -41,7 +41,7 @@
     "clean": "turbo run clean"
   },
   "engines": {
-    "node": "16.13.0"
+    "node": "^16.x"
    },
   "devDependencies": {
     "@swc-node/jest": "^1.4.3",
