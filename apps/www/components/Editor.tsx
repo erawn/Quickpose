@@ -59,17 +59,6 @@ const requestCurrentId = async () => {
   const response = await fetch('http://127.0.0.1:8080/currentVersion');
 	const id = await response.json();
 }
-//const result = await this.callbacks.onAssetCreate(this, file, id)
-//^from tldrawapp.ts
-//   async function requestTestImg(app: TldrawApp){ 
-//   axios.get('https://via.placeholder.com/150',{headers: {
-//     "Access-Control-Allow-Origin": '*'
-//   }}
-// ).then(response => {
-//       const f = new File([response.data()], 'test.jpg', {type: 'image/png'})
-//       app.addMediaFromFile(f,[200,200])
-//     })
-//     }
 
 function d3toTldrawCoords(x,y): number[]{
     return [ (x * 10) - TL_DRAW_RADIUS, (y * 10) - TL_DRAW_RADIUS]
@@ -166,20 +155,9 @@ const Editor = ({
     links: []
   };
   graphData.current = graphtestdata
-  
+  const simulation = React.useRef<d3.Simulation<SimulationNodeDatum,undefined>>();
 
-  const simulation = d3
-  .forceSimulation()
-  .force("center", d3.forceCenter(50,50))
-  .force('charge', d3.forceManyBody().strength(-100))
-  .force('collision', d3.forceCollide().radius(D3_RADIUS*10))
-  .force("link", d3.forceLink()
-    .id(function(d: dataNode,i) {
-      return d.id
-    })
-    .distance(20)
-    .strength(1)
-  );
+ 
       //https://codesandbox.io/s/tldraw-context-menu-wen03q
   const handlePatch = React.useCallback((app: TldrawApp, reason?: string) => {
 
@@ -275,6 +253,19 @@ const Editor = ({
     //   app = rTldrawApp.current!
     // }
     rTldrawApp.current = app
+    const coords = tldrawCoordstod3(...app.centerPoint as [number,number])
+    simulation.current = d3
+    .forceSimulation()
+    .force("center", d3.forceCenter(coords[0],coords[1]))
+    .force('charge', d3.forceManyBody().strength(-100))
+    .force('collision', d3.forceCollide().radius(D3_RADIUS*10))
+    .force("link", d3.forceLink()
+      .id(function(d: dataNode,i) {
+        return d.id
+      })
+      .distance(20)
+      .strength(1)
+    );
     
     //app.camera.zoom =
     app.deleteAll()
@@ -307,24 +298,8 @@ const Editor = ({
 
     const abortController = new AbortController();
     const timeout = 2000
-    const dataInterval = setInterval(() => {
+    const networkInterval = setInterval(() => {
         console.log("requesting data...")
-        axios.get('http://127.0.0.1:8080/versions.json', {
-          timeout: timeout,
-          signal: abortController.signal
-        })
-        .then(response => {
-          if(!deepEqual(response.data,netData.current)){
-            newData.current = true;
-            netData.current = response.data
-            //console.log("newdata",response.data)
-          }else{
-            //console.log("samedata",response.data)
-          }
-        })
-        .catch(error => {
-          //console.error("error fetching: ", error);
-        })
         const app = rTldrawApp.current!
         if(!(app === undefined) && selectedNode.current){
           //BUG = have to do this more slowly, or else firefox will get angry
@@ -335,11 +310,28 @@ const Editor = ({
             selectedShape.imgLink = getIconImageURL(idInteger)//refresh the thumbnail image
           }
         }
+        axios.get('http://127.0.0.1:8080/versions.json', {
+          timeout: timeout,
+          signal: abortController.signal
+        })
+        .then(response => {
+          if(!deepEqual(response.data,netData.current)){
+            newData.current = true;
+            netData.current = response.data
+            //console.log("newdata",response.data)
+            //dataInterval
+          }else{
+            //console.log("samedata",response.data)
+          }
+        })
+        .catch(error => {
+          //console.error("error fetching: ", error);
+        })
     }, timeout*2)
 
     //check for new data, if so, update graph data
     let i = 0 //Counter for sticky loading dots
-    const interval = setInterval(() => {
+    const dataInterval = setInterval(() => {
       
       // if(process.env["NEXT_PUBLIC_VERCEL_EN"] == '1'){
       //   console.log("im in vercel!")
@@ -349,7 +341,7 @@ const Editor = ({
       //   app = rTldrawApp.current!
       // }
       const app = rTldrawApp.current!
-      if(!(app === undefined)){
+      if(simulation.current && !(app === undefined)){
         
         //https://medium.com/ninjaconcept/interactive-dynamic-force-directed-graphs-with-d3-da720c6d7811
         if(newData.current){ //if we have new data come in
@@ -371,8 +363,8 @@ const Editor = ({
                 graphData.current.links = [...graphData.current.links,{...netLink}]
               }
             })
-            simulation.nodes(graphData.current.nodes);
-            const forceLink = simulation.force("link") as d3.ForceLink<d3.SimulationNodeDatum, d3.SimulationLinkDatum<d3.SimulationNodeDatum>>;
+            simulation.current.nodes(graphData.current.nodes);
+            const forceLink = simulation.current.force("link") as d3.ForceLink<d3.SimulationNodeDatum, d3.SimulationLinkDatum<d3.SimulationNodeDatum>>;
             forceLink.links(graphData.current.links)
           }
           newData.current = false
@@ -397,7 +389,7 @@ const Editor = ({
       const app = rTldrawApp.current!
 
       if(graphData.current && !(app === undefined)){
-        graphData.current.nodes = [...simulation.nodes()]; //get simulation data out
+        graphData.current.nodes = [...simulation.current.nodes()]; //get simulation data out
         const addNodes = graphData.current.nodes.map(function(node: dataNode){
           const tlDrawNode = app.getShape('node'+node.id)
           if(!tlDrawNode){
@@ -484,7 +476,7 @@ const Editor = ({
     },100)
 
     return () => {
-      clearInterval(interval)
+      clearInterval(networkInterval)
       clearInterval(dataInterval)
       clearInterval(drawInterval)
       abortController.abort();
