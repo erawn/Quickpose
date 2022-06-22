@@ -42,7 +42,7 @@
     "pre-push": "yarn test"
   },
   "engines": {
-    "node": "16.13.0"
+    "node": "^16.x"
    },
   "devDependencies": {
     "@ggallon/prettier-plugin-sort-imports": "^3.4.2-canary.0",
