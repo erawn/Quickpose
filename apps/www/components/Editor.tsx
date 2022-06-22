@@ -10,6 +10,7 @@ import {
   TDShape, 
   shapeUtils, 
   ArrowBinding,
+  ArrowShape,
   TDAssetType,
   TDImageAsset
 } from '@tldraw/tldraw'
@@ -78,6 +79,69 @@ function tldrawCoordstod3(x,y):number[] {
 }
 function getIconImageURL(id:string){
 	return 'http://127.0.0.1:8080' + "/image/" + id + "?" + ((new Date()).getTime()); //Add Time to avoid Caching so images update properly
+}
+let updateBinding = (app:TldrawApp, link, startNode,endNode,drawLink) => {
+  const newStartBinding: ArrowBinding = {
+    id: 'link'+link.index+'start',
+    fromId: 'link'+link.index,
+    toId: startNode.id,
+    handleId: 'start',
+    distance: 16,
+    point: [.5,.5]
+  }
+  const newTargetBinding: ArrowBinding = {
+    id: 'link'+link.index+'end',
+    fromId: 'link'+link.index,
+    toId: endNode.id,
+    handleId: 'end',
+    distance: 16,
+    point: [.5,.5]
+  }
+  let startBinding = app.getBinding('link'+link.index+'start')
+  let endBinding = app.getBinding('link'+link.index+'end')
+
+  if(!startBinding){startBinding = newStartBinding}
+  if(!endBinding){endBinding = newTargetBinding}
+
+  drawLink.handles.start.bindingId = 'link'+link.index+'start'
+  drawLink.handles.end.bindingId = 'link'+link.index+'end'
+
+  app.page.bindings[startBinding.id] = startBinding
+  app.page.bindings[endBinding.id] = endBinding
+}
+
+let makeArrow = (parentId, style, link): ArrowShape => {
+  return shapeUtils.arrow.getShape({
+    id: 'link'+link.index,
+    name: 'link'+link.index,
+    type: TDShapeType.Arrow,
+    parentId: parentId,
+    isLocked: false,
+    isGenerated: true,
+    point: [100,100],
+    style: { ...style },
+    handles: {
+      start: {
+        canBind: true,
+        bindingId: 'link'+link.index+'start',
+        id: "start",
+        index: 0,
+        point: [0, 0],
+      },
+      end: {
+        canBind: true,
+        bindingId: 'link'+link.index+'end',
+        index: 1,
+        id: "end",
+        point: [1, 1],
+      },
+      bend: {
+        id: "bend",
+        "index": 2,
+        point: [.5, .5],
+      }
+    }
+  })
 }
 
 const Editor = ({
@@ -385,6 +449,7 @@ const Editor = ({
         }  
         
         //draw links
+        const updateLinks: TDShape[] = [];
         const newLinks = graphData.current.links.map(function(link: SimulationLinkDatum<SimulationNodeDatum> ){
           const tlDrawLink = app.getShape('link'+link.index)
           const sourceNode = link.source as dataNode
@@ -393,74 +458,21 @@ const Editor = ({
           const endNode: TDShape = app.getShape('node'+targetNode.id)
 
           if(startNode && endNode){
-            const newStartBinding: ArrowBinding = {
-              id: 'link'+link.index+'start',
-              fromId: 'link'+link.index,
-              toId: startNode.id,
-              handleId: 'start',
-              distance: 16,
-              point: [.5,.5]
-            }
-            const newTargetBinding: ArrowBinding = {
-              id: 'link'+link.index+'end',
-              fromId: 'link'+link.index,
-              toId: endNode.id,
-              handleId: 'end',
-              distance: 16,
-              point: [.5,.5]
-            }
-
             if(!tlDrawLink){
-              const newArrow = shapeUtils.arrow.getShape({
-                id: 'link'+link.index,
-                name: 'link'+link.index,
-                type: TDShapeType.Arrow,
-                parentId: app.currentPageId,
-                isLocked: false,
-                isGenerated: true,
-                point: [100,100],
-                style: { ...app.appState.currentStyle },
-                handles: {
-                  start: {
-                    canBind: true,
-                    bindingId: 'link'+link.index+'start',
-                    id: "start",
-                    index: 0,
-                    point: [0, 0],
-                  },
-                  end: {
-                    canBind: true,
-                    bindingId: 'link'+link.index+'end',
-                    index: 1,
-                    id: "end",
-                    point: [1, 1],
-                  },
-                  bend: {
-                    id: "bend",
-                    "index": 2,
-                    point: [.5, .5],
-                  }
-                }
-              })
+              const newArrow = makeArrow(app.currentPageId,app.appState.currentStyle ,link)
+              updateBinding(app, link, startNode,endNode,newArrow)
               return newArrow
             }else{
-              let startBinding = app.getBinding('link'+link.index+'start')
-              let endBinding = app.getBinding('link'+link.index+'end')
-
-              if(!startBinding){startBinding = newStartBinding}
-              if(!endBinding){endBinding = newTargetBinding}
-
-              tlDrawLink.handles.start.bindingId = 'link'+link.index+'start'
-              tlDrawLink.handles.end.bindingId = 'link'+link.index+'end'
-
-              app.updateShapes(tlDrawLink)
-              
-              app.page.bindings[startBinding.id] = startBinding
-              app.page.bindings[endBinding.id] = endBinding
+              updateBinding(app, link, startNode,endNode,tlDrawLink)
+              updateLinks.push(tlDrawLink)
             }
           }
           return null
         }).filter(entry => entry !== null) as TDShape[]
+
+        if(updateLinks.length > 0){
+          app.updateShapes(...updateLinks)
+        }
 
         if(newLinks.length > 0){
           app.createShapes(...newLinks) 
