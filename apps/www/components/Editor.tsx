@@ -27,7 +27,7 @@ import {
 } from '@tldraw/core'
 import { useAccountHandlers } from 'hooks/useAccountHandlers'
 import { useUploadAssets } from 'hooks/useUploadAssets'
-import React, { FC } from 'react'
+import React from 'react'
 import * as gtag from 'utils/gtag'
 import axios from 'axios'
 import * as d3 from 'd3'
@@ -80,12 +80,12 @@ function getIconImageURL(id:string){
 	return 'http://127.0.0.1:8080' + "/image/" + id + "?" + ((new Date()).getTime()); //Add Time to avoid Caching so images update properly
 }
 
-const Editor: FC<EditorProps & Partial<TldrawProps>> = ({
+const Editor = ({
   id = 'home',
   isUser = false,
   isSponsor = false,
   ...rest
-}) => {
+}: EditorProps & Partial<TldrawProps>) => {
   
   const rTldrawApp = React.useRef<TldrawApp>()
   const netData = React.useRef<any>();
