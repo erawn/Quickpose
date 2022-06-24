@@ -40,6 +40,7 @@ import deepEqual from "deep-equal"
 
 const D3_RADIUS = 5;
 const TL_DRAW_RADIUS = 80;
+const ALPHA_TARGET_REFRESH = .1
 
 interface EditorProps {
   id?: string
@@ -64,10 +65,14 @@ function d3toTldrawCoords(x,y): number[]{
 function tldrawCoordstod3(x,y):number[] {
   return [ (x + TL_DRAW_RADIUS) / 10, (y + TL_DRAW_RADIUS) / 10]
 }
+function getIconImageURLNoTime(id:string){
+	return 'http://127.0.0.1:8080' + "/image/" + id; //Add Time to avoid Caching so images update properly
+}
+
 function getIconImageURL(id:string){
 	return 'http://127.0.0.1:8080' + "/image/" + id + "?" + ((new Date()).getTime()); //Add Time to avoid Caching so images update properly
 }
-let updateBinding = (app:TldrawApp, link, startNode,endNode,drawLink) => {
+const updateBinding = (app:TldrawApp, link, startNode,endNode,drawLink) => {
   const newStartBinding: ArrowBinding = {
     id: 'link'+link.index+'start',
     fromId: 'link'+link.index,
@@ -97,7 +102,7 @@ let updateBinding = (app:TldrawApp, link, startNode,endNode,drawLink) => {
   app.page.bindings[endBinding.id] = endBinding
 }
 
-let makeArrow = (parentId, style, link): ArrowShape => {
+const makeArrow = (parentId, style, link): ArrowShape => {
   return shapeUtils.arrow.getShape({
     id: 'link'+link.index,
     name: 'link'+link.index,
@@ -131,6 +136,7 @@ let makeArrow = (parentId, style, link): ArrowShape => {
   })
 }
 
+
 const Editor = ({
   id = 'home',
   isUser = false,
@@ -147,21 +153,113 @@ const Editor = ({
   const graphData = React.useRef<any>();
 
   const nodeRegex = new RegExp(/node\d/);
+  const linkRegex = new RegExp(/link\d/);
 
   const graphtestdata = {
     nodes: [],
     links: []
   };
   graphData.current = graphtestdata
+  
   const simulation = React.useRef<d3.Simulation<SimulationNodeDatum,undefined>>();
 
+  const drawInterval = () => {
+    const app = rTldrawApp.current!
+  
+    if(graphData.current && !(app === undefined) && simulation.current){
+      simulation.current.alpha(ALPHA_TARGET_REFRESH)
+      simulation.current.restart()
+      graphData.current.nodes = [...simulation.current.nodes()]; //get simulation data out
+      const tlNodes = app.getShapes().filter(shape => nodeRegex.test(shape.id)) 
+      const updateNodes = []
+      const addNodes = graphData.current.nodes.map(function(node: dataNode){
+        const tlDrawNode = tlNodes.find(n => n.id === 'node'+node.id)
+       
+        if(!tlDrawNode){
+          const n = {
+          id: 'node'+node.id,
+          name: 'node'+node.id,
+          type: TDShapeType.VersionNode,
+          parentId: 'page',
+          style:{
+            isFilled:true,
+            color: "black"
+          },
+          point: d3toTldrawCoords(node.x,node.y),
+          radius: [TL_DRAW_RADIUS,TL_DRAW_RADIUS],
+          imgLink: getIconImageURLNoTime(node.id.toString())
+         } as inputShape
+         return n
+        }else if(tlDrawNode && tlDrawNode.type == TDShapeType.VersionNode){ 
+          if(app.selectedIds.includes(tlDrawNode.id)){ //If we have a node selected, update the d3 sim instead
+            const d3Coords = tldrawCoordstod3(tlDrawNode.point[0],tlDrawNode.point[1])
+            node.x = d3Coords[0]
+            node.y = d3Coords[1]
+          }
+          if(tlDrawNode.id === selectedNode.current){ //If our node is the current version
+            tlDrawNode.style.color = ColorStyle.Green
+            tlDrawNode.style.size = SizeStyle.Large
+          }else{
+            tlDrawNode.style.color = ColorStyle.Black
+            tlDrawNode.style.size = SizeStyle.Small
+          }
+          tlDrawNode.point = d3toTldrawCoords(node.x ,node.y) //Update location either way
+          updateNodes.push(tlDrawNode)
+        }else{
+          return null
+        }
+      }).filter(entry => entry !== null && !(entry === undefined))
+      if(addNodes.length > 0){
+        console.log(addNodes)
+        app.createShapes(...addNodes)
+      }   
+      if(updateNodes.length > 0){
+        app.updateShapes(...updateNodes)
+      }  
+  
+      
+      //draw links
+      const updateLinks: TDShape[] = [];
+      const tlLinks = app.getShapes().filter(shape => linkRegex.test(shape.id))
+      const newLinks = graphData.current.links.map(function(link: SimulationLinkDatum<SimulationNodeDatum> ){
+        const tlDrawLink = tlLinks.find(l => l.id === 'link'+link.index)
+        const sourceNode = link.source as dataNode
+        const targetNode = link.target as dataNode
+        const startNode: TDShape = tlNodes.find(n => n.id === 'node'+sourceNode.id)
+        const endNode: TDShape = tlNodes.find(n => n.id === 'node'+targetNode.id)
+  
+        if(startNode && endNode){
+          if(!tlDrawLink){
+            const newArrow = makeArrow(app.currentPageId,app.appState.currentStyle ,link)
+            updateBinding(app, link, startNode,endNode,newArrow)
+            return newArrow
+          }else{
+            updateBinding(app, link, startNode,endNode,tlDrawLink)
+            updateLinks.push(tlDrawLink)
+          }
+        }
+        return null
+      }).filter(entry => entry !== null && !(entry === undefined)) as TDShape[]
+      if(updateLinks.length > 0){
+        app.updateShapes(...updateLinks)
+      }
+      if(newLinks.length > 0){
+        app.createShapes(...newLinks) 
+        //deselect created links
+        const newIds: string[] = newLinks.map((link) => link.id)
+        app.select(...app.selectedIds.filter((id) => !newIds.includes(id)))
+      }
+    }
+  }
  
       //https://codesandbox.io/s/tldraw-context-menu-wen03q
   const handlePatch = React.useCallback((app: TldrawApp, reason?: string) => {
 
     
     //console.log(reason)
+    drawInterval()
     switch (reason) {
+          
           case "set_status:translating": {
             // started translating...
             rIsDragging.current = true;
@@ -263,7 +361,12 @@ const Editor = ({
       })
       .distance(20)
       .strength(1)
-    );
+    ).on('tick', () => {
+      drawInterval()
+      console.log("simref draw")
+    });
+    
+
     
     //app.camera.zoom =
     app.deleteAll()
@@ -296,7 +399,7 @@ const Editor = ({
 
     const abortController = new AbortController();
     const timeout = 2000
-    const networkInterval = setInterval(() => {
+    const networkInterval = () => {
         console.log("requesting data...")
         const app = rTldrawApp.current!
         if(!(app === undefined) && selectedNode.current){
@@ -317,7 +420,7 @@ const Editor = ({
             newData.current = true;
             netData.current = response.data
             //console.log("newdata",response.data)
-            //dataInterval
+            dataInterval()
           }else{
             //console.log("samedata",response.data)
           }
@@ -325,11 +428,11 @@ const Editor = ({
         .catch(error => {
           //console.error("error fetching: ", error);
         })
-    }, timeout*2)
+    }
 
     //check for new data, if so, update graph data
     let i = 0 //Counter for sticky loading dots
-    const dataInterval = setInterval(() => {
+    const dataInterval = () => {
       
       // if(process.env["NEXT_PUBLIC_VERCEL_EN"] == '1'){
       //   console.log("im in vercel!")
@@ -340,35 +443,8 @@ const Editor = ({
       // }
       const app = rTldrawApp.current!
       if(simulation.current && !(app === undefined)){
-        
-        //https://medium.com/ninjaconcept/interactive-dynamic-force-directed-graphs-with-d3-da720c6d7811
-        if(newData.current){ //if we have new data come in
-
-          if(app.getShape("loading")){
-            app.delete(["loading"]) //remove loading sticky
-          }
-
-          if(netData.current && graphData.current){ //and we have our datasources ready
-            //add new links and nodes from netData into graphData
-            //only --adding-- nodes and links, so we can just append new incoming data to graphData
-            netData.current[0].forEach(function(netNode){
-              if(!graphData.current.nodes.some(graphNode => graphNode.id === netNode.id)){
-                graphData.current.nodes = [...graphData.current.nodes,{...netNode}]
-              }
-            })
-            netData.current[1].forEach(function(netLink){
-              if(!graphData.current.links.some(graphLink => (graphLink.source.id === netLink.source) && (graphLink.target.id === netLink.target))){
-                graphData.current.links = [...graphData.current.links,{...netLink}]
-              }
-            })
-            simulation.current.nodes(graphData.current.nodes);
-            const forceLink = simulation.current.force("link") as d3.ForceLink<d3.SimulationNodeDatum, d3.SimulationLinkDatum<d3.SimulationNodeDatum>>;
-            forceLink.links(graphData.current.links)
-          }
-          newData.current = false
-        }
-         //update loading sticky
-         if(graphData.current == graphtestdata){
+        //update loading sticky
+        if(graphData.current == graphtestdata){
           const app = rTldrawApp.current!
           if(app.getShape('loading')){
               const loadingDot = "."
@@ -378,105 +454,58 @@ const Editor = ({
               })
             }
           }
+        
+        //https://medium.com/ninjaconcept/interactive-dynamic-force-directed-graphs-with-d3-da720c6d7811
+        if((newData.current === true) && netData.current && graphData.current){ //if we have new data come in
+
+          let changed = false
+          newData.current = false
+          //and we have our datasources ready
+          //add new links and nodes from netData into graphData
+          //only --adding-- nodes and links, so we can just append new incoming data to graphData
+          netData.current[0].forEach(function(netNode){
+            if(!graphData.current.nodes.some(graphNode => graphNode.id === netNode.id)){
+              graphData.current.nodes = [...graphData.current.nodes,{...netNode}]
+              changed = true
+            }
+          })
+          netData.current[1].forEach(function(netLink){
+            if(!graphData.current.links.some(graphLink => (graphLink.source.id === netLink.source) && (graphLink.target.id === netLink.target))){
+              graphData.current.links = [...graphData.current.links,{...netLink}]
+              changed = true
+            }
+          })
+          if(changed){
+            simulation.current.nodes(graphData.current.nodes);
+            const forceLink = simulation.current.force("link") as d3.ForceLink<d3.SimulationNodeDatum, d3.SimulationLinkDatum<d3.SimulationNodeDatum>>;
+            forceLink.links(graphData.current.links)
+
+            if(app.getShape("loading")){
+              app.delete(["loading"]) //remove loading sticky
+            }
+            drawInterval()
+          }
+        }
         i++
       }
-    }, 500)
+    }
 
     //Draw shapes
-    const drawInterval = setInterval(() => {
-      const app = rTldrawApp.current!
-
-      if(graphData.current && !(app === undefined)){
-        graphData.current.nodes = [...simulation.current.nodes()]; //get simulation data out
-        const addNodes = graphData.current.nodes.map(function(node: dataNode){
-          const tlDrawNode = app.getShape('node'+node.id)
-          if(!tlDrawNode){
-            const n = {
-            id: 'node'+node.id,
-            name: 'node'+node.id,
-            type: TDShapeType.VersionNode,
-            parentId: 'page',
-            style:{
-              isFilled:true,
-              color: "black"
-            },
-            point: d3toTldrawCoords(node.x,node.y),
-            radius: [TL_DRAW_RADIUS,TL_DRAW_RADIUS],
-            imgLink: getIconImageURL(node.id.toString())
-           } as inputShape
-           return n
-          }else{
-            return null
-          }
-        }).filter(entry => entry !== null)
-        if(addNodes.length > 0){
-          app.createShapes(...addNodes)
-        }   
-
-        const updateNodes = graphData.current.nodes.map(function(node: dataNode){
-          const tlDrawNode = app.getShape('node'+node.id)
-          if(tlDrawNode && tlDrawNode.type == TDShapeType.VersionNode){ 
-            if(app.selectedIds.includes(tlDrawNode.id)){ //If we have a node selected, update the d3 sim instead
-              const d3Coords = tldrawCoordstod3(tlDrawNode.point[0],tlDrawNode.point[1])
-              node.x = d3Coords[0]
-              node.y = d3Coords[1]
-            }
-            if(tlDrawNode.id === selectedNode.current){ //If our node is the current version
-              tlDrawNode.style.color = ColorStyle.Green
-              tlDrawNode.style.size = SizeStyle.Large
-            }else{
-              tlDrawNode.style.color = ColorStyle.Black
-              tlDrawNode.style.size = SizeStyle.Small
-            }
-            tlDrawNode.point = d3toTldrawCoords(node.x ,node.y) //Update location either way
-            return tlDrawNode
-          }else{
-            return null
-          }
-        }).filter(entry => entry !== null)
-        if(updateNodes.length > 0){
-          app.updateShapes(...updateNodes)
-        }  
-        
-        //draw links
-        const updateLinks: TDShape[] = [];
-        const newLinks = graphData.current.links.map(function(link: SimulationLinkDatum<SimulationNodeDatum> ){
-          const tlDrawLink = app.getShape('link'+link.index)
-          const sourceNode = link.source as dataNode
-          const targetNode = link.target as dataNode
-          const startNode: TDShape = app.getShape('node'+sourceNode.id)
-          const endNode: TDShape = app.getShape('node'+targetNode.id)
-
-          if(startNode && endNode){
-            if(!tlDrawLink){
-              const newArrow = makeArrow(app.currentPageId,app.appState.currentStyle ,link)
-              updateBinding(app, link, startNode,endNode,newArrow)
-              return newArrow
-            }else{
-              updateBinding(app, link, startNode,endNode,tlDrawLink)
-              updateLinks.push(tlDrawLink)
-            }
-          }
-          return null
-        }).filter(entry => entry !== null) as TDShape[]
-
-        if(updateLinks.length > 0){
-          app.updateShapes(...updateLinks)
-        }
-
-        if(newLinks.length > 0){
-          app.createShapes(...newLinks) 
-          //deselect created links
-          const newIds: string[] = newLinks.map((link) => link.id)
-          app.select(...app.selectedIds.filter((id) => !newIds.includes(id)))
-        }
-      }
-    },100)
-
+    
+    const networkLoop = setInterval(networkInterval,timeout*2)
+    const dataLoop = setInterval(dataInterval,3000)
+    //const drawLoop = setInterval(drawInterval,100)
+  //   if(simulation.current){
+  //     simulation.current = simulation.current.on('tick', () => {
+  //       drawInterval()
+  //       console.log("draw")});
+      
+  // }
+    
     return () => {
-      clearInterval(networkInterval)
-      clearInterval(dataInterval)
-      clearInterval(drawInterval)
+      clearInterval(networkLoop)
+      clearInterval(dataLoop)
+      //clearInterval(drawLoop)
       abortController.abort();
     }
   },[]);
