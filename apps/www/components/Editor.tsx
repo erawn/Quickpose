@@ -60,10 +60,10 @@ const requestCurrentId = async () => {
 }
 
 function d3toTldrawCoords(x,y): number[]{
-    return [ (x * 10) - TL_DRAW_RADIUS, (y * 10) - TL_DRAW_RADIUS]
+    return [ (x * 5) - TL_DRAW_RADIUS, (y * 5) - TL_DRAW_RADIUS]
 }
 function tldrawCoordstod3(x,y):number[] {
-  return [ (x + TL_DRAW_RADIUS) / 10, (y + TL_DRAW_RADIUS) / 10]
+  return [ (x + TL_DRAW_RADIUS) / 5, (y + TL_DRAW_RADIUS) / 5]
 }
 function getIconImageURLNoTime(id:string){
 	return 'http://127.0.0.1:8080' + "/image/" + id; //Add Time to avoid Caching so images update properly
