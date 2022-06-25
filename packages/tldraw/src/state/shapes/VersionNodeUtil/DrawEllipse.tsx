@@ -36,7 +36,8 @@ export const DrawEllipse = React.memo(function DrawEllipse({
       />
       <defs>
         <pattern id={imgId} patternUnits="objectBoundingBox" width="1" height="1">
-          <image href={imgLink} x="0" y="0" width={radius[0]*2} height={radius[1]*2} />
+          <image href={imgLink} x="0" y="0" width={radius[0]*2} height={radius[1]*2}
+                  preserveAspectRatio="xMidYMid slice" />
         </pattern>
       </defs>
       {style.isFilled && (
