@@ -438,7 +438,7 @@ export class SelectTool extends BaseTool<Status> {
   onPointShape: TLPointerEventHandler = (info, e) => {
     if (info.spaceKey && e.buttons === 1) return
 
-    if (this.app.getShape(info.target).isLocked) return
+    if (this.app.getShape(info.target).isLocked || this.app.getShape(info.target).hideFromSelection) return
 
     const { editingId, hoveredId } = this.app.pageState
 
@@ -534,7 +534,7 @@ export class SelectTool extends BaseTool<Status> {
 
     const shape = this.app.getShape(info.target)
 
-    if (shape.isLocked) {
+    if (shape.isLocked || shape.hideFromSelection) {
       this.app.select(info.target)
       return
     }
@@ -563,7 +563,9 @@ export class SelectTool extends BaseTool<Status> {
   }
 
   onHoverShape: TLPointerEventHandler = info => {
-    this.app.setHoveredId(info.target)
+    if(!this.app.getShape(info.target).hideFromSelection){
+      this.app.setHoveredId(info.target)
+    }
   }
 
   onUnhoverShape: TLPointerEventHandler = info => {

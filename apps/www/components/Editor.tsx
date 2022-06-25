@@ -106,6 +106,7 @@ const updateBinding = (app:TldrawApp, link, startNode,endNode,drawLink) => {
 
 const makeArrow = (parentId, style, link): ArrowShape => {
   return shapeUtils.arrow.getShape({
+    hideFromSelection: true,
     id: 'link'+link.index,
     name: 'link'+link.index,
     type: TDShapeType.Arrow,
