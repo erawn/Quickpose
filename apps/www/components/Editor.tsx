@@ -340,7 +340,10 @@ const Editor = ({
           }
         }
       }, []);
-
+ const refreshSim = () => {
+  //simulation.current.alpha(ALPHA_TARGET_REFRESH)
+  simulation.current.restart()
+ }
 
   const handleMount = React.useCallback((app: TldrawApp) => {
     
@@ -364,10 +367,8 @@ const Editor = ({
       })
       .distance(20)
       .strength(1)
-    ).on('tick', () => {
-      drawInterval()
-      console.log("simref draw")
-    });
+    ).alpha(3)
+    .alphaDecay(.01)
     
 
     
@@ -493,22 +494,18 @@ const Editor = ({
       }
     }
 
-    //Draw shapes
-    
+    //get data from processing
     const networkLoop = setInterval(networkInterval,timeout*2)
+    //put it into the graph
     const dataLoop = setInterval(dataInterval,3000)
-    //const drawLoop = setInterval(drawInterval,100)
-  //   if(simulation.current){
-  //     simulation.current = simulation.current.on('tick', () => {
-  //       drawInterval()
-  //       console.log("draw")});
-      
-  // }
+    //draw the graph
+    const drawLoop = setInterval(drawInterval,16)
+
     
     return () => {
       clearInterval(networkLoop)
       clearInterval(dataLoop)
-      //clearInterval(drawLoop)
+      clearInterval(drawLoop)
       abortController.abort();
     }
   },[]);
