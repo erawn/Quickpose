@@ -41,6 +41,8 @@ import deepEqual from "deep-equal"
 const D3_RADIUS = 5;
 const TL_DRAW_RADIUS = 80;
 const ALPHA_TARGET_REFRESH = .1
+const LOCALHOST_BASE = 'http://127.0.0.1:8080';
+const DOUBLE_CLICK_TIME = 500
 
 interface EditorProps {
   id?: string
@@ -54,10 +56,21 @@ interface dataNode extends SimulationNodeDatum {
 type inputShape = { id: string; name?: string; type: TDShapeType;} & Partial<TDShape>
 
 
+
 const requestCurrentId = async () => {
-  const response = await fetch('http://127.0.0.1:8080/currentVersion');
+  const response = await fetch(LOCALHOST_BASE+'/currentVersion');
 	const id = await response.json();
 }
+
+const sendFork = async (id) => {
+	const response = await fetch(LOCALHOST_BASE + '/fork/' + id)
+	return await response.json();
+	
+}
+const sendSelect = async (id) => {
+	const response = await fetch(LOCALHOST_BASE + '/select/' + id);
+}
+
 
 function d3toTldrawCoords(x,y): number[]{
     return [ (x * 5) - TL_DRAW_RADIUS, (y * 5) - TL_DRAW_RADIUS]
@@ -150,7 +163,8 @@ const Editor = ({
   const newData = React.useRef<boolean>(false);
   const rIsDragging = React.useRef(false);
   const selectedNode = React.useRef<string>(null);
-  const lastSelection = React.useRef<string>(null)
+  const lastSelection = React.useRef<string>(null);
+  const timeSinceLastSelection = React.useRef<number>(0);
   const graphData = React.useRef<any>();
 
   const nodeRegex = new RegExp(/node\d/);
@@ -165,11 +179,13 @@ const Editor = ({
   const simulation = React.useRef<d3.Simulation<SimulationNodeDatum,undefined>>();
 
   const drawInterval = () => {
-    const app = rTldrawApp.current!
+
+    requestAnimationFrame(()=>{
+      const app = rTldrawApp.current!
   
     if(graphData.current && !(app === undefined) && simulation.current){
-      simulation.current.alpha(ALPHA_TARGET_REFRESH)
-      simulation.current.restart()
+      //simulation.current.alpha(ALPHA_TARGET_REFRESH)
+      //simulation.current.restart()
       graphData.current.nodes = [...simulation.current.nodes()]; //get simulation data out
       const tlNodes = app.getShapes().filter(shape => nodeRegex.test(shape.id)) 
       const updateNodes = []
@@ -192,6 +208,7 @@ const Editor = ({
          } as inputShape
          return n
         }else if(tlDrawNode && tlDrawNode.type == TDShapeType.VersionNode){ 
+          const baseNode = {...tlDrawNode}
           if(app.selectedIds.includes(tlDrawNode.id)){ //If we have a node selected, update the d3 sim instead
             const d3Coords = tldrawCoordstod3(tlDrawNode.point[0],tlDrawNode.point[1])
             node.x = d3Coords[0]
@@ -204,8 +221,21 @@ const Editor = ({
             tlDrawNode.style.color = ColorStyle.Black
             tlDrawNode.style.size = SizeStyle.Small
           }
-          tlDrawNode.point = d3toTldrawCoords(node.x ,node.y) //Update location either way
-          updateNodes.push(tlDrawNode)
+          
+          let newCoords = tlDrawNode.point
+          if(node.id === '0'){
+            node.fx = tldrawCoordstod3(...app.centerPoint as [number,number])[0]
+            node.fy = tldrawCoordstod3(...app.centerPoint as [number,number])[1]
+            newCoords = app.centerPoint as [number,number]
+          }else{
+            newCoords = d3toTldrawCoords(node.x ,node.y)
+          }
+          if (Math.abs(newCoords[0] - tlDrawNode.point[0]) > .1 || Math.abs(newCoords[0] - tlDrawNode.point[0]) > .1){
+            tlDrawNode.point = d3toTldrawCoords(node.x ,node.y)
+          }
+          if(!deepEqual(baseNode,tlDrawNode)){
+            updateNodes.push(tlDrawNode)
+          }
         }else{
           return null
         }
@@ -249,16 +279,17 @@ const Editor = ({
         //deselect created links
         const newIds: string[] = newLinks.map((link) => link.id)
         app.select(...app.selectedIds.filter((id) => !newIds.includes(id)))
+        console.log("changed selection")
       }
     }
+    })
   }
  
       //https://codesandbox.io/s/tldraw-context-menu-wen03q
   const handlePatch = React.useCallback((app: TldrawApp, reason?: string) => {
 
     
-    //console.log(reason)
-    drawInterval()
+    console.log(reason)
     switch (reason) {
           
           case "set_status:translating": {
@@ -279,6 +310,7 @@ const Editor = ({
           }
           case "session:TranslateSession": {
             if (rIsDragging.current) {
+              refreshSim()
               // Dragging...
               const bounds = Utils.getCommonBounds(
                 app.selectedIds.map((id) => app.getShapeBounds(id))
@@ -317,23 +349,43 @@ const Editor = ({
             }
             break;
           }
+          case "set_status:pointingBounds":{
+            if(app.selectedIds.length == 1 && 
+              app.getShape(app.selectedIds[0]).type === TDShapeType.VersionNode &&
+              app.selectedIds[0] === selectedNode.current){
+              const selectedShape = app.getShape(selectedNode.current)
+              if(!(selectedShape === undefined) && 
+                  selectedShape.type == TDShapeType.VersionNode &&
+                  (new Date()).getTime() - timeSinceLastSelection.current < DOUBLE_CLICK_TIME){
+                const idInteger = selectedShape.id.replace(/\D/g,"")
+                //sendSelect(idInteger)
+                console.log("send double click")
+                
+              }else{
+                timeSinceLastSelection.current = (new Date()).getTime()
+              }
+            }else{
+              selectedNode.current = undefined
+            }
+            break;
+          }
           case "selected": {
 
             //Select Node
             lastSelection.current = selectedNode.current
             if(app.selectedIds.length == 1 && 
               app.getShape(app.selectedIds[0]).type === TDShapeType.VersionNode){
-              console.log("selected Node")
               selectedNode.current = app.selectedIds[0]
-              //const node = app.getShape(app.selectedIds[0])
-              //single click
-              //double click
-              //clear selection
-
+              const selectedShape = app.getShape(selectedNode.current)
+              if(!(lastSelection.current === selectedNode.current)){
+                const idInteger = selectedShape.id.replace(/\D/g,"")
+                //sendSelect(idInteger)
+                console.log("send select!")
+                timeSinceLastSelection.current = (new Date()).getTime()
+              }
+            }else{
+              selectedNode.current = undefined
             }
-
-
-            
             break
           }
         }
@@ -404,16 +456,33 @@ const Editor = ({
     const networkInterval = () => {
         console.log("requesting data...")
         const app = rTldrawApp.current!
+
+        //Update Thumbnail Image
         if(!(app === undefined) && selectedNode.current){
           //BUG = have to do this more slowly, or else firefox will get angry
           //cant change url before last image has loaded - thats why its in the slower interval
           const selectedShape = app.getShape(selectedNode.current)
-          if(selectedShape.type == TDShapeType.VersionNode){
+          if(!(selectedShape === undefined) && selectedShape.type == TDShapeType.VersionNode){
             const idInteger = selectedShape.id.replace(/\D/g,"")
             selectedShape.imgLink = getIconImageURL(idInteger)//refresh the thumbnail image
           }
         }
-        axios.get('http://127.0.0.1:8080/versions.json', {
+
+        //Update Current Version
+        axios.get(LOCALHOST_BASE+'/currentVersion', {
+          timeout: timeout,
+          signal: abortController.signal
+        })
+        .then(response => {
+            selectedNode.current = response.data
+            console.log("currentVersion is  "+ selectedNode.current)
+        })
+        .catch(error => {
+          //console.error("error fetching: ", error);
+        })
+
+        //Update Versions
+        axios.get(LOCALHOST_BASE+'/versions.json', {
           timeout: timeout,
           signal: abortController.signal
         })
