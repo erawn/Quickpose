@@ -360,7 +360,7 @@ const Editor = ({
                   selectedShape.type == TDShapeType.VersionNode &&
                   (new Date()).getTime() - timeSinceLastSelection.current < DOUBLE_CLICK_TIME){
                 const idInteger = selectedShape.id.replace(/\D/g,"")
-                //sendSelect(idInteger)
+                sendFork(idInteger)
                 console.log("send double click")
                 
               }else{
@@ -381,7 +381,7 @@ const Editor = ({
               const selectedShape = app.getShape(selectedNode.current)
               if(!(lastSelection.current === selectedNode.current)){
                 const idInteger = selectedShape.id.replace(/\D/g,"")
-                //sendSelect(idInteger)
+                sendSelect(idInteger)
                 console.log("send select!")
                 timeSinceLastSelection.current = (new Date()).getTime()
               }
