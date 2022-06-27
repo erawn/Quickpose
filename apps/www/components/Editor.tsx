@@ -12,7 +12,8 @@ import {
   ArrowBinding,
   ArrowShape,
   TDAssetType,
-  TDImageAsset
+  TDImageAsset,
+  VersionNodeShape
 } from '@tldraw/tldraw'
 import {
   TLBoundsCorner,
@@ -39,10 +40,13 @@ import deepEqual from "deep-equal"
 
 
 const D3_RADIUS = 5;
+const D3_LINK_DISTANCE = 20
 const TL_DRAW_RADIUS = 80;
 const ALPHA_TARGET_REFRESH = .1
 const LOCALHOST_BASE = 'http://127.0.0.1:8080';
 const DOUBLE_CLICK_TIME = 500
+const d3TlScale = 5
+
 
 interface EditorProps {
   id?: string
@@ -52,9 +56,14 @@ interface dataNode extends SimulationNodeDatum {
   id: string;
   x: number;
   y: number;
+  r: number;
+}
+
+interface dataLink extends SimulationLinkDatum<SimulationNodeDatum> {
+  d: number
 }
 type inputShape = { id: string; name?: string; type: TDShapeType;} & Partial<TDShape>
-
+type inputVersionNodeShape = { id: string; name?: string; type: TDShapeType;} & Partial<VersionNodeShape>
 
 
 const requestCurrentId = async () => {
@@ -73,10 +82,10 @@ const sendSelect = async (id) => {
 
 
 function d3toTldrawCoords(x,y): number[]{
-    return [ (x * 5) - TL_DRAW_RADIUS, (y * 5) - TL_DRAW_RADIUS]
+    return [ (x * d3TlScale) - TL_DRAW_RADIUS, (y * d3TlScale) - TL_DRAW_RADIUS]
 }
 function tldrawCoordstod3(x,y):number[] {
-  return [ (x + TL_DRAW_RADIUS) / 5, (y + TL_DRAW_RADIUS) / 5]
+  return [ (x + TL_DRAW_RADIUS) / d3TlScale, (y + TL_DRAW_RADIUS) / d3TlScale]
 }
 function getIconImageURLNoTime(id:string){
 	return 'http://127.0.0.1:8080' + "/image/" + id; //Add Time to avoid Caching so images update properly
@@ -184,8 +193,6 @@ const Editor = ({
       const app = rTldrawApp.current!
   
     if(graphData.current && !(app === undefined) && simulation.current){
-      //simulation.current.alpha(ALPHA_TARGET_REFRESH)
-      //simulation.current.restart()
       graphData.current.nodes = [...simulation.current.nodes()]; //get simulation data out
       const tlNodes = app.getShapes().filter(shape => nodeRegex.test(shape.id)) 
       const updateNodes = []
@@ -205,14 +212,19 @@ const Editor = ({
           point: d3toTldrawCoords(node.x,node.y),
           radius: [TL_DRAW_RADIUS,TL_DRAW_RADIUS],
           imgLink: getIconImageURLNoTime(node.id.toString())
-         } as inputShape
+         } as inputVersionNodeShape
+         node.r = n.radius[0] / d3TlScale
+         console.log("input radius", node.r)
          return n
+
         }else if(tlDrawNode && tlDrawNode.type == TDShapeType.VersionNode){ 
           const baseNode = {...tlDrawNode}
           if(app.selectedIds.includes(tlDrawNode.id)){ //If we have a node selected, update the d3 sim instead
             const d3Coords = tldrawCoordstod3(tlDrawNode.point[0],tlDrawNode.point[1])
             node.x = d3Coords[0]
             node.y = d3Coords[1]
+            node.r = tlDrawNode.radius[0] / d3TlScale
+            console.log("updated radius",tldrawCoordstod3(...tlDrawNode.radius as [number,number])[0])
           }
           if(tlDrawNode.id === selectedNode.current){ //If our node is the current version
             tlDrawNode.style.color = ColorStyle.Green
@@ -241,23 +253,27 @@ const Editor = ({
         }
       }).filter(entry => entry !== null && !(entry === undefined))
       if(addNodes.length > 0){
-        console.log(addNodes)
         app.createShapes(...addNodes)
       }   
       if(updateNodes.length > 0){
         app.updateShapes(...updateNodes)
       }  
+
+      simulation.current.nodes(graphData.current.nodes)
   
       
       //draw links
       const updateLinks: TDShape[] = [];
       const tlLinks = app.getShapes().filter(shape => linkRegex.test(shape.id))
-      const newLinks = graphData.current.links.map(function(link: SimulationLinkDatum<SimulationNodeDatum> ){
+      const newLinks = graphData.current.links.map(function(link: dataLink){
         const tlDrawLink = tlLinks.find(l => l.id === 'link'+link.index)
+        const baseLink = {...tlDrawLink}
         const sourceNode = link.source as dataNode
         const targetNode = link.target as dataNode
         const startNode: TDShape = tlNodes.find(n => n.id === 'node'+sourceNode.id)
         const endNode: TDShape = tlNodes.find(n => n.id === 'node'+targetNode.id)
+
+        //D3_LINK_DISTANCE
   
         if(startNode && endNode){
           if(!tlDrawLink){
@@ -266,8 +282,11 @@ const Editor = ({
             return newArrow
           }else{
             updateBinding(app, link, startNode,endNode,tlDrawLink)
-            updateLinks.push(tlDrawLink)
+            if(!deepEqual(baseLink,tlDrawLink)){
+              updateLinks.push(tlDrawLink)
+            }
           }
+          link.d = D3_LINK_DISTANCE + sourceNode.r + targetNode.r
         }
         return null
       }).filter(entry => entry !== null && !(entry === undefined)) as TDShape[]
@@ -279,8 +298,12 @@ const Editor = ({
         //deselect created links
         const newIds: string[] = newLinks.map((link) => link.id)
         app.select(...app.selectedIds.filter((id) => !newIds.includes(id)))
-        console.log("changed selection")
       }
+      const forceLink = simulation.current.force("link") as d3.ForceLink<d3.SimulationNodeDatum, d3.SimulationLinkDatum<d3.SimulationNodeDatum>>;
+      forceLink.links(graphData.current.links)
+
+      //simulation.current.alpha(ALPHA_TARGET_REFRESH)
+      simulation.current.restart()
     }
     })
   }
@@ -349,6 +372,15 @@ const Editor = ({
             }
             break;
           }
+          //scaling
+          case "session:TransformSingleSession": {
+            if(app.selectedIds.length == 1 && 
+              app.getShape(app.selectedIds[0]).type === TDShapeType.VersionNode){
+                //console.log(graphData.current.nodes)
+              }
+            break;
+          }
+          //double click on shape
           case "set_status:pointingBounds":{
             if(app.selectedIds.length == 1 && 
               app.getShape(app.selectedIds[0]).type === TDShapeType.VersionNode &&
@@ -390,8 +422,10 @@ const Editor = ({
           }
         }
       }, []);
+
+
  const refreshSim = () => {
-  //simulation.current.alpha(ALPHA_TARGET_REFRESH)
+  simulation.current.alpha(ALPHA_TARGET_REFRESH)
   simulation.current.restart()
  }
 
@@ -410,12 +444,18 @@ const Editor = ({
     .forceSimulation()
     .force("center", d3.forceCenter(coords[0],coords[1]))
     .force('charge', d3.forceManyBody().strength(-100))
-    .force('collision', d3.forceCollide().radius(D3_RADIUS*10))
+    .force('collision', d3.forceCollide().radius(function(d: dataNode) {return d.r + 20} ))
     .force("link", d3.forceLink()
       .id(function(d: dataNode,i) {
         return d.id
       })
-      .distance(20)
+      .distance(function(l:dataLink){
+        if(l.d !== undefined){
+          return l.d
+        }else{
+          return 20
+        }
+      })
       .strength(1)
     ).alpha(3)
     .alphaDecay(.01)
@@ -450,7 +490,23 @@ const Editor = ({
   }, [])
 
   React.useEffect(() => {
-
+    //https://sparkjava.com/documentation#examples-and-faq
+    //https://stackoverflow.com/questions/18206231/saving-and-reloading-a-force-layout-using-d3-js
+    // export default function LoadingFiles() {
+    //   const [file, setFile] = React.useState<TDFile>()
+    
+    //   React.useEffect(() => {
+    //     async function loadFile(): Promise<void> {
+    //       const file = await fetch('Example.tldr').then((response) => response.json())
+    //       setFile(file)
+    //     }
+    
+    //     loadFile()
+    //   }, [])
+    
+    //   return <Tldraw document={file?.document} />
+    // }
+    
     const abortController = new AbortController();
     const timeout = 2000
     const networkInterval = () => {
