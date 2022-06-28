@@ -224,9 +224,8 @@ const Editor = ({
             node.x = d3Coords[0]
             node.y = d3Coords[1]
             node.r = tlDrawNode.radius[0] / d3TlScale
-            console.log("updated radius",tldrawCoordstod3(...tlDrawNode.radius as [number,number])[0])
           }
-          if(tlDrawNode.id === selectedNode.current){ //If our node is the current version
+          if(selectedNode.current && tlDrawNode.id.replace(/\D/g,"") === selectedNode.current.toString()){ //If our node is the current version
             tlDrawNode.style.color = ColorStyle.Green
             tlDrawNode.style.size = SizeStyle.Large
           }else{
@@ -412,7 +411,7 @@ const Editor = ({
               if(!(lastSelection.current === selectedNode.current)){
                 const idInteger = selectedShape.id.replace(/\D/g,"")
                 sendSelect(idInteger)
-                console.log("send select!")
+                console.log("send select!", idInteger)
                 timeSinceLastSelection.current = (new Date()).getTime()
               }
             }else{
@@ -530,8 +529,10 @@ const Editor = ({
           signal: abortController.signal
         })
         .then(response => {
+          if(response.data){
             selectedNode.current = response.data
             console.log("currentVersion is  "+ selectedNode.current)
+          }
         })
         .catch(error => {
           //console.error("error fetching: ", error);
