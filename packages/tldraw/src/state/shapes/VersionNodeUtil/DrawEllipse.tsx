@@ -24,6 +24,7 @@ export const DrawEllipse = React.memo(function DrawEllipse({
   const { stroke, strokeWidth, fill } = getShapeStyle(style, isDarkMode)
   const innerPath = getEllipsePath(id, radius, style)
   const imgId = "img"+id.toString()
+  style.isFilled = true 
 
   return (
     <>
