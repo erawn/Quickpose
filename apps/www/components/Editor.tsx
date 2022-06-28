@@ -175,6 +175,7 @@ const Editor = ({
   const rIsDragging = React.useRef(false);
   const selectedNode = React.useRef<string>(null);
   const lastSelection = React.useRef<string>(null);
+  const currentVersion = React.useRef<string>(null);
   const timeSinceLastSelection = React.useRef<number>(0);
   const graphData = React.useRef<any>();
 
@@ -227,7 +228,7 @@ const Editor = ({
             node.y = d3Coords[1]
             node.r = tlDrawNode.radius[0] / d3TlScale
           }
-          if(selectedNode.current && tlDrawNode.id.replace(/\D/g,"") === selectedNode.current.toString()){ //If our node is the current version
+          if(currentVersion.current && tlDrawNode.id.replace(/\D/g,"") === currentVersion.current){ //If our node is the current version
             tlDrawNode.style.color = ColorStyle.Green
             tlDrawNode.style.size = SizeStyle.Large
           }else{
@@ -246,7 +247,7 @@ const Editor = ({
           if (Math.abs(newCoords[0] - tlDrawNode.point[0]) > .1 || Math.abs(newCoords[0] - tlDrawNode.point[0]) > .1){
             tlDrawNode.point = d3toTldrawCoords(node.x ,node.y)
           }
-          if(!deepEqual(baseNode,tlDrawNode)){
+          if(!deepEqual(baseNode,tlDrawNode) || baseNode.style.color !== tlDrawNode.style.color){
             updateNodes.push(tlDrawNode)
           }
         }else{
@@ -314,6 +315,7 @@ const Editor = ({
 
     
     console.log(reason)
+    drawInterval()
     switch (reason) {
           
           case "set_status:translating": {
@@ -398,7 +400,7 @@ const Editor = ({
                 timeSinceLastSelection.current = (new Date()).getTime()
               }
             }else{
-              selectedNode.current = undefined
+              //selectedNode.current = undefined
             }
             break;
           }
@@ -532,8 +534,8 @@ const Editor = ({
         })
         .then(response => {
           if(response.data){
-            selectedNode.current = response.data
-            console.log("currentVersion is  "+ selectedNode.current)
+            currentVersion.current = response.data.toString()
+            console.log("currentVersion is  "+ currentVersion.current)
           }
         })
         .catch(error => {
