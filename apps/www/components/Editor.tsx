@@ -245,9 +245,10 @@ const Editor = ({
           if (Math.abs(newCoords[0] - tlDrawNode.point[0]) > .1 || Math.abs(newCoords[0] - tlDrawNode.point[0]) > .1){
             tlDrawNode.point = d3toTldrawCoords(node.x ,node.y)
           }
-          if(!deepEqual(baseNode,tlDrawNode) || baseNode.style.color !== tlDrawNode.style.color){
+          //dont know why this optimization isn't updating style changes :(
+          //if(!deepEqual(baseNode,tlDrawNode) || baseNode.style.color !== tlDrawNode.style.color){
             updateNodes.push(tlDrawNode)
-          }
+          //}
         }else{
           return null
         }
@@ -507,9 +508,26 @@ const Editor = ({
     
     //   return <Tldraw document={file?.document} />
     // }
-    
-    const abortController = new AbortController();
+    const abortCurrentVersionController = new AbortController();
     const timeout = 2000
+    //Update Current Version
+    const currentVersionInterval = () => {
+      axios.get(LOCALHOST_BASE+'/currentVersion', {
+        timeout: timeout,
+        signal: abortCurrentVersionController.signal
+      })
+      .then(response => {
+        if(response.data){
+          currentVersion.current = response.data.toString()
+          console.log("currentVersion is  "+ currentVersion.current)
+        }
+      })
+      .catch(error => {
+        //console.error("error fetching: ", error);
+      })
+    }
+    
+    const abortVersionsController = new AbortController();
     const networkInterval = () => {
         console.log("requesting data...")
         const app = rTldrawApp.current!
@@ -525,25 +543,12 @@ const Editor = ({
           }
         }
 
-        //Update Current Version
-        axios.get(LOCALHOST_BASE+'/currentVersion', {
-          timeout: timeout,
-          signal: abortController.signal
-        })
-        .then(response => {
-          if(response.data){
-            currentVersion.current = response.data.toString()
-            console.log("currentVersion is  "+ currentVersion.current)
-          }
-        })
-        .catch(error => {
-          //console.error("error fetching: ", error);
-        })
+       
 
         //Update Versions
         axios.get(LOCALHOST_BASE+'/versions.json', {
-          timeout: timeout,
-          signal: abortController.signal
+          timeout: 100,
+          signal: abortVersionsController.signal
         })
         .then(response => {
           if(!deepEqual(response.data,netData.current)){
@@ -599,14 +604,10 @@ const Editor = ({
               if(!(parentLink === undefined)){
                 const parent: dataNode = graphData.current.nodes.find(node => node.id === parentLink.source)
                 if(!(parent === undefined)){
-
                   netNode.x = parent.x + 10
                   netNode.y = parent.y + 10
-
-                  
                 }
               }
-              
               graphData.current.nodes = [...graphData.current.nodes,{...netNode}]
               changed = true
             }
@@ -635,6 +636,8 @@ const Editor = ({
 
     //get data from processing
     const networkLoop = setInterval(networkInterval,timeout*2)
+    //look for current version
+    const currentVersionLoop = setInterval(currentVersionInterval,100)
     //put it into the graph
     const dataLoop = setInterval(dataInterval,3000)
     //draw the graph
@@ -643,9 +646,11 @@ const Editor = ({
     
     return () => {
       clearInterval(networkLoop)
+      clearInterval(currentVersionLoop)
       clearInterval(dataLoop)
       clearInterval(drawLoop)
-      abortController.abort();
+      abortVersionsController.abort();
+      abortCurrentVersionController.abort();
     }
   },[]);
 
