@@ -593,8 +593,20 @@ const Editor = ({
           //and we have our datasources ready
           //add new links and nodes from netData into graphData
           //only --adding-- nodes and links, so we can just append new incoming data to graphData
-          netData.current[0].forEach(function(netNode){
+          netData.current[0].forEach(function(netNode: dataNode){
             if(!graphData.current.nodes.some(graphNode => graphNode.id === netNode.id)){
+              const parentLink = netData.current[1].find(link => link.target === netNode.id)
+              if(!(parentLink === undefined)){
+                const parent: dataNode = graphData.current.nodes.find(node => node.id === parentLink.source)
+                if(!(parent === undefined)){
+
+                  netNode.x = parent.x + 10
+                  netNode.y = parent.y + 10
+
+                  
+                }
+              }
+              
               graphData.current.nodes = [...graphData.current.nodes,{...netNode}]
               changed = true
             }
@@ -609,7 +621,8 @@ const Editor = ({
             simulation.current.nodes(graphData.current.nodes);
             const forceLink = simulation.current.force("link") as d3.ForceLink<d3.SimulationNodeDatum, d3.SimulationLinkDatum<d3.SimulationNodeDatum>>;
             forceLink.links(graphData.current.links)
-
+            console.log("netdata",netData.current)
+            console.log("graphData",graphData.current)
             if(app.getShape("loading")){
               app.delete(["loading"]) //remove loading sticky
             }
