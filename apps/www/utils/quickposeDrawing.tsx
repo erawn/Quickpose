@@ -1,7 +1,7 @@
 import { ArrowBinding, ArrowShape, ColorStyle, shapeUtils, SizeStyle, TDShape, TDShapeType, TldrawApp } from "@tldraw/tldraw"
 import { dataLink, dataNode, inputShape, inputVersionNodeShape } from "./quickPoseTypes"
 import deepEqual from "deep-equal";
-import { d3TlScale, D3_LINK_DISTANCE, TL_DRAW_RADIUS } from "components/Editor";
+import { ALPHA_TARGET_REFRESH, d3TlScale, D3_LINK_DISTANCE, TL_DRAW_RADIUS } from "components/Editor";
 import { getIconImageURLNoTime } from "./quickPoseNetworking"
 import * as d3 from 'd3'
 
@@ -29,6 +29,10 @@ export const d3Sim = (centerPoint) => {
     ).alpha(3)
     .alphaDecay(.01)
 }
+export const refreshSim = (simulation) => {
+    simulation.current.alpha(ALPHA_TARGET_REFRESH)
+    simulation.current.restart()
+  }
 
 export const defaultSticky = (centerPoint) => {
     return {
