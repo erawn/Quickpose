@@ -13,7 +13,9 @@ import {
   ArrowShape,
   TDAssetType,
   TDImageAsset,
-  VersionNodeShape
+  VersionNodeShape,
+  TDDocument,
+  TDFile
 } from '@tldraw/tldraw'
 import {
   TLBoundsCorner,
@@ -35,6 +37,9 @@ import axios from 'axios'
 import * as d3 from 'd3'
 import { SimulationNodeDatum, SimulationLinkDatum } from 'd3'
 import deepEqual from "deep-equal"
+import FormData from 'form-data'
+import { createReadStream } from 'fs'
+import type { FileSystemHandle } from '@tldraw/tldraw'
 
 //declare const window: Window & { app: TldrawApp }
 
@@ -80,6 +85,45 @@ const sendFork = async (id) => {
 }
 const sendSelect = async (id) => {
 	const response = await fetch(LOCALHOST_BASE + '/select/' + id);
+}
+
+const saveToProcessing = async (document: TDDocument, fileHandle: FileSystemHandle | null) => {
+    console.log("saving file...")
+    const file: TDFile = {
+        name: 'quickpose.tldr',
+        fileHandle: fileHandle ?? null,
+        document,
+        assets: {},
+      }
+    // Serialize to JSON
+    const json = JSON.stringify(file, null, 2)
+    // Create blob
+    const blob = new Blob([json], {
+      type: 'application/vnd.Tldraw+json',
+    })
+    const formData = new FormData()
+    formData.append('uploaded_file', blob, {
+      filename: 'quickpose.tldr',
+      contentType: 'application/vnd.Tldraw+json'
+    })
+    //app.saveProject
+    axios.post(LOCALHOST_BASE+'/tldrfile', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+        "Content-Disposition": "filename=quickpose.tldr.png"
+      }
+    })
+    .then(function (response) {
+      console.log(response);
+    })
+    .catch(function (error) {
+      console.log(error);
+    });
+    
+  
+    // Return true
+    return true
+
 }
 
 
@@ -322,56 +366,18 @@ const Editor = ({
           case "set_status:translating": {
             // started translating...
             rIsDragging.current = true;
-
-            const bounds = Utils.getCommonBounds(
-              app.selectedIds.map((id) => app.getShapeBounds(id))
-            );
-
-            // elm.style.setProperty("opacity", "1");
-            // elm.style.setProperty("width", bounds.width + "px");
-            // elm.style.setProperty(
-            //   "transform",
-            //   `translate(${bounds.minX}px, ${bounds.minY - 64}px)`
-            // );
             break;
           }
           case "session:TranslateSession": {
             if (rIsDragging.current) {
               refreshSim()
               // Dragging...
-              const bounds = Utils.getCommonBounds(
-                app.selectedIds.map((id) => app.getShapeBounds(id))
-                
-              );
-              // app.selectedIds.filter((id) => nodeRegex.test(id)).forEach((id) => {
-              //   let selectedNode = app.getShape(id)
-
-              //   if(selectedNode){
-              //     let d3Node = selectedNode.node
-              //     const d3Coords = tldrawCoordstod3(selectedNode.point[0],selectedNode.point[1])
-              //     d3Node.x = d3Coords[0]
-              //     d3Node.y = d3Coords[1]
-              //     d3Node.fx = d3Coords[0]
-              //     d3Node.fy = d3Coords[1]
-                  
-              //   }
-
-                
-
-              // })
-              // elm.style.setProperty("opacity", "1");
-              // elm.style.setProperty("width", bounds.width + "px");
-              // elm.style.setProperty(
-              //   "transform",
-              //   `translate(${bounds.minX}px, ${bounds.minY - 64}px)`
-              // );
             }
             break;
           }
           case "set_status:idle": {
             if (rIsDragging.current) {
               // stopped translating...
-              //elm.style.setProperty("opacity", "0");
               rIsDragging.current = false;
             }
             break;
@@ -426,7 +432,6 @@ const Editor = ({
           }
         }
       }, []);
-
 
  const refreshSim = () => {
   simulation.current.alpha(ALPHA_TARGET_REFRESH)
@@ -521,13 +526,14 @@ const Editor = ({
       .then(response => {
         if(response.data){
           currentVersion.current = response.data.toString()
-          console.log("currentVersion is  "+ currentVersion.current)
+          //console.log("currentVersion is  "+ currentVersion.current)
         }
       })
       .catch(error => {
         //console.error("error fetching: ", error);
       })
     }
+    
     
     const abortVersionsController = new AbortController();
     const networkInterval = () => {
@@ -543,10 +549,12 @@ const Editor = ({
             const idInteger = selectedShape.id.replace(/\D/g,"")
             selectedShape.imgLink = getIconImageURL(idInteger)//refresh the thumbnail image
           }
+          if(!(app.document === undefined)){
+            saveToProcessing(app.document,null)
+          }
         }
-
-       
-
+        
+        
         //Update Versions
         axios.get(LOCALHOST_BASE+'/versions.json', {
           timeout: 100,
