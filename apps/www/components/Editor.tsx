@@ -37,174 +37,47 @@ import axios from 'axios'
 import * as d3 from 'd3'
 import { SimulationNodeDatum, SimulationLinkDatum } from 'd3'
 import deepEqual from "deep-equal"
-import FormData from 'form-data'
-import { createReadStream } from 'fs'
-import type { FileSystemHandle } from '@tldraw/tldraw'
+import { 
+  sendFork, 
+  sendSelect, 
+  saveToProcessing, 
+  getIconImageURLNoTime, 
+  getIconImageURL,
+  updateVersions, 
+  updateThumbnail,
+  updateCurrentVersion,
+  loadFileFromProcessing
+} from 'utils/quickPoseNetworking'
+
+import { 
+  EditorProps,
+  dataNode,
+  dataLink,
+  inputShape,
+  inputVersionNodeShape
+ } from 'utils/quickPoseTypes'
+
+ import {
+   graphBaseData,
+   linkRegex,
+  makeArrow,
+  nodeRegex,
+  tldrawCoordstod3,
+  updateBinding,
+  updateLinkShapes,
+  updateNodeShapes
+ } from 'utils/quickposeDrawing'
 
 //declare const window: Window & { app: TldrawApp }
 
 
 const D3_RADIUS = 5;
-const D3_LINK_DISTANCE = 20
-const TL_DRAW_RADIUS = 80;
+export const D3_LINK_DISTANCE = 20
+export const TL_DRAW_RADIUS = 80;
 const ALPHA_TARGET_REFRESH = .1
 const LOCALHOST_BASE = 'http://127.0.0.1:8080';
 const DOUBLE_CLICK_TIME = 500
-const d3TlScale = 5
-
-
-interface EditorProps {
-  id?: string
-  isUser?: boolean
-  isSponsor?: boolean
-}
-
-interface dataNode extends SimulationNodeDatum {
-  id: string;
-  x: number;
-  y: number;
-  r: number;
-}
-
-interface dataLink extends SimulationLinkDatum<SimulationNodeDatum> {
-  d: number
-}
-type inputShape = { id: string; name?: string; type: TDShapeType;} & Partial<TDShape>
-type inputVersionNodeShape = { id: string; name?: string; type: TDShapeType;} & Partial<VersionNodeShape>
-
-
-const requestCurrentId = async () => {
-  const response = await fetch(LOCALHOST_BASE+'/currentVersion');
-	const id = await response.json();
-}
-
-const sendFork = async (id) => {
-	const response = await fetch(LOCALHOST_BASE + '/fork/' + id)
-	return await response.json();
-	
-}
-const sendSelect = async (id) => {
-	const response = await fetch(LOCALHOST_BASE + '/select/' + id);
-}
-
-const saveToProcessing = async (document: TDDocument, fileHandle: FileSystemHandle | null) => {
-    console.log("saving file...")
-    const file: TDFile = {
-        name: 'quickpose.tldr',
-        fileHandle: fileHandle ?? null,
-        document,
-        assets: {},
-      }
-    // Serialize to JSON
-    const json = JSON.stringify(file, null, 2)
-    // Create blob
-    const blob = new Blob([json], {
-      type: 'application/vnd.Tldraw+json',
-    })
-    const formData = new FormData()
-    formData.append('uploaded_file', blob, {
-      filename: 'quickpose.tldr',
-      contentType: 'application/vnd.Tldraw+json'
-    })
-    //app.saveProject
-    axios.post(LOCALHOST_BASE+'/tldrfile', formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-        "Content-Disposition": "filename=quickpose.tldr.png"
-      }
-    })
-    .then(function (response) {
-      console.log(response);
-    })
-    .catch(function (error) {
-      console.log(error);
-    });
-    
-  
-    // Return true
-    return true
-
-}
-
-
-function d3toTldrawCoords(x,y): number[]{
-    return [ (x * d3TlScale) - TL_DRAW_RADIUS, (y * d3TlScale) - TL_DRAW_RADIUS]
-}
-function tldrawCoordstod3(x,y):number[] {
-  return [ (x + TL_DRAW_RADIUS) / d3TlScale, (y + TL_DRAW_RADIUS) / d3TlScale]
-}
-function getIconImageURLNoTime(id:string){
-	return 'http://127.0.0.1:8080' + "/image/" + id; //Add Time to avoid Caching so images update properly
-}
-
-function getIconImageURL(id:string){
-	return 'http://127.0.0.1:8080' + "/image/" + id + "?" + ((new Date()).getTime()); //Add Time to avoid Caching so images update properly
-}
-const updateBinding = (app:TldrawApp, link, startNode,endNode,drawLink) => {
-  const newStartBinding: ArrowBinding = {
-    id: 'link'+link.index+'start',
-    fromId: 'link'+link.index,
-    toId: startNode.id,
-    handleId: 'start',
-    distance: 16,
-    point: [.5,.5]
-  }
-  const newTargetBinding: ArrowBinding = {
-    id: 'link'+link.index+'end',
-    fromId: 'link'+link.index,
-    toId: endNode.id,
-    handleId: 'end',
-    distance: 16,
-    point: [.5,.5]
-  }
-  let startBinding = app.getBinding('link'+link.index+'start')
-  let endBinding = app.getBinding('link'+link.index+'end')
-
-  if(!startBinding){startBinding = newStartBinding}
-  if(!endBinding){endBinding = newTargetBinding}
-
-  drawLink.handles.start.bindingId = 'link'+link.index+'start'
-  drawLink.handles.end.bindingId = 'link'+link.index+'end'
-
-  app.page.bindings[startBinding.id] = startBinding
-  app.page.bindings[endBinding.id] = endBinding
-}
-
-const makeArrow = (parentId, style, link): ArrowShape => {
-  return shapeUtils.arrow.getShape({
-    hideFromSelection: true,
-    id: 'link'+link.index,
-    name: 'link'+link.index,
-    type: TDShapeType.Arrow,
-    parentId: parentId,
-    isLocked: false,
-    isGenerated: true,
-    point: [100,100],
-    style: { ...style },
-    handles: {
-      start: {
-        canBind: true,
-        bindingId: 'link'+link.index+'start',
-        id: "start",
-        index: 0,
-        point: [0, 0],
-      },
-      end: {
-        canBind: true,
-        bindingId: 'link'+link.index+'end',
-        index: 1,
-        id: "end",
-        point: [1, 1],
-      },
-      bend: {
-        id: "bend",
-        "index": 2,
-        point: [.5, .5],
-      }
-    }
-  })
-}
-
+export const d3TlScale = 5
 
 const Editor = ({
   id = 'home',
@@ -222,15 +95,11 @@ const Editor = ({
   const currentVersion = React.useRef<string>(null);
   const timeSinceLastSelection = React.useRef<number>(0);
   const graphData = React.useRef<any>();
+  const loadFile = React.useRef<TDFile>(null);
+  const loadedFile = React.useRef<boolean>(false);
 
-  const nodeRegex = new RegExp(/node\d/);
-  const linkRegex = new RegExp(/link\d/);
 
-  const graphtestdata = {
-    nodes: [],
-    links: []
-  };
-  graphData.current = graphtestdata
+  graphData.current = graphBaseData
   
   const simulation = React.useRef<d3.Simulation<SimulationNodeDatum,undefined>>();
 
@@ -241,102 +110,19 @@ const Editor = ({
   
     if(graphData.current && !(app === undefined) && simulation.current){
       graphData.current.nodes = [...simulation.current.nodes()]; //get simulation data out
-      const tlNodes = app.getShapes().filter(shape => nodeRegex.test(shape.id)) 
-      const updateNodes = []
-      const addNodes = graphData.current.nodes.map(function(node: dataNode){
-        const tlDrawNode = tlNodes.find(n => n.id === 'node'+node.id)
-       
-        if(!tlDrawNode){
-          const n = {
-          id: 'node'+node.id,
-          name: 'node'+node.id,
-          type: TDShapeType.VersionNode,
-          parentId: 'page',
-          style:{
-            isFilled:true,
-            color: "black"
-          },
-          point: d3toTldrawCoords(node.x,node.y),
-          radius: [TL_DRAW_RADIUS,TL_DRAW_RADIUS],
-          imgLink: getIconImageURLNoTime(node.id.toString())
-         } as inputVersionNodeShape
-         node.r = n.radius[0] / d3TlScale
-         console.log("input radius", node.r)
-         return n
-
-        }else if(tlDrawNode && tlDrawNode.type == TDShapeType.VersionNode){ 
-          const baseNode = {...tlDrawNode}
-          if(app.selectedIds.includes(tlDrawNode.id)){ //If we have a node selected, update the d3 sim instead
-            const d3Coords = tldrawCoordstod3(tlDrawNode.point[0],tlDrawNode.point[1])
-            node.x = d3Coords[0]
-            node.y = d3Coords[1]
-            node.r = tlDrawNode.radius[0] / d3TlScale
-          }
-          if(currentVersion.current && tlDrawNode.id.replace(/\D/g,"") === currentVersion.current){ //If our node is the current version
-            tlDrawNode.style.color = ColorStyle.Green
-            tlDrawNode.style.size = SizeStyle.Large
-          }else{
-            tlDrawNode.style.color = ColorStyle.Black
-            tlDrawNode.style.size = SizeStyle.Small
-          }
-          
-          let newCoords = tlDrawNode.point
-          if(node.id === '0'){
-            node.fx = tldrawCoordstod3(...app.centerPoint as [number,number])[0]
-            node.fy = tldrawCoordstod3(...app.centerPoint as [number,number])[1]
-            newCoords = app.centerPoint as [number,number]
-          }else{
-            newCoords = d3toTldrawCoords(node.x ,node.y)
-          }
-          if (Math.abs(newCoords[0] - tlDrawNode.point[0]) > .1 || Math.abs(newCoords[0] - tlDrawNode.point[0]) > .1){
-            tlDrawNode.point = d3toTldrawCoords(node.x ,node.y)
-          }
-          //dont know why this optimization isn't updating style changes :(
-          //if(!deepEqual(baseNode,tlDrawNode) || baseNode.style.color !== tlDrawNode.style.color){
-            updateNodes.push(tlDrawNode)
-          //}
-        }else{
-          return null
-        }
-      }).filter(entry => entry !== null && !(entry === undefined))
+      let tlNodes = app.getShapes().filter(shape => nodeRegex.test(shape.id)) 
+      const [addNodes,updateNodes] = updateNodeShapes(graphData,tlNodes,currentVersion,app.centerPoint,app.selectedIds)
       if(addNodes.length > 0){
         app.createShapes(...addNodes)
       }   
       if(updateNodes.length > 0){
         app.updateShapes(...updateNodes)
       }  
-
       simulation.current.nodes(graphData.current.nodes)
   
-      
-      //draw links
-      const updateLinks: TDShape[] = [];
       const tlLinks = app.getShapes().filter(shape => linkRegex.test(shape.id))
-      const newLinks = graphData.current.links.map(function(link: dataLink){
-        const tlDrawLink = tlLinks.find(l => l.id === 'link'+link.index)
-        const baseLink = {...tlDrawLink}
-        const sourceNode = link.source as dataNode
-        const targetNode = link.target as dataNode
-        const startNode: TDShape = tlNodes.find(n => n.id === 'node'+sourceNode.id)
-        const endNode: TDShape = tlNodes.find(n => n.id === 'node'+targetNode.id)
-
-        //D3_LINK_DISTANCE
-  
-        if(startNode && endNode){
-          if(!tlDrawLink){
-            const newArrow = makeArrow(app.currentPageId,app.appState.currentStyle ,link)
-            updateBinding(app, link, startNode,endNode,newArrow)
-            return newArrow
-          }else{
-            updateBinding(app, link, startNode,endNode,tlDrawLink)
-            if(!deepEqual(baseLink,tlDrawLink)){
-              updateLinks.push(tlDrawLink)
-            }
-          }
-          link.d = D3_LINK_DISTANCE + sourceNode.r + targetNode.r
-        }
-        return null
-      }).filter(entry => entry !== null && !(entry === undefined)) as TDShape[]
+      tlNodes = app.getShapes().filter(shape => nodeRegex.test(shape.id)) 
+      const [newLinks, updateLinks] = updateLinkShapes(app, tlLinks,graphData,tlNodes)
       if(updateLinks.length > 0){
         app.updateShapes(...updateLinks)
       }
@@ -354,7 +140,6 @@ const Editor = ({
     }
     })
   }
- 
       //https://codesandbox.io/s/tldraw-context-menu-wen03q
   const handlePatch = React.useCallback((app: TldrawApp, reason?: string) => {
 
@@ -447,6 +232,7 @@ const Editor = ({
     //   console.log("im local!")
     //   app = rTldrawApp.current!
     // }
+
     rTldrawApp.current = app
     const coords = tldrawCoordstod3(...app.centerPoint as [number,number])
     simulation.current = d3
@@ -496,83 +282,56 @@ const Editor = ({
             }
       } as inputShape
     )
+    
   }, [])
 
   React.useEffect(() => {
     //https://sparkjava.com/documentation#examples-and-faq
     //https://stackoverflow.com/questions/18206231/saving-and-reloading-a-force-layout-using-d3-js
-    // export default function LoadingFiles() {
-    //   const [file, setFile] = React.useState<TDFile>()
-    
-    //   React.useEffect(() => {
-    //     async function loadFile(): Promise<void> {
-    //       const file = await fetch('Example.tldr').then((response) => response.json())
-    //       setFile(file)
-    //     }
-    
-    //     loadFile()
-    //   }, [])
-    
-    //   return <Tldraw document={file?.document} />
-    // }
     const abortCurrentVersionController = new AbortController();
-    const timeout = 2000
-    //Update Current Version
-    const currentVersionInterval = () => {
-      axios.get(LOCALHOST_BASE+'/currentVersion', {
-        timeout: timeout,
-        signal: abortCurrentVersionController.signal
-      })
-      .then(response => {
-        if(response.data){
-          currentVersion.current = response.data.toString()
-          //console.log("currentVersion is  "+ currentVersion.current)
-        }
-      })
-      .catch(error => {
-        //console.error("error fetching: ", error);
-      })
-    }
-    
-    
+    const abortFileController = new AbortController();
     const abortVersionsController = new AbortController();
-    const networkInterval = () => {
-        console.log("requesting data...")
-        const app = rTldrawApp.current!
+    const timeout = 2000
 
-        //Update Thumbnail Image
-        if(!(app === undefined) && selectedNode.current){
-          //BUG = have to do this more slowly, or else firefox will get angry
-          //cant change url before last image has loaded - thats why its in the slower interval
-          const selectedShape = app.getShape(selectedNode.current)
-          if(!(selectedShape === undefined) && selectedShape.type == TDShapeType.VersionNode){
-            const idInteger = selectedShape.id.replace(/\D/g,"")
-            selectedShape.imgLink = getIconImageURL(idInteger)//refresh the thumbnail image
+    const networkInterval = () => {
+      console.log("requesting data...")
+      const app = rTldrawApp.current!
+      if(!(app === undefined)){
+        
+        //load/save file
+        if(loadedFile.current === false){
+          switch(loadFile.current){
+            case null:{
+              loadFileFromProcessing(loadFile,abortFileController)
+              break;
+            }
+            case undefined:{
+              loadedFile.current = true
+              //make new file, do intro experience?
+              break;
+            }
+            default:{
+              app.loadDocument(loadFile.current.document)
+              loadedFile.current = true
+              break;
+            }
           }
+        }else{
           if(!(app.document === undefined)){
             saveToProcessing(app.document,null)
           }
         }
-        
-        
-        //Update Versions
-        axios.get(LOCALHOST_BASE+'/versions.json', {
-          timeout: 100,
-          signal: abortVersionsController.signal
-        })
-        .then(response => {
-          if(!deepEqual(response.data,netData.current)){
-            newData.current = true;
-            netData.current = response.data
-            //console.log("newdata",response.data)
-            dataInterval()
-          }else{
-            //console.log("samedata",response.data)
-          }
-        })
-        .catch(error => {
-          //console.error("error fetching: ", error);
-        })
+        //BUG = have to do this more slowly, or else firefox will get angry
+        //cant change url before last image has loaded - thats why its in the slower interval
+        updateThumbnail(selectedNode, rTldrawApp)
+
+        updateVersions(netData,newData,abortVersionsController)
+      }
+    }
+
+     //Update Current Version — (we want to do this very fast)
+     const currentVersionInterval = () => {
+      updateCurrentVersion(currentVersion, timeout, abortCurrentVersionController)
     }
 
     //check for new data, if so, update graph data
@@ -589,7 +348,6 @@ const Editor = ({
       const app = rTldrawApp.current!
       if(simulation.current && !(app === undefined)){
         //update loading sticky
-        if(graphData.current == graphtestdata){
           const app = rTldrawApp.current!
           if(app.getShape('loading')){
               const loadingDot = "."
@@ -598,7 +356,7 @@ const Editor = ({
                 text: " Quickpose is looking for a Processing Session" + loadingDot.repeat(i%6),
               })
             }
-          }
+      }
         
         //https://medium.com/ninjaconcept/interactive-dynamic-force-directed-graphs-with-d3-da720c6d7811
         if((newData.current === true) && netData.current && graphData.current){ //if we have new data come in
@@ -641,7 +399,6 @@ const Editor = ({
           }
         }
         i++
-      }
     }
 
     //get data from processing
