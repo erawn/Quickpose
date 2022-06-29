@@ -59,19 +59,20 @@ export const saveToProcessing = async (document: TDDocument, fileHandle: FileSys
     return true
 }
 export const loadFileFromProcessing = async(loadFile,abortFileController) => {
-    axios.get(LOCALHOST_BASE+'/quickpose.tldr', {
+    axios.get(LOCALHOST_BASE+'/tldrfile', {
       timeout: 100,
       signal: abortFileController.signal
     })
     .then(response => {
       if(response.status === 200){
         loadFile.current = response.data
+        console.log("loaded file",response.data)
       }else{
         loadFile.current = undefined //this is the signal that we attempted to load a file, but it was missing
       }
     })
     .catch(error => {
-      //console.error("error fetching: ", error);
+      console.error("error fetching: ", error);
     })
   }
 
