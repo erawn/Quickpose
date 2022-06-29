@@ -1,11 +1,58 @@
 import { ArrowBinding, ArrowShape, ColorStyle, shapeUtils, SizeStyle, TDShape, TDShapeType, TldrawApp } from "@tldraw/tldraw"
-import { dataLink, dataNode, inputVersionNodeShape } from "./quickPoseTypes"
+import { dataLink, dataNode, inputShape, inputVersionNodeShape } from "./quickPoseTypes"
 import deepEqual from "deep-equal";
 import { d3TlScale, D3_LINK_DISTANCE, TL_DRAW_RADIUS } from "components/Editor";
 import { getIconImageURLNoTime } from "./quickPoseNetworking"
+import * as d3 from 'd3'
 
 export const nodeRegex = new RegExp(/node\d/);
 export const linkRegex = new RegExp(/link\d/);
+
+export const d3Sim = (centerPoint) => {
+    const coords = tldrawCoordstod3(...centerPoint as [number,number])
+    return d3.forceSimulation()
+    .force("center", d3.forceCenter(coords[0],coords[1]))
+    .force('charge', d3.forceManyBody().strength(-100))
+    .force('collision', d3.forceCollide().radius(function(d: dataNode) {return d.r + 20} ))
+    .force("link", d3.forceLink()
+      .id(function(d: dataNode,i) {
+        return d.id
+      })
+      .distance(function(l:dataLink){
+        if(l.d !== undefined){
+          return l.d
+        }else{
+          return 20
+        }
+      })
+      .strength(1)
+    ).alpha(3)
+    .alphaDecay(.01)
+}
+
+export const defaultSticky = (centerPoint) => {
+    return {
+    id: 'loading',
+    type: TDShapeType.Sticky,
+    name: 'loading',
+    childIndex: 1,
+    point: centerPoint,
+    size: [400, 400],
+    isLocked: false,
+    isGenerated: true,
+    text: " Quickpose is looking for a Processing Session....",
+    rotation: 0,
+        "style": {
+          "color": "black",
+          "size": "large",
+          "isFilled": false,
+          "dash": "draw",
+          "scale": 1,
+          "font": "script",
+          "textAlign": "middle"
+        }
+  } as inputShape
+}
 
 export const graphBaseData = {
     nodes: [],
@@ -177,5 +224,3 @@ export const updateBinding = (app:TldrawApp, link, startNode,endNode,drawLink) =
 
     return [addNodes,updateNodes]
   }
-
-

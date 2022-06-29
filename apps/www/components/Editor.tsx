@@ -58,6 +58,9 @@ import {
  } from 'utils/quickPoseTypes'
 
  import {
+   d3Sim,
+   defaultSticky,
+   drawInterval,
    graphBaseData,
    linkRegex,
   makeArrow,
@@ -87,22 +90,27 @@ const Editor = ({
 }: EditorProps & Partial<TldrawProps>) => {
   
   const rTldrawApp = React.useRef<TldrawApp>()
-  const netData = React.useRef<any>();
-  const newData = React.useRef<boolean>(false);
+
+  //selection/dragging
   const rIsDragging = React.useRef(false);
   const selectedNode = React.useRef<string>(null);
   const lastSelection = React.useRef<string>(null);
   const currentVersion = React.useRef<string>(null);
   const timeSinceLastSelection = React.useRef<number>(0);
-  const graphData = React.useRef<any>();
+
+  //file loading
   const loadFile = React.useRef<TDFile>(null);
   const loadedFile = React.useRef<boolean>(false);
 
-
-  graphData.current = graphBaseData
-  
+  //d3 sim
   const simulation = React.useRef<d3.Simulation<SimulationNodeDatum,undefined>>();
 
+  //data structs
+  const netData = React.useRef<any>();
+  const newData = React.useRef<boolean>(false);
+  const graphData = React.useRef<any>();
+  graphData.current = graphBaseData
+  
   const drawInterval = () => {
 
     requestAnimationFrame(()=>{
@@ -140,10 +148,12 @@ const Editor = ({
     }
     })
   }
+
+
+ 
       //https://codesandbox.io/s/tldraw-context-menu-wen03q
   const handlePatch = React.useCallback((app: TldrawApp, reason?: string) => {
 
-    
     console.log(reason)
     drawInterval()
     switch (reason) {
@@ -234,53 +244,12 @@ const Editor = ({
     // }
 
     rTldrawApp.current = app
-    const coords = tldrawCoordstod3(...app.centerPoint as [number,number])
-    simulation.current = d3
-    .forceSimulation()
-    .force("center", d3.forceCenter(coords[0],coords[1]))
-    .force('charge', d3.forceManyBody().strength(-100))
-    .force('collision', d3.forceCollide().radius(function(d: dataNode) {return d.r + 20} ))
-    .force("link", d3.forceLink()
-      .id(function(d: dataNode,i) {
-        return d.id
-      })
-      .distance(function(l:dataLink){
-        if(l.d !== undefined){
-          return l.d
-        }else{
-          return 20
-        }
-      })
-      .strength(1)
-    ).alpha(3)
-    .alphaDecay(.01)
-    
+    simulation.current = d3Sim(app.centerPoint)
 
-    
     //app.camera.zoom =
     app.deleteAll()
     app.createShapes( 
-      {
-        id: 'loading',
-        type: TDShapeType.Sticky,
-        name: 'loading',
-        childIndex: 1,
-        point: app.centerPoint,
-        size: [400, 400],
-        isLocked: false,
-        isGenerated: true,
-        text: " Quickpose is looking for a Processing Session....",
-        rotation: 0,
-            "style": {
-              "color": "black",
-              "size": "large",
-              "isFilled": false,
-              "dash": "draw",
-              "scale": 1,
-              "font": "script",
-              "textAlign": "middle"
-            }
-      } as inputShape
+      defaultSticky(app.centerPoint)
     )
     
   }, [])
