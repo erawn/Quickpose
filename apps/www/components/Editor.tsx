@@ -96,6 +96,7 @@ const Editor = ({
   //file loading
   const loadFile = React.useRef<TDFile>(null)
   const loadedFile = React.useRef<boolean>(false)
+  const loadedData = React.useRef<boolean>(false)
 
   //d3 sim
   const simulation = React.useRef<d3.Simulation<SimulationNodeDatum, undefined>>()
@@ -105,12 +106,17 @@ const Editor = ({
   const newData = React.useRef<boolean>(false)
   const graphData = React.useRef<any>()
   graphData.current = graphBaseData
+  const refreshSim = () => {
+    simulation.current.alpha(ALPHA_TARGET_REFRESH)
+    simulation.current.restart()
+  }
 
   const drawInterval = () => {
+    //console.log('drawInterval')
     requestAnimationFrame(() => {
       const app = rTldrawApp.current!
 
-      if (graphData.current && !(app === undefined) && simulation.current) {
+      if (loadedFile.current === true && graphData.current && !(app === undefined) && simulation.current) {
         graphData.current.nodes = [...simulation.current.nodes()] //get simulation data out
         let tlNodes = app.getShapes().filter((shape) => nodeRegex.test(shape.id))
         const [addNodes, updateNodes] = updateNodeShapes(
@@ -180,28 +186,47 @@ const Editor = ({
     const timeout = 2000
 
     const networkInterval = () => {
-      console.log('requesting data...')
+      console.log('network Interval')
       const app = rTldrawApp.current!
       if (!(app === undefined)) {
         //load/save file
         if (loadedFile.current === false) {
-          switch (loadFile.current) {
-            case null: {
-              loadFileFromProcessing(loadFile, abortFileController)
-              break
+          console.log('requesting file...')
+          if(loadFile.current === null){
+            loadFileFromProcessing(loadFile,netData,newData, abortFileController)
+            if (app.getShape('loading')) {
+              const loadingDot = '.'
+              app.updateShapes({
+                id: 'loading',
+                text: ' Quickpose is looking for a Processing Session' + loadingDot.repeat(i % 6),
+              })
             }
-            case undefined: {
-              loadedFile.current = true
-              //make new file, do intro experience?
-              break
+          }else if(loadFile.current === undefined){
+            loadedFile.current = true
+            console.log('no file found!')
+            //make new file, do intro experience?
+          }else if(loadFile.current && simulation.current){ //we have a file and data
+            const shapes = loadFile.current.document
+            //app.updateDocument
+            //app.updateShapes(...loadFile.current.document.pages.page.shapes)
+            console.log("prev doc", app.document)
+            //app.updateDocument(loadFile.current.document)
+            console.log("post doc", app.document)
+            //app.loadDocument(loadFile.current.document) //load the document
+            //app.
+            // graphData.current.nodes = [...netData.current[0]] //load the data
+            // graphData.current.links = [...netData.current[1]]
+            // simulation.current.nodes(graphData.current.nodes) //put the data into the sim
+            // const forceLink = simulation.current.force('link') as d3.ForceLink<d3.SimulationNodeDatum,d3.SimulationLinkDatum<d3.SimulationNodeDatum>>
+            // forceLink.links(graphData.current.links)
+            if (app.getShape('loading')) {//remove loading sticky
+              app.delete(['loading']) 
             }
-            default: {
-              app.loadDocument(loadFile.current.document)
-              loadedFile.current = true
-              break
-            }
+            console.log("loaded file",loadFile.current.document)
+            loadedFile.current = true
           }
-        } else {
+        }else { //default update loop
+          console.log('saving/updating...')
           if (!(app.document === undefined)) {
             saveToProcessing(app.document, null)
           }
@@ -216,12 +241,14 @@ const Editor = ({
 
     //Update Current Version — (we want to do this very fast)
     const currentVersionInterval = () => {
+      console.log('update current version interval')
       updateCurrentVersion(currentVersion, timeout, abortCurrentVersionController)
     }
 
     //check for new data, if so, update graph data
     let i = 0 //Counter for sticky loading dots
     const dataInterval = () => {
+      console.log('dataInterval')
       // if(process.env["NEXT_PUBLIC_VERCEL_EN"] == '1'){
       //   console.log("im in vercel!")
       //   app = window.app
@@ -229,25 +256,14 @@ const Editor = ({
       //   console.log("im local!")
       //   app = rTldrawApp.current!
       // }
-      const app = rTldrawApp.current!
-      if (simulation.current && !(app === undefined)) {
-        //update loading sticky
-        const app = rTldrawApp.current!
-        if (app.getShape('loading')) {
-          const loadingDot = '.'
-          app.updateShapes({
-            id: 'loading',
-            text: ' Quickpose is looking for a Processing Session' + loadingDot.repeat(i % 6),
-          })
-        }
-      }
 
       //https://medium.com/ninjaconcept/interactive-dynamic-force-directed-graphs-with-d3-da720c6d7811
       if (newData.current === true && netData.current && graphData.current) {
         //if we have new data come in
 
-        let changed = false
+        let changed = true
         newData.current = false
+
         //and we have our datasources ready
         //add new links and nodes from netData into graphData
         //only --adding-- nodes and links, so we can just append new incoming data to graphData
@@ -279,6 +295,7 @@ const Editor = ({
           }
         })
         if (changed) {
+          
           simulation.current.nodes(graphData.current.nodes)
           const forceLink = simulation.current.force('link') as d3.ForceLink<
             d3.SimulationNodeDatum,
@@ -287,10 +304,7 @@ const Editor = ({
           forceLink.links(graphData.current.links)
           console.log('netdata', netData.current)
           console.log('graphData', graphData.current)
-          if (app.getShape('loading')) {
-            app.delete(['loading']) //remove loading sticky
-          }
-          drawInterval()
+          console.log("dataInterval Update")
         }
       }
       i++
