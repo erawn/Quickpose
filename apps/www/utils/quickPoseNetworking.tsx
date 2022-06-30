@@ -24,7 +24,6 @@ export function getIconImageURL(id:string){
 }
 
 export const saveToProcessing = async (document: TDDocument, fileHandle: FileSystemHandle | null) => {
-    console.log("saving file...")
     const file: TDFile = {
         name: 'quickpose.tldr',
         fileHandle: fileHandle ?? null,
@@ -58,22 +57,37 @@ export const saveToProcessing = async (document: TDDocument, fileHandle: FileSys
     
     return true
 }
-export const loadFileFromProcessing = async(loadFile,abortFileController) => {
-    axios.get(LOCALHOST_BASE+'/tldrfile', {
+export const loadFileFromProcessing = async(loadFile, netData, newData, abortFileController) => {
+
+    const getFile = axios.get(LOCALHOST_BASE+'/tldrfile', {
       timeout: 100,
       signal: abortFileController.signal
     })
-    .then(response => {
-      if(response.status === 200){
-        loadFile.current = response.data
-        console.log("loaded file",response.data)
-      }else{
-        loadFile.current = undefined //this is the signal that we attempted to load a file, but it was missing
-      }
-    })
-    .catch(error => {
-      console.error("error fetching: ", error);
-    })
+
+    const getData = axios.get(LOCALHOST_BASE+'/versions.json', {
+        timeout: 100,
+        signal: abortFileController.signal
+      })
+
+    axios.all([getFile,getData]).then(axios.spread((...responses) => {
+
+        const file = responses[0]
+        const data = responses[1]
+        if(file.status === 200 && data.data){
+            loadFile.current = file.data
+            newData.current = true;
+            netData.current = data.data
+        }else if(file.status === 201){
+            loadFile.current = undefined //this is the signal that we attempted to load a file, but it was missing
+        }
+
+        // use/access the results 
+      
+      })).catch(errors => {
+      
+        // react on errors.
+      
+      })
   }
 
 export const updateVersions = async (netData, newData, abortVersionsController:AbortController) => {
