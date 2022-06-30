@@ -4,6 +4,7 @@ import deepEqual from "deep-equal";
 import { ALPHA_TARGET_REFRESH, d3TlScale, D3_LINK_DISTANCE, TL_DRAW_RADIUS } from "components/Editor";
 import { getIconImageURLNoTime } from "./quickPoseNetworking"
 import * as d3 from 'd3'
+import { MutableRefObject } from "react";
 
 export const nodeRegex = new RegExp(/node\d/);
 export const linkRegex = new RegExp(/link\d/);
@@ -29,10 +30,6 @@ export const d3Sim = (centerPoint) => {
     ).alpha(3)
     .alphaDecay(.01)
 }
-export const refreshSim = (simulation) => {
-    simulation.current.alpha(ALPHA_TARGET_REFRESH)
-    simulation.current.restart()
-  }
 
 export const defaultSticky = (centerPoint) => {
     return {
@@ -175,7 +172,6 @@ export const updateBinding = (app:TldrawApp, link, startNode,endNode,drawLink) =
             id: 'node'+node.id,
             name: 'node'+node.id,
             type: TDShapeType.VersionNode,
-            parentId: 'page',
             style:{
                 size: "small",
                 dash: "draw",
@@ -193,29 +189,29 @@ export const updateBinding = (app:TldrawApp, link, startNode,endNode,drawLink) =
     }else if(tlDrawNode && tlDrawNode.type == TDShapeType.VersionNode){ 
         const baseNode = {...tlDrawNode}
         if(selectedIds.includes(tlDrawNode.id)){ //If we have a node selected, update the d3 sim instead
-        const d3Coords = tldrawCoordstod3(tlDrawNode.point[0],tlDrawNode.point[1])
-        node.x = d3Coords[0]
-        node.y = d3Coords[1]
-        node.r = tlDrawNode.radius[0] / d3TlScale
+            const d3Coords = tldrawCoordstod3(tlDrawNode.point[0],tlDrawNode.point[1])
+            node.x = d3Coords[0]
+            node.y = d3Coords[1]
+            node.r = tlDrawNode.radius[0] / d3TlScale
         }
         if(currentVersion.current && tlDrawNode.id.replace(/\D/g,"") === currentVersion.current){ //If our node is the current version
-        tlDrawNode.style.color = ColorStyle.Green
-        tlDrawNode.style.size = SizeStyle.Large
+            tlDrawNode.style.color = ColorStyle.Green
+            tlDrawNode.style.size = SizeStyle.Large
         }else{
-        tlDrawNode.style.color = ColorStyle.Black
-        tlDrawNode.style.size = SizeStyle.Small
+            tlDrawNode.style.color = ColorStyle.Black
+            tlDrawNode.style.size = SizeStyle.Small
         }
         
         let newCoords = tlDrawNode.point
         if(node.id === '0'){
-        node.fx = tldrawCoordstod3(...centerPoint as [number,number])[0]
-        node.fy = tldrawCoordstod3(...centerPoint as [number,number])[1]
-        newCoords = centerPoint as [number,number]
+            node.fx = tldrawCoordstod3(...centerPoint as [number,number])[0]
+            node.fy = tldrawCoordstod3(...centerPoint as [number,number])[1]
+            newCoords = centerPoint as [number,number]
         }else{
-        newCoords = d3toTldrawCoords(node.x ,node.y)
+            newCoords = d3toTldrawCoords(node.x ,node.y)
         }
         if (Math.abs(newCoords[0] - tlDrawNode.point[0]) > .1 || Math.abs(newCoords[0] - tlDrawNode.point[0]) > .1){
-        tlDrawNode.point = d3toTldrawCoords(node.x ,node.y)
+            tlDrawNode.point = d3toTldrawCoords(node.x ,node.y)
         }
         //dont know why this optimization isn't updating style changes :(
         //if(!deepEqual(baseNode,tlDrawNode) || baseNode.style.color !== tlDrawNode.style.color){
