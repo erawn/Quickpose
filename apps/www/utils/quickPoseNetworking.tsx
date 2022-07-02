@@ -2,7 +2,7 @@ import { TDDocument, TDFile, TDShapeType, TldrawApp } from "@tldraw/tldraw";
 import FormData from 'form-data'
 import type { FileSystemHandle } from '@tldraw/tldraw'
 
-import axiosRetry from 'axios-retry';
+import axiosRetry, { exponentialDelay } from 'axios-retry';
 import RaxConfig from "axios-retry";
 import deepEqual from "deep-equal";
 import { useCallback } from "react";
@@ -99,6 +99,7 @@ export const loadFileFromProcessing = async(loadFile, netData, newData, abortFil
 
 export const updateVersions = async (netData, newData, abortVersionsController:AbortController) => {
     //Update Versions
+    
     axios.get(LOCALHOST_BASE+'/versions.json', {
       timeout: 100,
       signal: abortVersionsController.signal
@@ -132,20 +133,33 @@ export const updateThumbnail = (selectedNode, rTldrawApp) => {
   }
 
   export const updateCurrentVersion = async (currentVersion, timeout,abortCurrentVersionController) => {
-    await axios.get(LOCALHOST_BASE+'/currentVersion', {
+    const client = axios.create()
+        axiosRetry(client, { 
+          retries: 10,
+          shouldResetTimeout: true,
+          retryDelay(retryCount, error) {
+              return 10*retryCount
+          },
+          onRetry(retryCount, error, requestConfig) {
+              console.log("retrying upload",retryCount)
+          },
+         });
+    await client.get(LOCALHOST_BASE+'/currentVersion', {
         timeout: timeout,
-        signal: abortCurrentVersionController.signal
+        //signal: abortCurrentVersionController.signal
       })
       .then(response => {
         if(response.data){
           currentVersion.current = response.data.toString()
           return true
           //console.log("currentVersion is  "+ currentVersion.current)
+        }else{
+          return false
         }
       })
       .catch(error => {
-        return false
-        console.error("error fetching current version: ", error);
+        //console.warn("error fetching current version: ", error);
+        return null
       })
   }
 

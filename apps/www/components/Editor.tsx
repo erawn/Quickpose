@@ -260,14 +260,8 @@ const Editor = ({
     //Update Current Version — (we want to do this very fast)
     const currentVersionInterval = () => {
       //console.log('update current version interval')
-      const res = updateCurrentVersion(currentVersion, timeout, abortCurrentVersionController)
-      if(res){
-        //console.log("current version found")
-        setTimeout(currentVersionInterval, 100);
-      }else{
-        console.log("current version not found")
-        setTimeout(currentVersionInterval, 2000);
-      }
+      updateCurrentVersion(currentVersion, timeout, abortCurrentVersionController)
+      setTimeout(currentVersionInterval, 3000);
     }
 
     //check for new data, if so, update graph data
