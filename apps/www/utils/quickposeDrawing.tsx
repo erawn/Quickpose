@@ -1,4 +1,4 @@
-import { ArrowBinding, ArrowShape, ColorStyle, shapeUtils, SizeStyle, TDShape, TDShapeType, TldrawApp } from "@tldraw/tldraw"
+import { ArrowBinding, ArrowShape, ColorStyle, DashStyle, shapeUtils, SizeStyle, TDShape, TDShapeType, TldrawApp, VersionNodeShape } from "@tldraw/tldraw"
 import { dataLink, dataNode, inputShape, inputVersionNodeShape } from "./quickPoseTypes"
 import deepEqual from "deep-equal";
 import { ALPHA_TARGET_REFRESH, d3TlScale, D3_LINK_DISTANCE, TL_DRAW_RADIUS } from "components/Editor";
@@ -68,7 +68,7 @@ export function tldrawCoordstod3(x,y):number[] {
     return [ (x + TL_DRAW_RADIUS) / d3TlScale, (y + TL_DRAW_RADIUS) / d3TlScale]
   }
 
-export const makeArrow = (parentId, style, link): ArrowShape => {
+export const makeArrow = (parentId, link): ArrowShape => {
     return shapeUtils.arrow.getShape({
       hideFromSelection: true,
       id: 'link'+link.index,
@@ -78,7 +78,12 @@ export const makeArrow = (parentId, style, link): ArrowShape => {
       isLocked: false,
       isGenerated: true,
       point: [100,100],
-      style: { ...style },
+      style:{
+        size: SizeStyle.Small,
+        dash: DashStyle.Dotted,
+        isFilled:true,
+        color: ColorStyle.Indigo
+      },
       handles: {
         start: {
           canBind: true,
@@ -146,7 +151,7 @@ export const updateBinding = (app:TldrawApp, link, startNode,endNode,drawLink) =
 
       if(startNode && endNode){
         if(!tlDrawLink){
-          const newArrow = makeArrow(app.currentPageId,app.appState.currentStyle,link)
+          const newArrow = makeArrow(app.currentPageId,link)
           updateBinding(app, link, startNode,endNode,newArrow)
           return newArrow
         }else{
@@ -165,7 +170,7 @@ export const updateBinding = (app:TldrawApp, link, startNode,endNode,drawLink) =
   export const updateNodeShapes = (graphData, tlNodes,currentVersion,centerPoint,selectedIds) => {
     const updateNodes = []
     const addNodes = graphData.current.nodes.map(function(node: dataNode){
-    const tlDrawNode = tlNodes.find(n => n.id === 'node'+node.id)
+    const tlDrawNode:VersionNodeShape = tlNodes.find(n => n.id === 'node'+node.id)
     
     if(!tlDrawNode){
         const n = {
@@ -206,7 +211,10 @@ export const updateBinding = (app:TldrawApp, link, startNode,endNode,drawLink) =
         if(node.id === '0'){
             node.fx = tldrawCoordstod3(...centerPoint as [number,number])[0]
             node.fy = tldrawCoordstod3(...centerPoint as [number,number])[1]
+            node.x = tldrawCoordstod3(...centerPoint as [number,number])[0]
+            node.y = tldrawCoordstod3(...centerPoint as [number,number])[1]
             newCoords = centerPoint as [number,number]
+            tlDrawNode.point = d3toTldrawCoords(node.x ,node.y)
         }else{
             newCoords = d3toTldrawCoords(node.x ,node.y)
         }
