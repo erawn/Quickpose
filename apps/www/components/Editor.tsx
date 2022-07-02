@@ -30,7 +30,7 @@ import {
   TLBinding
 } from '@tldraw/core'
 import { useAccountHandlers } from 'hooks/useAccountHandlers'
-import { useUploadAssets } from 'hooks/useUploadAssets'
+//import { useUploadAssets } from 'hooks/useUploadAssets'
 import React from 'react'
 import * as gtag from 'utils/gtag'
 import axios from 'axios'
@@ -46,7 +46,8 @@ import {
   updateVersions, 
   updateThumbnail,
   updateCurrentVersion,
-  loadFileFromProcessing
+  loadFileFromProcessing,
+  useUploadAssets
 } from 'utils/quickPoseNetworking'
 
 import { 
@@ -206,19 +207,19 @@ const Editor = ({
             console.log('no file found!')
             //make new file, do intro experience?
           }else if(loadFile.current && simulation.current){ //we have a file and data
-            const shapes = loadFile.current.document
-            //app.updateDocument
-            //app.updateShapes(...loadFile.current.document.pages.page.shapes)
-            console.log("prev doc", app.document)
-            //app.updateDocument(loadFile.current.document)
-            console.log("post doc", app.document)
-            //app.loadDocument(loadFile.current.document) //load the document
-            //app.
-            // graphData.current.nodes = [...netData.current[0]] //load the data
-            // graphData.current.links = [...netData.current[1]]
-            // simulation.current.nodes(graphData.current.nodes) //put the data into the sim
-            // const forceLink = simulation.current.force('link') as d3.ForceLink<d3.SimulationNodeDatum,d3.SimulationLinkDatum<d3.SimulationNodeDatum>>
-            // forceLink.links(graphData.current.links)
+            //https://stackoverflow.com/questions/18206231/saving-and-reloading-a-force-layout-using-d3-js
+            //Load the data
+            const loadedData = JSON.parse(loadFile.current.assets["simData"].toString())
+            graphData.current = loadedData
+            simulation.current.nodes(graphData.current.nodes)
+            const forceLink = simulation.current.force('link') as d3.ForceLink<
+              d3.SimulationNodeDatum,
+              d3.SimulationLinkDatum<d3.SimulationNodeDatum>
+            >
+            forceLink.links(graphData.current.links)
+            simulation.current.alpha(parseInt(loadFile.current.assets["alpha"].toString()))
+            app.loadDocument(loadFile.current.document)
+
             if (app.getShape('loading')) {//remove loading sticky
               app.delete(['loading']) 
             }
@@ -228,7 +229,7 @@ const Editor = ({
         }else { //default update loop
           console.log('saving/updating...')
           if (!(app.document === undefined)) {
-            saveToProcessing(app.document, null)
+            saveToProcessing(app.document, JSON.stringify(graphData.current), simulation.current.alpha(),null)
           }
           //BUG = have to do this more slowly, or else firefox will get angry
           //cant change url before last image has loaded - thats why its in the slower interval
@@ -241,7 +242,7 @@ const Editor = ({
 
     //Update Current Version — (we want to do this very fast)
     const currentVersionInterval = () => {
-      console.log('update current version interval')
+      //console.log('update current version interval')
       updateCurrentVersion(currentVersion, timeout, abortCurrentVersionController)
     }
 
@@ -331,7 +332,7 @@ const Editor = ({
 
   //https://codesandbox.io/s/tldraw-context-menu-wen03q
   const handlePatch = React.useCallback((app: TldrawApp, reason?: string) => {
-    console.log(reason)
+    //console.log(reason)
     drawInterval()
     switch (reason) {
       case 'set_status:translating': {
@@ -429,10 +430,12 @@ const Editor = ({
       <Tldraw
         id={id}
         autofocus
+        showPages={false}
         onMount={handleMount}
         onPatch={handlePatch}
         onPersist={handlePersist}
         onAssetUpload={onAssetUpload}
+        onAssetCreate={onAssetUpload}
         {...fileSystemEvents}
         {...rest}
       />

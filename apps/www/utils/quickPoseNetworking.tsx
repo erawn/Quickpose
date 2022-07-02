@@ -1,34 +1,37 @@
-import { TDDocument, TDFile, TDShapeType } from "@tldraw/tldraw";
+import { TDDocument, TDFile, TDShapeType, TldrawApp } from "@tldraw/tldraw";
 import FormData from 'form-data'
 import type { FileSystemHandle } from '@tldraw/tldraw'
 import axios from 'axios'
 import deepEqual from "deep-equal";
+import { useCallback } from "react";
 
 const LOCALHOST_BASE = 'http://127.0.0.1:8080';
 
 
 export const sendFork = async (id) => {
-	const response = await fetch(LOCALHOST_BASE + '/fork/' + id)
-	return await response.json();
-	
+    const response = await fetch(LOCALHOST_BASE + '/fork/' + id)
+    return await response.json();
+    
 }
 export const sendSelect = async (id) => {
-	const response = await fetch(LOCALHOST_BASE + '/select/' + id);
+    const response = await fetch(LOCALHOST_BASE + '/select/' + id);
 }
 export function getIconImageURLNoTime(id:string){
-	return LOCALHOST_BASE + "/image/" + id; //Add Time to avoid Caching so images update properly
+    return LOCALHOST_BASE + "/image/" + id; //Add Time to avoid Caching so images update properly
 }
 
 export function getIconImageURL(id:string){
-	return LOCALHOST_BASE + "/image/" + id + "?" + ((new Date()).getTime()); //Add Time to avoid Caching so images update properly
+    return LOCALHOST_BASE + "/image/" + id + "?" + ((new Date()).getTime()); //Add Time to avoid Caching so images update properly
 }
 
-export const saveToProcessing = async (document: TDDocument, fileHandle: FileSystemHandle | null) => {
+export const saveToProcessing = async (document: TDDocument, simData: string, alpha, fileHandle: FileSystemHandle | null) => {
     const file: TDFile = {
         name: 'quickpose.tldr',
         fileHandle: fileHandle ?? null,
         document,
-        assets: {},
+        assets: {"simData":simData,
+                "alpha":alpha.toString()
+                },
       }
     // Serialize to JSON
     const json = JSON.stringify(file, null, 2)
@@ -138,4 +141,45 @@ export const updateThumbnail = (selectedNode, rTldrawApp) => {
       .catch(error => {
         //console.error("error fetching: ", error);
       })
+  }
+
+  export function useUploadAssets() {
+    const onAssetUpload = useCallback(
+      // Send the asset to our upload endpoint, which in turn will send it to AWS and
+      // respond with the URL of the uploaded file.
+  
+      async (app: TldrawApp, file: File, id: string): Promise<string | false> => {
+        const filename = encodeURIComponent(file.name)
+  
+        const fileType = encodeURIComponent(file.type)
+  
+        const url = LOCALHOST_BASE+"/assets/"+filename
+        console.log("making url",url)
+        
+        const formData = new FormData()
+            formData.append('uploaded_file', file, file.name)//dont change 'uploaded_file' - processing side is looking for this label
+  
+        const upload = axios.put(url, formData, {
+            headers: {
+              'Content-Type': 'multipart/form-data'
+              
+            }
+          })
+          .then(function (response) {
+            console.log("uploaded file",url)
+            return url
+          })
+          .catch(function (error) {
+            console.error("error uploading image: ", error);
+            return false
+          });
+
+          if (!upload) return false
+
+          return url
+      },
+      []
+    )
+  
+    return { onAssetUpload }
   }
