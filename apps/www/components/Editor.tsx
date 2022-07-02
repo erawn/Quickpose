@@ -102,6 +102,7 @@ const Editor = ({
   //d3 sim
   const simulation = React.useRef<d3.Simulation<SimulationNodeDatum, undefined>>()
 
+  
   //data structs
   const netData = React.useRef<any>()
   const newData = React.useRef<boolean>(false)
@@ -113,11 +114,12 @@ const Editor = ({
   }
 
   const drawInterval = () => {
-    //console.log('drawInterval')
+   
     requestAnimationFrame(() => {
       const app = rTldrawApp.current!
 
       if (loadedFile.current === true && graphData.current && !(app === undefined) && simulation.current) {
+        console.log('drawInterval')
         graphData.current.nodes = [...simulation.current.nodes()] //get simulation data out
         let tlNodes = app.getShapes().filter((shape) => nodeRegex.test(shape.id))
         const [addNodes, updateNodes] = updateNodeShapes(
@@ -170,12 +172,18 @@ const Editor = ({
     //   app = rTldrawApp.current!
     // }
 
+    console.log('requesting startup file...')
+    const abortFileController = new AbortController()
+    loadFileFromProcessing(loadFile,netData,newData,abortFileController)
+
     rTldrawApp.current = app
     simulation.current = d3Sim(app.centerPoint)
 
     //app.camera.zoom =
-    app.deleteAll() //replace this with make new document or something
+    //app.deleteAll() //replace this with make new document or something
+    app.replacePageContent({},{},{})
     app.createShapes(defaultSticky(app.centerPoint))
+    app.zoomToFit()
   }, [])
 
   React.useEffect(() => {
@@ -187,13 +195,14 @@ const Editor = ({
     const timeout = 2000
 
     const networkInterval = () => {
-      console.log('network Interval')
+      
       const app = rTldrawApp.current!
       if (!(app === undefined)) {
         //load/save file
         if (loadedFile.current === false) {
-          console.log('requesting file...')
+          
           if(loadFile.current === null){
+            console.log('requesting file...')
             loadFileFromProcessing(loadFile,netData,newData, abortFileController)
             if (app.getShape('loading')) {
               const loadingDot = '.'
@@ -207,9 +216,11 @@ const Editor = ({
             console.log('no file found!')
             //make new file, do intro experience?
           }else if(loadFile.current && simulation.current){ //we have a file and data
+            abortFileController.abort()
             //https://stackoverflow.com/questions/18206231/saving-and-reloading-a-force-layout-using-d3-js
             //Load the data
             const loadedData = JSON.parse(loadFile.current.assets["simData"].toString())
+            console.log('loaded data',loadedData)
             graphData.current = loadedData
             simulation.current.nodes(graphData.current.nodes)
             const forceLink = simulation.current.force('link') as d3.ForceLink<
@@ -224,6 +235,8 @@ const Editor = ({
               app.delete(['loading']) 
             }
             console.log("loaded file",loadFile.current.document)
+            drawInterval()
+            app.zoomToFit()
             loadedFile.current = true
           }
         }else { //default update loop
@@ -243,13 +256,20 @@ const Editor = ({
     //Update Current Version — (we want to do this very fast)
     const currentVersionInterval = () => {
       //console.log('update current version interval')
-      updateCurrentVersion(currentVersion, timeout, abortCurrentVersionController)
+      const res = updateCurrentVersion(currentVersion, timeout, abortCurrentVersionController)
+      if(res){
+        //console.log("current version found")
+        setTimeout(currentVersionInterval, 100);
+      }else{
+        console.log("current version not found")
+        setTimeout(currentVersionInterval, 2000);
+      }
     }
 
     //check for new data, if so, update graph data
     let i = 0 //Counter for sticky loading dots
     const dataInterval = () => {
-      console.log('dataInterval')
+      
       // if(process.env["NEXT_PUBLIC_VERCEL_EN"] == '1'){
       //   console.log("im in vercel!")
       //   app = window.app
@@ -261,7 +281,7 @@ const Editor = ({
       //https://medium.com/ninjaconcept/interactive-dynamic-force-directed-graphs-with-d3-da720c6d7811
       if (newData.current === true && netData.current && graphData.current) {
         //if we have new data come in
-
+        console.log('dataInterval')
         let changed = true
         newData.current = false
 
@@ -314,7 +334,7 @@ const Editor = ({
     //get data from processing
     const networkLoop = setInterval(networkInterval, timeout * 2)
     //look for current version
-    const currentVersionLoop = setInterval(currentVersionInterval, 100)
+    currentVersionInterval()
     //put it into the graph
     const dataLoop = setInterval(dataInterval, 3000)
     //draw the graph
@@ -322,11 +342,12 @@ const Editor = ({
 
     return () => {
       clearInterval(networkLoop)
-      clearInterval(currentVersionLoop)
+      //clearInterval(currentVersionLoop)
       clearInterval(dataLoop)
       clearInterval(drawLoop)
       abortVersionsController.abort()
       abortCurrentVersionController.abort()
+      abortFileController.abort()
     }
   }, [])
 
@@ -423,7 +444,7 @@ const Editor = ({
 
   const fileSystemEvents = useFileSystem()
   const { onSignIn, onSignOut } = useAccountHandlers()
-  const { onAssetUpload } = useUploadAssets()
+  const { onAssetUpload , onAssetDelete} = useUploadAssets()
 
   return (
     <div className="tldraw">
@@ -433,12 +454,12 @@ const Editor = ({
         showPages={false}
         onMount={handleMount}
         onPatch={handlePatch}
-        onPersist={handlePersist}
         showSponsorLink={!isSponsor}
         onSignIn={isSponsor ? undefined : onSignIn}
         onSignOut={isUser ? onSignOut : undefined}
         onAssetUpload={onAssetUpload}
         onAssetCreate={onAssetUpload}
+        onAssetDelete={onAssetDelete}
         {...fileSystemEvents}
         {...rest}
       />
