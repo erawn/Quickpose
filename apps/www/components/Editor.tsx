@@ -235,11 +235,13 @@ const Editor = ({
               app.delete(['loading']) 
             }
             console.log("loaded file",loadFile.current.document)
+            console.log('loaded graphdata',graphData.current)
+            dataInterval()
             drawInterval()
             app.zoomToFit()
             loadedFile.current = true
           }
-        }else { //default update loop
+        }else if(loadedFile.current === true){ //default update loop
           console.log('saving/updating...')
           if (!(app.document === undefined)) {
             saveToProcessing(app.document, JSON.stringify(graphData.current), simulation.current.alpha(),null)
@@ -249,6 +251,8 @@ const Editor = ({
           updateThumbnail(selectedNode, rTldrawApp)
 
           updateVersions(netData, newData, abortVersionsController)
+        }else{
+          console.log(loadFile.current)
         }
       }
     }
@@ -349,7 +353,7 @@ const Editor = ({
       abortCurrentVersionController.abort()
       abortFileController.abort()
     }
-  }, [])
+  },[])
 
   //https://codesandbox.io/s/tldraw-context-menu-wen03q
   const handlePatch = React.useCallback((app: TldrawApp, reason?: string) => {

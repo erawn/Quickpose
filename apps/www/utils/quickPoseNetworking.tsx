@@ -1,10 +1,12 @@
 import { TDDocument, TDFile, TDShapeType, TldrawApp } from "@tldraw/tldraw";
 import FormData from 'form-data'
 import type { FileSystemHandle } from '@tldraw/tldraw'
-import axios from 'axios'
+
+import axiosRetry from 'axios-retry';
+import RaxConfig from "axios-retry";
 import deepEqual from "deep-equal";
 import { useCallback } from "react";
-
+import axios from 'axios'
 const LOCALHOST_BASE = 'http://127.0.0.1:8080';
 
 
@@ -151,49 +153,36 @@ export const updateThumbnail = (selectedNode, rTldrawApp) => {
     const onAssetUpload = useCallback(
       // Send the asset to our upload endpoint, which in turn will send it to AWS and
       // respond with the URL of the uploaded file.
-  
+      
       async (app: TldrawApp, file: File, id: string): Promise<string | false> => {
         const filename = encodeURIComponent(file.name)
-  
-        const fileType = encodeURIComponent(file.type)
-  
         const url = LOCALHOST_BASE+"/assets/"+filename
         console.log("making url",url)
-        
+        const client = axios.create()
+        axiosRetry(client, { 
+          retries: 10,
+          shouldResetTimeout: true,
+          onRetry(retryCount, error, requestConfig) {
+              console.log("retrying upload",retryCount)
+          },
+         });
         const formData = new FormData()
-            formData.append('uploaded_file', file, file.name)//dont change 'uploaded_file' - processing side is looking for this label
-  
-        const upload = axios.put(url, formData, {
+        formData.append('uploaded_file', file, file.name)//dont change 'uploaded_file' - processing side is looking for this label
+        await client.put(url, formData, {
             headers: {
               'Content-Type': 'multipart/form-data'
-              
             }
-          })
-          .then(async function (response) {
-            
-            const delay = (new Date()).getTime()
-            let imageRetrieve = false
-            while(!imageRetrieve || ((new Date()).getTime() - delay < 1000 )){
-              await axios.get(url).then(response =>{
-                if(response.status == 200){
-                  imageRetrieve = true
-                }
-              }).catch(function(error){ 
-                console.error("error retrieving image: ", error);
-                return false
-              })
-            }
-            console.log("uploaded file",url)
-            return url
           })
           .catch(function (error) {
             console.error("error uploading image: ", error);
-            return false
           });
-
-          if (!upload) return false
-
+        const res = await client.get(url)
+        const status = await res.status
+        if(status === 200){
           return url
+        }else{
+          return false
+        }
       },
       []
     )
