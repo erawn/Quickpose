@@ -15,6 +15,7 @@ export const sendFork = async (id) => {
 }
 export const sendSelect = async (id) => {
     const response = await fetch(LOCALHOST_BASE + '/select/' + id);
+    return await response.json();
 }
 export function getIconImageURLNoTime(id:string){
     return LOCALHOST_BASE + "/image/" + id; //Add Time to avoid Caching so images update properly
@@ -63,12 +64,12 @@ export const saveToProcessing = async (document: TDDocument, simData: string, al
 export const loadFileFromProcessing = async(loadFile, netData, newData, abortFileController) => {
 
     const getFile = axios.get(LOCALHOST_BASE+'/tldrfile', {
-      timeout: 100,
+      timeout: 2000,
       signal: abortFileController.signal
     })
 
     const getData = axios.get(LOCALHOST_BASE+'/versions.json', {
-        timeout: 100,
+        timeout: 2000,
         signal: abortFileController.signal
       })
 
@@ -76,10 +77,11 @@ export const loadFileFromProcessing = async(loadFile, netData, newData, abortFil
 
         const file = responses[0]
         const data = responses[1]
-        if(file.status === 200 && data.data){
+        if(file.status === 200 && data.data && loadFile.current === null){ //this third conditional is to avoid race conditions
             loadFile.current = file.data
-            newData.current = true;
             netData.current = data.data
+            abortFileController.abort()
+            console.log("loaded file - aborting file requests")
         }else if(file.status === 201){
             loadFile.current = undefined //this is the signal that we attempted to load a file, but it was missing
         }
@@ -128,18 +130,20 @@ export const updateThumbnail = (selectedNode, rTldrawApp) => {
   }
 
   export const updateCurrentVersion = async (currentVersion, timeout,abortCurrentVersionController) => {
-    axios.get(LOCALHOST_BASE+'/currentVersion', {
+    await axios.get(LOCALHOST_BASE+'/currentVersion', {
         timeout: timeout,
         signal: abortCurrentVersionController.signal
       })
       .then(response => {
         if(response.data){
           currentVersion.current = response.data.toString()
+          return true
           //console.log("currentVersion is  "+ currentVersion.current)
         }
       })
       .catch(error => {
-        //console.error("error fetching: ", error);
+        return false
+        console.error("error fetching current version: ", error);
       })
   }
 
@@ -165,7 +169,20 @@ export const updateThumbnail = (selectedNode, rTldrawApp) => {
               
             }
           })
-          .then(function (response) {
+          .then(async function (response) {
+            
+            const delay = (new Date()).getTime()
+            let imageRetrieve = false
+            while(!imageRetrieve || ((new Date()).getTime() - delay < 1000 )){
+              await axios.get(url).then(response =>{
+                if(response.status == 200){
+                  imageRetrieve = true
+                }
+              }).catch(function(error){ 
+                console.error("error retrieving image: ", error);
+                return false
+              })
+            }
             console.log("uploaded file",url)
             return url
           })
@@ -180,6 +197,24 @@ export const updateThumbnail = (selectedNode, rTldrawApp) => {
       },
       []
     )
+    const onAssetDelete = useCallback(
+      // Send the asset to our upload endpoint, which in turn will send it to AWS and
+      // respond with the URL of the uploaded file.
   
-    return { onAssetUpload }
+      async (app: TldrawApp, id: string): Promise<boolean>=> {
+        const asset = app.assets.find(asset => asset.id === id)
+        await axios.delete(asset.src).then(response =>{
+          if(response.status == 200){
+            return true
+          }
+        }).catch(function(error){ 
+          console.error("error deleting image: ",id, error);
+          return false
+        })
+        return false
+      },
+      []
+    )
+  
+    return { onAssetUpload, onAssetDelete }
   }
