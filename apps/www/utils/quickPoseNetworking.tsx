@@ -10,14 +10,38 @@ import axios from 'axios'
 const LOCALHOST_BASE = 'http://127.0.0.1:8080';
 
 
-export const sendFork = async (id) => {
-    const response = await fetch(LOCALHOST_BASE + '/fork/' + id)
-    return await response.json();
-    
+export const sendFork = async (id: string,currentVersion: { current: string; }) => {
+    //const response = await fetch(LOCALHOST_BASE + '/fork/' + id)
+    //return await response.json();
+    await axios.get(LOCALHOST_BASE + '/fork/' + id, {
+      timeout: 10000,
+      //signal: abortCurrentVersionController.signal
+    })
+    .then(response => {
+      if(response.status === 200){
+        currentVersion.current = response.data.toString()
+        console.log("forked, currentVersion is  "+ currentVersion.current)
+      }
+    })
+    .catch(error => {
+      //console.warn("error fetching current version: ", error);
+      return null
+    })
 }
-export const sendSelect = async (id) => {
-    const response = await fetch(LOCALHOST_BASE + '/select/' + id);
-    return await response.json();
+export const sendSelect = async (id: string,currentVersion: { current: string; }) => {
+  await axios.get(LOCALHOST_BASE + '/select/' + id, {
+    timeout: 10000,
+    //signal: abortCurrentVersionController.signal
+  })
+  .then(function(response) {
+    if(response.status === 200){
+      currentVersion.current = response.data.toString()
+    }
+  })
+  .catch(error => {
+    //console.warn("error fetching current version: ", error);
+    return null
+  })
 }
 export function getIconImageURLNoTime(id:string){
     return LOCALHOST_BASE + "/image/" + id; //Add Time to avoid Caching so images update properly
@@ -135,18 +159,15 @@ export const updateThumbnail = (selectedNode, rTldrawApp) => {
   export const updateCurrentVersion = async (currentVersion, timeout,abortCurrentVersionController) => {
     const client = axios.create()
         axiosRetry(client, { 
-          retries: 10,
-          shouldResetTimeout: true,
-          retryDelay(retryCount, error) {
-              return 10*retryCount
-          },
+          retries: 1,
+          shouldResetTimeout: false,
           onRetry(retryCount, error, requestConfig) {
-              console.log("retrying upload",retryCount)
+              console.log("retrying update",retryCount)
           },
          });
     await client.get(LOCALHOST_BASE+'/currentVersion', {
         timeout: timeout,
-        //signal: abortCurrentVersionController.signal
+        signal: abortCurrentVersionController.signal
       })
       .then(response => {
         if(response.data){
