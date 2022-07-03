@@ -72,8 +72,8 @@ import {
 
 
 const D3_RADIUS = 5;
-export const D3_LINK_DISTANCE = 20
-export const TL_DRAW_RADIUS = 80;
+export const D3_LINK_DISTANCE = 4
+export const TL_DRAW_RADIUS = 30;
 export const ALPHA_TARGET_REFRESH = .1
 const LOCALHOST_BASE = 'http://127.0.0.1:8080';
 const DOUBLE_CLICK_TIME = 500
@@ -149,13 +149,11 @@ const Editor = ({
           const newIds: string[] = newLinks.map((link) => link.id)
           app.select(...app.selectedIds.filter((id) => !newIds.includes(id)))
         }
-        const forceLink = simulation.current.force('link') as d3.ForceLink<
+
+        (simulation.current.force('link') as d3.ForceLink<
           d3.SimulationNodeDatum,
           d3.SimulationLinkDatum<d3.SimulationNodeDatum>
-        >
-        forceLink.links(graphData.current.links)
-
-        //simulation.current.alpha(ALPHA_TARGET_REFRESH)
+        >).links(graphData.current.links)
         simulation.current.restart()
       }
     })
@@ -177,7 +175,7 @@ const Editor = ({
     loadFileFromProcessing(loadFile,netData,newData,abortFileController)
 
     rTldrawApp.current = app
-    simulation.current = d3Sim(app.centerPoint)
+    simulation.current = d3Sim(app.centerPoint,app.rendererBounds)
 
     //app.camera.zoom =
     //app.deleteAll() //replace this with make new document or something
@@ -223,14 +221,27 @@ const Editor = ({
             //Load the data
             const loadedData = JSON.parse(loadFile.current.assets["simData"].toString())
             console.log('loaded data',loadedData)
-            graphData.current = loadedData
+            const importNodes = loadedData.nodes as dataNode[]
+            console.log(importNodes)
+            importNodes.forEach(node =>{
+              node.fx = node.x
+              node.fy = node.y
+            })
+            graphData.current.nodes = importNodes
+            graphData.current.links = loadedData.links
             simulation.current.nodes(graphData.current.nodes)
-            const forceLink = simulation.current.force('link') as d3.ForceLink<
-              d3.SimulationNodeDatum,
-              d3.SimulationLinkDatum<d3.SimulationNodeDatum>
-            >
-            forceLink.links(graphData.current.links)
+            simulation.current.force('link',d3.forceLink(graphData.current.links))
+            // const forceLink = simulation.current.force('link') as d3.ForceLink<
+            //   d3.SimulationNodeDatum,
+            //   d3.SimulationLinkDatum<d3.SimulationNodeDatum>
+            // >
+            // forceLink.links(graphData.current.links)
             simulation.current.alpha(parseInt(loadFile.current.assets["alpha"].toString()))
+            //simulation.current.tick(1)
+            graphData.current.nodes.forEach(node =>{
+              node.fx = null
+              node.fy = null
+            })
             app.loadDocument(loadFile.current.document)
 
             if (app.getShape('loading')) {//remove loading sticky
@@ -241,6 +252,7 @@ const Editor = ({
             dataInterval()
             drawInterval()
             app.zoomToFit()
+            simulation.current.restart()
             loadedFile.current = true
           }
         }else if(loadedFile.current === true){ //default update loop
@@ -325,6 +337,7 @@ const Editor = ({
           console.log('netdata', netData.current)
           console.log('graphData', graphData.current)
           console.log("dataInterval Update")
+          simulation.current.restart()
         }
       }
       i++
