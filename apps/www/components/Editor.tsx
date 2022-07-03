@@ -119,7 +119,7 @@ const Editor = ({
       const app = rTldrawApp.current!
 
       if (loadedFile.current === true && graphData.current && !(app === undefined) && simulation.current) {
-        console.log('drawInterval')
+        //console.log('drawInterval')
         graphData.current.nodes = [...simulation.current.nodes()] //get simulation data out
         let tlNodes = app.getShapes().filter((shape) => nodeRegex.test(shape.id))
         const [addNodes, updateNodes] = updateNodeShapes(
@@ -204,6 +204,7 @@ const Editor = ({
           if(loadFile.current === null){
             console.log('requesting file...')
             loadFileFromProcessing(loadFile,netData,newData, abortFileController)
+            currentVersionInterval()
             if (app.getShape('loading')) {
               const loadingDot = '.'
               app.updateShapes({
@@ -217,6 +218,7 @@ const Editor = ({
             //make new file, do intro experience?
           }else if(loadFile.current && simulation.current){ //we have a file and data
             abortFileController.abort()
+            currentVersionInterval()
             //https://stackoverflow.com/questions/18206231/saving-and-reloading-a-force-layout-using-d3-js
             //Load the data
             const loadedData = JSON.parse(loadFile.current.assets["simData"].toString())
@@ -259,9 +261,8 @@ const Editor = ({
 
     //Update Current Version — (we want to do this very fast)
     const currentVersionInterval = () => {
-      //console.log('update current version interval')
+      console.log('update current version interval')
       updateCurrentVersion(currentVersion, timeout, abortCurrentVersionController)
-      setTimeout(currentVersionInterval, 3000);
     }
 
     //check for new data, if so, update graph data
@@ -332,7 +333,7 @@ const Editor = ({
     //get data from processing
     const networkLoop = setInterval(networkInterval, timeout * 2)
     //look for current version
-    currentVersionInterval()
+    //const currentVersionLoop = setInterval(currentVersionInterval, 10000)
     //put it into the graph
     const dataLoop = setInterval(dataInterval, 3000)
     //draw the graph
@@ -397,7 +398,7 @@ const Editor = ({
             new Date().getTime() - timeSinceLastSelection.current < DOUBLE_CLICK_TIME
           ) {
             const idInteger = selectedShape.id.replace(/\D/g, '')
-            sendFork(idInteger)
+            sendFork(idInteger,currentVersion)
             console.log('send double click')
           } else {
             timeSinceLastSelection.current = new Date().getTime()
@@ -418,7 +419,7 @@ const Editor = ({
           const selectedShape = app.getShape(selectedNode.current)
           if (!(lastSelection.current === selectedNode.current)) {
             const idInteger = selectedShape.id.replace(/\D/g, '')
-            sendSelect(idInteger)
+            sendSelect(idInteger,currentVersion)
             console.log('send select!', idInteger)
             timeSinceLastSelection.current = new Date().getTime()
           }

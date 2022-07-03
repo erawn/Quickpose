@@ -79,7 +79,7 @@ export const makeArrow = (parentId, link): ArrowShape => {
       isGenerated: true,
       point: [100,100],
       style:{
-        size: SizeStyle.Small,
+        size: SizeStyle.Large,
         dash: DashStyle.Dotted,
         isFilled:true,
         color: ColorStyle.Indigo
