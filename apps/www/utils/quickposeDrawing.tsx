@@ -4,30 +4,38 @@ import deepEqual from "deep-equal";
 import { ALPHA_TARGET_REFRESH, d3TlScale, D3_LINK_DISTANCE, TL_DRAW_RADIUS } from "components/Editor";
 import { getIconImageURLNoTime } from "./quickPoseNetworking"
 import * as d3 from 'd3'
+import forceBoundary from 'd3-force-boundary'
 import { MutableRefObject } from "react";
+import { TLBounds } from "@tldraw/core";
 
 export const nodeRegex = new RegExp(/node\d/);
 export const linkRegex = new RegExp(/link\d/);
 
-export const d3Sim = (centerPoint) => {
+export const d3Sim = (centerPoint,bounds:TLBounds) => {
     const coords = tldrawCoordstod3(...centerPoint as [number,number])
+    const boundary = tldrawCoordstod3(bounds.maxX,bounds.maxY)
+    console.log(bounds,boundary)
     return d3.forceSimulation()
-    .force("center", d3.forceCenter(coords[0],coords[1]))
-    .force('charge', d3.forceManyBody().strength(-100))
-    .force('collision', d3.forceCollide().radius(function(d: dataNode) {return d.r + 20} ))
+    .force("center", d3.forceCenter(coords[0],coords[1]).strength(.1))
+    .force("boundary", forceBoundary(0,0,500,500))
+    .force('charge', d3.forceManyBody().strength(-10))
     .force("link", d3.forceLink()
-      .id(function(d: dataNode,i) {
+      .id(function(d:dataNode) {
         return d.id
       })
       .distance(function(l:dataLink){
+        return D3_LINK_DISTANCE
         if(l.d !== undefined){
+          //console.log(l.d)
           return l.d
+          
         }else{
           return 20
         }
       })
-      .strength(1)
-    ).alpha(3)
+    )
+    .force('collision', d3.forceCollide().radius(function(d: dataNode) {return d.r + 20} ))
+    .alpha(3)
     .alphaDecay(.01)
 }
 
@@ -79,7 +87,7 @@ export const makeArrow = (parentId, link): ArrowShape => {
       isGenerated: true,
       point: [100,100],
       style:{
-        size: SizeStyle.Large,
+        size: SizeStyle.Small,
         dash: DashStyle.Dotted,
         isFilled:true,
         color: ColorStyle.Indigo
@@ -161,6 +169,7 @@ export const updateBinding = (app:TldrawApp, link, startNode,endNode,drawLink) =
           }
         }
         link.d = D3_LINK_DISTANCE + sourceNode.r + targetNode.r
+        link.strength = 10
       }
       return null
     }).filter(entry => entry !== null && !(entry === undefined)) as TDShape[]
@@ -170,64 +179,69 @@ export const updateBinding = (app:TldrawApp, link, startNode,endNode,drawLink) =
   export const updateNodeShapes = (graphData, tlNodes,currentVersion,centerPoint,selectedIds) => {
     const updateNodes = []
     const addNodes = graphData.current.nodes.map(function(node: dataNode){
-    const tlDrawNode:VersionNodeShape = tlNodes.find(n => n.id === 'node'+node.id)
-    
-    if(!tlDrawNode){
-        const n = {
-            id: 'node'+node.id,
-            name: 'node'+node.id,
-            type: TDShapeType.VersionNode,
-            style:{
-                size: "small",
-                dash: "draw",
-                isFilled:true,
-                color: "black"
-            },
-            point: d3toTldrawCoords(node.x,node.y),
-            radius: [TL_DRAW_RADIUS,TL_DRAW_RADIUS],
-            imgLink: getIconImageURLNoTime(node.id.toString())
-        } as inputVersionNodeShape
-        node.r = n.radius[0] / d3TlScale
-        console.log("input radius", node.r)
-        return n
+      const tlDrawNode:VersionNodeShape = tlNodes.find(n => n.id === 'node'+node.id)
+      
+      if(!tlDrawNode){
+          const n = {
+              id: 'node'+node.id,
+              name: 'node'+node.id,
+              type: TDShapeType.VersionNode,
+              style:{
+                  size: "small",
+                  dash: DashStyle.Solid,
+                  isFilled:true,
+                  color: "black"
+              },
+              point: d3toTldrawCoords(node.x,node.y),
+              radius: [TL_DRAW_RADIUS,TL_DRAW_RADIUS],
+              imgLink: getIconImageURLNoTime(node.id.toString())
+          } as inputVersionNodeShape
+          node.r = n.radius[0] / d3TlScale
+          //console.log("input radius", node.r)
+          return n
 
-    }else if(tlDrawNode && tlDrawNode.type == TDShapeType.VersionNode){ 
-        const baseNode = {...tlDrawNode}
-        if(selectedIds.includes(tlDrawNode.id)){ //If we have a node selected, update the d3 sim instead
-            const d3Coords = tldrawCoordstod3(tlDrawNode.point[0],tlDrawNode.point[1])
-            node.x = d3Coords[0]
-            node.y = d3Coords[1]
-            node.r = tlDrawNode.radius[0] / d3TlScale
-        }
-        if(currentVersion.current && tlDrawNode.id.replace(/\D/g,"") === currentVersion.current){ //If our node is the current version
-            tlDrawNode.style.color = ColorStyle.Green
-            tlDrawNode.style.size = SizeStyle.Large
-        }else{
-            tlDrawNode.style.color = ColorStyle.Black
-            tlDrawNode.style.size = SizeStyle.Small
-        }
-        
-        let newCoords = tlDrawNode.point
-        if(node.id === '0'){
-            node.fx = tldrawCoordstod3(...centerPoint as [number,number])[0]
-            node.fy = tldrawCoordstod3(...centerPoint as [number,number])[1]
-            node.x = tldrawCoordstod3(...centerPoint as [number,number])[0]
-            node.y = tldrawCoordstod3(...centerPoint as [number,number])[1]
-            newCoords = centerPoint as [number,number]
-            tlDrawNode.point = d3toTldrawCoords(node.x ,node.y)
-        }else{
-            newCoords = d3toTldrawCoords(node.x ,node.y)
-        }
-        if (Math.abs(newCoords[0] - tlDrawNode.point[0]) > .1 || Math.abs(newCoords[0] - tlDrawNode.point[0]) > .1){
-            tlDrawNode.point = d3toTldrawCoords(node.x ,node.y)
-        }
-        //dont know why this optimization isn't updating style changes :(
-        //if(!deepEqual(baseNode,tlDrawNode) || baseNode.style.color !== tlDrawNode.style.color){
-        updateNodes.push(tlDrawNode)
-        //}
-    }else{
-        return null
-    }
+      }else if(tlDrawNode && tlDrawNode.type == TDShapeType.VersionNode){ 
+          const baseNode = {...tlDrawNode}
+          if(selectedIds.includes(tlDrawNode.id)){ //If we have a node selected, update the d3 sim instead
+              const d3Coords = tldrawCoordstod3(tlDrawNode.point[0],tlDrawNode.point[1])
+              node.x = d3Coords[0]
+              node.y = d3Coords[1]
+              node.fx = d3Coords[0]
+              node.fy = d3Coords[1]
+              node.r = (tlDrawNode.radius[0] / d3TlScale)
+          }else{
+            node.fx = null
+            node.fy = null
+          }
+          if(currentVersion.current && tlDrawNode.id.replace(/\D/g,"") === currentVersion.current){ //If our node is the current version
+              tlDrawNode.style.color = ColorStyle.Green
+              tlDrawNode.style.size = SizeStyle.Large
+          }else{
+              tlDrawNode.style.color = ColorStyle.Black
+              tlDrawNode.style.size = SizeStyle.Small
+          }
+          
+          let newCoords = tlDrawNode.point
+          if(node.id === '0'){
+              node.fx = tldrawCoordstod3(...centerPoint as [number,number])[0]
+              node.fy = tldrawCoordstod3(...centerPoint as [number,number])[1]
+              node.x = tldrawCoordstod3(...centerPoint as [number,number])[0]
+              node.y = tldrawCoordstod3(...centerPoint as [number,number])[1]
+              newCoords = centerPoint as [number,number]
+              tlDrawNode.point = d3toTldrawCoords(node.x ,node.y)
+          }else{
+              newCoords = d3toTldrawCoords(node.x ,node.y)
+          }
+          if (Math.abs(newCoords[0] - tlDrawNode.point[0]) > .1 || Math.abs(newCoords[0] - tlDrawNode.point[0]) > .1){
+              tlDrawNode.point = d3toTldrawCoords(node.x ,node.y)
+          }
+          //dont know why this optimization isn't updating style changes :(
+          //if(!deepEqual(baseNode,tlDrawNode) || baseNode.style.color !== tlDrawNode.style.color){
+          updateNodes.push(tlDrawNode)
+          //}
+      }else{
+          return null
+      }
     }).filter(entry => entry !== null && !(entry === undefined))
 
     return [addNodes,updateNodes]

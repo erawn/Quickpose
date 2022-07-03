@@ -15,7 +15,8 @@ export interface dataNode extends SimulationNodeDatum {
   }
   
 export interface dataLink extends SimulationLinkDatum<SimulationNodeDatum> {
-    d: number
+    d: number;
+    strength: number;
   }
 export type inputShape = { id: string; name?: string; type: TDShapeType;} & Partial<TDShape>
 export type inputVersionNodeShape = { id: string; name?: string; type: TDShapeType;} & Partial<VersionNodeShape>
