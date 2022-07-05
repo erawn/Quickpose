@@ -4,9 +4,9 @@ import type React from 'react'
 import '~styles/globals.css'
 import useGtag from '~utils/useGtag'
 
-const APP_NAME = 'tldraw'
-const APP_DESCRIPTION = 'A tiny little drawing app.'
-const APP_URL = 'https://tldraw.com'
+const APP_NAME = 'quickpose'
+const APP_DESCRIPTION = 'version control for Processing'
+const APP_URL = 'ericrawn.graphics'
 const IMAGE = 'https://tldraw.com/social-image.png'
 
 function MyApp({ Component, pageProps }: any) {
@@ -48,7 +48,7 @@ function MyApp({ Component, pageProps }: any) {
         <link rel="shortcut icon" href="/favicon.ico" />
         <link rel="apple-touch-icon" sizes="180x180" href="/icons/apple-touch-icon.png" />
 
-        <title>tldraw</title>
+        <title>quickpose</title>
       </Head>
       <Component {...pageProps} />
     </>

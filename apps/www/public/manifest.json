@@ -1,6 +1,6 @@
 {
-  "name": "tldraw",
-  "short_name": "tldraw",
+  "name": "quickpose",
+  "short_name": "quickpose",
   "icons": [
     {
       "src": "/android-chrome-512x512.png",
