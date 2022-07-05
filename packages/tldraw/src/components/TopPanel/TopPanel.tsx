@@ -10,6 +10,7 @@ import { RedoIcon, UndoIcon } from '~components/Primitives/icons'
 import { breakpoints } from '~components/breakpoints'
 import { useTldrawApp } from '~hooks'
 import { MultiplayerMenu } from './MultiplayerMenu'
+import { CurrentVersionMenu } from './CurrentVersionMenu'
 
 interface TopPanelProps {
   readOnly: boolean
@@ -39,6 +40,7 @@ export function TopPanel({
           {showMenu && <Menu sponsor={sponsor} readOnly={readOnly} />}
           {showMultiplayerMenu && <MultiplayerMenu />}
           {showPages && <PageMenu />}
+          {<CurrentVersionMenu/>}
         </Panel>
       )}
       <StyledSpacer />

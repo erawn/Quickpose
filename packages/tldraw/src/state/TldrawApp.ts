@@ -254,6 +254,7 @@ export class TldrawApp extends StateManager<TDSnapshot> {
     offset: [0, 0],
   }
 
+
   constructor(id?: string, callbacks = {} as TDCallbacks) {
     super(TldrawApp.defaultState, id, TldrawApp.version, (prev, next, prevVersion) => {
       return {
@@ -4083,6 +4084,7 @@ export class TldrawApp extends StateManager<TDSnapshot> {
       snapLines: [],
       isLoading: false,
       disableAssets: false,
+      currentProject: '',
     },
     document: TldrawApp.defaultDocument,
   }
