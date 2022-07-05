@@ -242,3 +242,21 @@ export const updateThumbnail = (selectedNode, rTldrawApp) => {
   
     return { onAssetUpload, onAssetDelete }
   }
+
+
+  export const getCurrentProject = async (currentProject,app:TldrawApp) => {
+    //Update Versions
+    
+    axios.get(LOCALHOST_BASE+'/projectName', {
+      timeout: 100,
+    })
+    .then(response => {
+      currentProject.current = response.data
+      app.appState.currentProject = response.data
+    })
+    .catch(error => {
+      //console.error("error fetching: ", error);
+      app.appState.currentProject = ''
+      currentProject.current = null
+    })
+  }

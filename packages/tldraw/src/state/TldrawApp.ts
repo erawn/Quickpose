@@ -4213,6 +4213,7 @@ export class TldrawApp extends StateManager<TDSnapshot> {
       snapLines: [],
       isLoading: false,
       disableAssets: false,
+      currentProject: '',
     },
     document: TldrawApp.defaultDocument,
   }

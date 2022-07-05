@@ -47,7 +47,8 @@ import {
   updateThumbnail,
   updateCurrentVersion,
   loadFileFromProcessing,
-  useUploadAssets
+  useUploadAssets,
+  getCurrentProject
 } from 'utils/quickPoseNetworking'
 
 import { 
@@ -98,6 +99,7 @@ const Editor = ({
   const loadFile = React.useRef<TDFile>(null)
   const loadedFile = React.useRef<boolean>(false)
   const loadedData = React.useRef<boolean>(false)
+  const currentProject = React.useRef<string>(null)
 
   //d3 sim
   const simulation = React.useRef<d3.Simulation<SimulationNodeDatum, undefined>>()
@@ -193,12 +195,17 @@ const Editor = ({
     const timeout = 2000
 
     const networkInterval = () => {
+
       
+    
       const app = rTldrawApp.current!
       if (!(app === undefined)) {
+        if(currentProject.current !== undefined){
+          getCurrentProject(currentProject,app)
+        }
         //load/save file
         if (loadedFile.current === false) {
-          
+
           if(loadFile.current === null){
             console.log('requesting file...')
             loadFileFromProcessing(loadFile,netData,newData, abortFileController)
@@ -455,7 +462,6 @@ const Editor = ({
   }, [])
 
   const fileSystemEvents = useFileSystem()
-  const { onSignIn, onSignOut } = useAccountHandlers()
   const { onAssetUpload , onAssetDelete} = useUploadAssets()
 
   return (
@@ -466,9 +472,9 @@ const Editor = ({
         showPages={false}
         onMount={handleMount}
         onPatch={handlePatch}
-        showSponsorLink={!isSponsor}
-        onSignIn={isSponsor ? undefined : onSignIn}
-        onSignOut={isUser ? onSignOut : undefined}
+        showSponsorLink={false}
+        onSignIn={undefined}
+        onSignOut={undefined}
         onAssetUpload={onAssetUpload}
         onAssetCreate={onAssetUpload}
         onAssetDelete={onAssetDelete}

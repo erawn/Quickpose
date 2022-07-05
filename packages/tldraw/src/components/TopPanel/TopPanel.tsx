@@ -6,9 +6,7 @@ import { useTldrawApp } from '~hooks'
 import { styled } from '~styles'
 import { Menu } from './Menu/Menu'
 import { MultiplayerMenu } from './MultiplayerMenu'
-import { PageMenu } from './PageMenu'
-import { StyleMenu } from './StyleMenu'
-import { ZoomMenu } from './ZoomMenu'
+import { CurrentVersionMenu } from './CurrentVersionMenu'
 
 interface TopPanelProps {
   readOnly: boolean
@@ -36,6 +34,7 @@ export function _TopPanel({
           {showMenu && <Menu readOnly={readOnly} />}
           {showMultiplayerMenu && <MultiplayerMenu />}
           {showPages && <PageMenu />}
+          {<CurrentVersionMenu/>}
         </Panel>
       )}
       <StyledSpacer />
