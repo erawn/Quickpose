@@ -115,50 +115,52 @@ const Editor = ({
     simulation.current.restart()
   }
 
-  const drawInterval = () => {
-   
-    requestAnimationFrame(() => {
-      const app = rTldrawApp.current!
+ function drawInterval(simulation,app,graphData){
+    if(simulation !== undefined &&
+       simulation.current !== undefined &&
+       simulation.current.alpha > simulation.current.alphaMin){
+      if (loadedFile.current === true && graphData.current && !(app === undefined)) {
+        requestAnimationFrame(() => {
+          //console.log('drawInterval')
+          graphData.current.nodes = [...simulation.current.nodes()] //get simulation data out
+          let tlNodes = app.getShapes().filter((shape) => nodeRegex.test(shape.id))
+          const [addNodes, updateNodes] = updateNodeShapes(
+            graphData,
+            tlNodes,
+            currentVersion,
+            app.centerPoint,
+            app.selectedIds
+          )
+          if (addNodes.length > 0) {
+            app.createShapes(...addNodes)
+          }
+          if (updateNodes.length > 0) {
+            app.updateShapes(...updateNodes)
+          }
+          simulation.current.nodes(graphData.current.nodes)
 
-      if (loadedFile.current === true && graphData.current && !(app === undefined) && simulation.current) {
-        //console.log('drawInterval')
-        graphData.current.nodes = [...simulation.current.nodes()] //get simulation data out
-        let tlNodes = app.getShapes().filter((shape) => nodeRegex.test(shape.id))
-        const [addNodes, updateNodes] = updateNodeShapes(
-          graphData,
-          tlNodes,
-          currentVersion,
-          app.centerPoint,
-          app.selectedIds
-        )
-        if (addNodes.length > 0) {
-          app.createShapes(...addNodes)
-        }
-        if (updateNodes.length > 0) {
-          app.updateShapes(...updateNodes)
-        }
-        simulation.current.nodes(graphData.current.nodes)
+          const tlLinks = app.getShapes().filter((shape) => linkRegex.test(shape.id))
+          tlNodes = app.getShapes().filter((shape) => nodeRegex.test(shape.id))
+          const [newLinks, updateLinks] = updateLinkShapes(app, tlLinks, graphData, tlNodes)
+          if (updateLinks.length > 0) {
+            app.updateShapes(...updateLinks)
+          }
+          if (newLinks.length > 0) {
+            app.createShapes(...newLinks)
+            //deselect created links
+            const newIds: string[] = newLinks.map((link) => link.id)
+            app.select(...app.selectedIds.filter((id) => !newIds.includes(id)))
+          }
 
-        const tlLinks = app.getShapes().filter((shape) => linkRegex.test(shape.id))
-        tlNodes = app.getShapes().filter((shape) => nodeRegex.test(shape.id))
-        const [newLinks, updateLinks] = updateLinkShapes(app, tlLinks, graphData, tlNodes)
-        if (updateLinks.length > 0) {
-          app.updateShapes(...updateLinks)
-        }
-        if (newLinks.length > 0) {
-          app.createShapes(...newLinks)
-          //deselect created links
-          const newIds: string[] = newLinks.map((link) => link.id)
-          app.select(...app.selectedIds.filter((id) => !newIds.includes(id)))
-        }
-
-        (simulation.current.force('link') as d3.ForceLink<
-          d3.SimulationNodeDatum,
-          d3.SimulationLinkDatum<d3.SimulationNodeDatum>
-        >).links(graphData.current.links)
-        simulation.current.restart()
+          (simulation.current.force('link') as d3.ForceLink<
+            d3.SimulationNodeDatum,
+            d3.SimulationLinkDatum<d3.SimulationNodeDatum>
+          >).links(graphData.current.links)
+          //simulation.current.restart()
+        
+        })
       }
-    })
+    }
   }
 
  
@@ -236,6 +238,7 @@ const Editor = ({
             })
             graphData.current.nodes = importNodes
             graphData.current.links = loadedData.links
+            simulation.current.restart()
             simulation.current.nodes(graphData.current.nodes)
             simulation.current.force('link',d3.forceLink(graphData.current.links))
             // const forceLink = simulation.current.force('link') as d3.ForceLink<
@@ -245,6 +248,7 @@ const Editor = ({
             // forceLink.links(graphData.current.links)
             simulation.current.alpha(parseInt(loadFile.current.assets["alpha"].toString()))
             //simulation.current.tick(1)
+            
             graphData.current.nodes.forEach(node =>{
               node.fx = null
               node.fy = null
@@ -257,7 +261,7 @@ const Editor = ({
             console.log("loaded file",loadFile.current.document)
             console.log('loaded graphdata',graphData.current)
             dataInterval()
-            drawInterval()
+            drawInterval(simulation,app,graphData)
             app.zoomToFit()
             simulation.current.restart()
             loadedFile.current = true
@@ -357,7 +361,7 @@ const Editor = ({
     //put it into the graph
     const dataLoop = setInterval(dataInterval, 3000)
     //draw the graph
-    const drawLoop = setInterval(drawInterval, 16)
+    const drawLoop = setInterval(drawInterval, 200)
 
     return () => {
       clearInterval(networkLoop)
@@ -373,7 +377,10 @@ const Editor = ({
   //https://codesandbox.io/s/tldraw-context-menu-wen03q
   const handlePatch = React.useCallback((app: TldrawApp, reason?: string) => {
     //console.log(reason)
-    drawInterval()
+    if(loadedFile.current === true){
+      drawInterval(simulation,app,graphData)
+    }
+    
     switch (reason) {
       case 'set_status:translating': {
         // started translating...
