@@ -9,6 +9,7 @@ import { ToolButton } from '~components/Primitives/ToolButton'
 import { UndoIcon } from '~components/Primitives/icons'
 import { useTldrawApp } from '~hooks'
 import { MultiplayerMenu } from './MultiplayerMenu'
+import { CurrentVersionMenu } from './CurrentVersionMenu'
 
 interface TopPanelProps {
   readOnly: boolean
@@ -36,6 +37,7 @@ export function TopPanel({
           {showMenu && <Menu readOnly={readOnly} />}
           {showMultiplayerMenu && <MultiplayerMenu />}
           {showPages && <PageMenu />}
+          {<CurrentVersionMenu/>}
         </Panel>
       )}
       <StyledSpacer />

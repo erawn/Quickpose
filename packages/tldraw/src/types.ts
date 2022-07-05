@@ -115,6 +115,7 @@ export interface TDSnapshot {
     isLoading: boolean
     disableAssets: boolean
     selectByContain?: boolean
+    currentProject: string
   }
   document: TDDocument
   room?: {
