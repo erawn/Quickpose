@@ -20,7 +20,7 @@ export const d3Sim = (centerPoint,bounds:TLBounds) => {
     .force("boundary", forceBoundary(0,0,500,500))
     .force('charge', d3.forceManyBody().strength(-10))
     .force("link", d3.forceLink()
-      .id(function(d:dataNode) {
+      .id(function(d:dataNode,i) {
         return d.id
       })
       .distance(function(l:dataLink){
@@ -178,7 +178,7 @@ export const updateBinding = (app:TldrawApp, link, startNode,endNode,drawLink) =
 
   export const updateNodeShapes = (graphData, tlNodes,currentVersion,centerPoint,selectedIds) => {
     const updateNodes = []
-    const addNodes = graphData.current.nodes.map(function(node: dataNode){
+    const addNodes = graphData.nodes.map(function(node: dataNode){
       const tlDrawNode:VersionNodeShape = tlNodes.find(n => n.id === 'node'+node.id)
       
       if(!tlDrawNode){

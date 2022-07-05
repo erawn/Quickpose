@@ -115,17 +115,23 @@ const Editor = ({
     simulation.current.restart()
   }
 
- function drawInterval(simulation,app,graphData){
-    if(simulation !== undefined &&
-       simulation.current !== undefined &&
-       simulation.current.alpha > simulation.current.alphaMin){
-      if (loadedFile.current === true && graphData.current && !(app === undefined)) {
+ function drawInterval(simdd,appd,graphDatad){
+  //console.log('drawInterval')
+  const sim = simulation.current!
+  const app = rTldrawApp.current!
+  const gData = graphData.current!
+    if(//simulation !== undefined //&&
+       sim !== undefined && gData !== undefined
+       //&& simulation.current.alpha > simulation.current.alphaMin
+       ){
+        //console.log('drawInterval2')
+      if (loadedFile.current === true && !(app === undefined)) {
         requestAnimationFrame(() => {
-          //console.log('drawInterval')
-          graphData.current.nodes = [...simulation.current.nodes()] //get simulation data out
+          //console.log('drawInterval3')
+          gData.nodes = [...sim.nodes()] //get simulation data out
           let tlNodes = app.getShapes().filter((shape) => nodeRegex.test(shape.id))
           const [addNodes, updateNodes] = updateNodeShapes(
-            graphData,
+            gData,
             tlNodes,
             currentVersion,
             app.centerPoint,
@@ -137,7 +143,7 @@ const Editor = ({
           if (updateNodes.length > 0) {
             app.updateShapes(...updateNodes)
           }
-          simulation.current.nodes(graphData.current.nodes)
+          sim.nodes(gData.nodes)
 
           const tlLinks = app.getShapes().filter((shape) => linkRegex.test(shape.id))
           tlNodes = app.getShapes().filter((shape) => nodeRegex.test(shape.id))
@@ -152,11 +158,11 @@ const Editor = ({
             app.select(...app.selectedIds.filter((id) => !newIds.includes(id)))
           }
 
-          (simulation.current.force('link') as d3.ForceLink<
+          (sim.force('link') as d3.ForceLink<
             d3.SimulationNodeDatum,
             d3.SimulationLinkDatum<d3.SimulationNodeDatum>
-          >).links(graphData.current.links)
-          //simulation.current.restart()
+          >).links(gData.links)
+          sim.restart()
         
         })
       }
@@ -240,7 +246,12 @@ const Editor = ({
             graphData.current.links = loadedData.links
             simulation.current.restart()
             simulation.current.nodes(graphData.current.nodes)
-            simulation.current.force('link',d3.forceLink(graphData.current.links))
+            //simulation.current.force('link',d3.forceLink(graphData.current.links))
+            const forceLink = simulation.current.force('link') as d3.ForceLink<
+            d3.SimulationNodeDatum,
+            d3.SimulationLinkDatum<d3.SimulationNodeDatum>
+            >
+            forceLink.links(graphData.current.links)
             // const forceLink = simulation.current.force('link') as d3.ForceLink<
             //   d3.SimulationNodeDatum,
             //   d3.SimulationLinkDatum<d3.SimulationNodeDatum>
@@ -276,6 +287,7 @@ const Editor = ({
           updateThumbnail(selectedNode, rTldrawApp)
 
           updateVersions(netData, newData, abortVersionsController)
+          refreshSim()
         }else{
           console.log(loadFile.current)
         }
@@ -361,7 +373,7 @@ const Editor = ({
     //put it into the graph
     const dataLoop = setInterval(dataInterval, 3000)
     //draw the graph
-    const drawLoop = setInterval(drawInterval, 200)
+    const drawLoop = setInterval(drawInterval, 100)
 
     return () => {
       clearInterval(networkLoop)
