@@ -110,6 +110,13 @@ const Editor = ({
   const newData = React.useRef<boolean>(false)
   const graphData = React.useRef<any>()
   graphData.current = graphBaseData
+  const loadingTicks = React.useRef<number>(0); //Counter for sticky loading dots
+  
+  const abortCurrentVersionController = new AbortController()
+  const abortFileController = new AbortController()
+  const abortVersionsController = new AbortController()
+  const timeout = 2000
+
   const refreshSim = () => {
     simulation.current.alpha(ALPHA_TARGET_REFRESH)
     simulation.current.restart()
@@ -168,7 +175,161 @@ const Editor = ({
       }
     }
   }
+  //check for new data, if so, update graph data
+    
+  const dataInterval = () => {
+      
+    // if(process.env["NEXT_PUBLIC_VERCEL_EN"] == '1'){
+    //   console.log("im in vercel!")
+    //   app = window.app
+    // }else{
+    //   console.log("im local!")
+    //   app = rTldrawApp.current!
+    // }
 
+    //https://medium.com/ninjaconcept/interactive-dynamic-force-directed-graphs-with-d3-da720c6d7811
+    if (newData.current === true && netData.current && graphData.current) {
+      //if we have new data come in
+      console.log('dataInterval')
+      let changed = true
+      newData.current = false
+
+      //and we have our datasources ready
+      //add new links and nodes from netData into graphData
+      //only --adding-- nodes and links, so we can just append new incoming data to graphData
+      netData.current[0].forEach(function (netNode: dataNode) {
+        if (!graphData.current.nodes.some((graphNode) => graphNode.id === netNode.id)) {
+          const parentLink = netData.current[1].find((link) => link.target === netNode.id)
+          if (!(parentLink === undefined)) {
+            const parent: dataNode = graphData.current.nodes.find(
+              (node) => node.id === parentLink.source
+            )
+            if (!(parent === undefined)) {
+              netNode.x = parent.x + 10
+              netNode.y = parent.y + 10
+            }
+          }
+          graphData.current.nodes = [...graphData.current.nodes, { ...netNode }]
+          changed = true
+        }
+      })
+      netData.current[1].forEach(function (netLink) {
+        if (
+          !graphData.current.links.some(
+            (graphLink) =>
+              graphLink.source.id === netLink.source && graphLink.target.id === netLink.target
+          )
+        ) {
+          graphData.current.links = [...graphData.current.links, { ...netLink }]
+          changed = true
+        }
+      })
+      if (changed) {
+        
+        simulation.current.nodes(graphData.current.nodes)
+        const forceLink = simulation.current.force('link') as d3.ForceLink<
+          d3.SimulationNodeDatum,
+          d3.SimulationLinkDatum<d3.SimulationNodeDatum>
+        >
+        forceLink.links(graphData.current.links)
+        console.log('netdata', netData.current)
+        console.log('graphData', graphData.current)
+        console.log("dataInterval Update")
+        simulation.current.restart()
+        drawInterval()
+      }
+    }
+    loadingTicks.current++ 
+  }
+
+  const networkInterval = () => {
+    const app = rTldrawApp.current!
+    if (!(app === undefined)) {
+
+      //load/save file
+      if (loadedFile.current === false) {
+
+        if(loadFile.current === null){
+          console.log('requesting file...')
+          loadFileFromProcessing(loadFile,netData,newData, abortFileController)
+          currentVersionInterval()
+          if (app.getShape('loading')) {
+            const loadingDot = '.'
+            app.updateShapes({
+              id: 'loading',
+              text: ' Quickpose is looking for a Processing Session' + loadingDot.repeat(loadingTicks.current % 6),
+            })
+          }
+        }else if(loadFile.current === undefined){
+          loadedFile.current = true
+          console.log('no file found!')
+          //make new file, do intro experience?
+        }else if(loadFile.current && simulation.current){ //we have a file and data
+          abortFileController.abort()
+          currentVersionInterval()
+          //https://stackoverflow.com/questions/18206231/saving-and-reloading-a-force-layout-using-d3-js
+          //Load the data
+          const loadedData = JSON.parse(loadFile.current.assets["simData"].toString())
+          console.log('loaded data',loadedData)
+          const importNodes = loadedData.nodes as dataNode[]
+          console.log(importNodes)
+          importNodes.forEach(node =>{
+            node.fx = node.x
+            node.fy = node.y
+          })
+          graphData.current.nodes = importNodes
+          graphData.current.links = loadedData.links
+          simulation.current.restart()
+          simulation.current.nodes(graphData.current.nodes)
+          //simulation.current.force('link',d3.forceLink(graphData.current.links))
+          const forceLink = simulation.current.force('link') as d3.ForceLink<
+          d3.SimulationNodeDatum,
+          d3.SimulationLinkDatum<d3.SimulationNodeDatum>
+          >
+          forceLink.links(graphData.current.links)
+          simulation.current.alpha(parseInt(loadFile.current.assets["alpha"].toString()))
+          //simulation.current.tick(1)
+          
+          graphData.current.nodes.forEach(node =>{
+            node.fx = null
+            node.fy = null
+          })
+          app.loadDocument(loadFile.current.document)
+
+          if (app.getShape('loading')) {//remove loading sticky
+            app.delete(['loading']) 
+          }
+          console.log("loaded file",loadFile.current.document)
+          console.log('loaded graphdata',graphData.current)
+          dataInterval()
+          drawInterval()
+          app.zoomToFit()
+          //simulation.current.restart()
+          loadedFile.current = true
+        }
+      }else if(loadedFile.current === true){ //default update loop
+        console.log('saving/updating...')
+        if (!(app.document === undefined)) {
+          saveToProcessing(app.document, JSON.stringify(graphData.current), simulation.current.alpha(),null)
+        }
+        
+
+        updateVersions(netData, newData, abortVersionsController)
+        dataInterval()
+        refreshSim()
+      }else{
+        console.log(loadFile.current)
+      }
+    }
+  }
+
+    //Update Current Version — (we want to do this very fast)
+  const currentVersionInterval = () => {
+    console.log('update current version interval')
+    updateCurrentVersion(currentVersion, timeout, abortCurrentVersionController)
+  }
+
+    
  
 
   const handleMount = React.useCallback((app: TldrawApp) => {
@@ -197,93 +358,9 @@ const Editor = ({
   React.useEffect(() => {
     //https://sparkjava.com/documentation#examples-and-faq
     //https://stackoverflow.com/questions/18206231/saving-and-reloading-a-force-layout-using-d3-js
-    const abortCurrentVersionController = new AbortController()
-    const abortFileController = new AbortController()
-    const abortVersionsController = new AbortController()
-    const timeout = 2000
+   
 
-    const networkInterval = () => {
-
-      
     
-      const app = rTldrawApp.current!
-      if (!(app === undefined)) {
-
-        //load/save file
-        if (loadedFile.current === false) {
-
-          if(loadFile.current === null){
-            console.log('requesting file...')
-            loadFileFromProcessing(loadFile,netData,newData, abortFileController)
-            currentVersionInterval()
-            if (app.getShape('loading')) {
-              const loadingDot = '.'
-              app.updateShapes({
-                id: 'loading',
-                text: ' Quickpose is looking for a Processing Session' + loadingDot.repeat(i % 6),
-              })
-            }
-          }else if(loadFile.current === undefined){
-            loadedFile.current = true
-            console.log('no file found!')
-            //make new file, do intro experience?
-          }else if(loadFile.current && simulation.current){ //we have a file and data
-            abortFileController.abort()
-            currentVersionInterval()
-            //https://stackoverflow.com/questions/18206231/saving-and-reloading-a-force-layout-using-d3-js
-            //Load the data
-            const loadedData = JSON.parse(loadFile.current.assets["simData"].toString())
-            console.log('loaded data',loadedData)
-            const importNodes = loadedData.nodes as dataNode[]
-            console.log(importNodes)
-            importNodes.forEach(node =>{
-              node.fx = node.x
-              node.fy = node.y
-            })
-            graphData.current.nodes = importNodes
-            graphData.current.links = loadedData.links
-            simulation.current.restart()
-            simulation.current.nodes(graphData.current.nodes)
-            //simulation.current.force('link',d3.forceLink(graphData.current.links))
-            const forceLink = simulation.current.force('link') as d3.ForceLink<
-            d3.SimulationNodeDatum,
-            d3.SimulationLinkDatum<d3.SimulationNodeDatum>
-            >
-            forceLink.links(graphData.current.links)
-            simulation.current.alpha(parseInt(loadFile.current.assets["alpha"].toString()))
-            //simulation.current.tick(1)
-            
-            graphData.current.nodes.forEach(node =>{
-              node.fx = null
-              node.fy = null
-            })
-            app.loadDocument(loadFile.current.document)
-
-            if (app.getShape('loading')) {//remove loading sticky
-              app.delete(['loading']) 
-            }
-            console.log("loaded file",loadFile.current.document)
-            console.log('loaded graphdata',graphData.current)
-            dataInterval()
-            drawInterval()
-            app.zoomToFit()
-            //simulation.current.restart()
-            loadedFile.current = true
-          }
-        }else if(loadedFile.current === true){ //default update loop
-          console.log('saving/updating...')
-          if (!(app.document === undefined)) {
-            saveToProcessing(app.document, JSON.stringify(graphData.current), simulation.current.alpha(),null)
-          }
-          
-
-          updateVersions(netData, newData, abortVersionsController)
-          refreshSim()
-        }else{
-          console.log(loadFile.current)
-        }
-      }
-    }
    const updateThumbnailInterval = () =>{
       //BUG = have to do this more slowly, or else firefox will get angry
       //cant change url before last image has loaded - thats why its in the slower interval
@@ -294,78 +371,9 @@ const Editor = ({
     }
     
 
-    //Update Current Version — (we want to do this very fast)
-    const currentVersionInterval = () => {
-      console.log('update current version interval')
-      updateCurrentVersion(currentVersion, timeout, abortCurrentVersionController)
-    }
+ 
 
-    //check for new data, if so, update graph data
-    let i = 0 //Counter for sticky loading dots
-    const dataInterval = () => {
-      
-      // if(process.env["NEXT_PUBLIC_VERCEL_EN"] == '1'){
-      //   console.log("im in vercel!")
-      //   app = window.app
-      // }else{
-      //   console.log("im local!")
-      //   app = rTldrawApp.current!
-      // }
-
-      //https://medium.com/ninjaconcept/interactive-dynamic-force-directed-graphs-with-d3-da720c6d7811
-      if (newData.current === true && netData.current && graphData.current) {
-        //if we have new data come in
-        console.log('dataInterval')
-        let changed = true
-        newData.current = false
-
-        //and we have our datasources ready
-        //add new links and nodes from netData into graphData
-        //only --adding-- nodes and links, so we can just append new incoming data to graphData
-        netData.current[0].forEach(function (netNode: dataNode) {
-          if (!graphData.current.nodes.some((graphNode) => graphNode.id === netNode.id)) {
-            const parentLink = netData.current[1].find((link) => link.target === netNode.id)
-            if (!(parentLink === undefined)) {
-              const parent: dataNode = graphData.current.nodes.find(
-                (node) => node.id === parentLink.source
-              )
-              if (!(parent === undefined)) {
-                netNode.x = parent.x + 10
-                netNode.y = parent.y + 10
-              }
-            }
-            graphData.current.nodes = [...graphData.current.nodes, { ...netNode }]
-            changed = true
-          }
-        })
-        netData.current[1].forEach(function (netLink) {
-          if (
-            !graphData.current.links.some(
-              (graphLink) =>
-                graphLink.source.id === netLink.source && graphLink.target.id === netLink.target
-            )
-          ) {
-            graphData.current.links = [...graphData.current.links, { ...netLink }]
-            changed = true
-          }
-        })
-        if (changed) {
-          
-          simulation.current.nodes(graphData.current.nodes)
-          const forceLink = simulation.current.force('link') as d3.ForceLink<
-            d3.SimulationNodeDatum,
-            d3.SimulationLinkDatum<d3.SimulationNodeDatum>
-          >
-          forceLink.links(graphData.current.links)
-          console.log('netdata', netData.current)
-          console.log('graphData', graphData.current)
-          console.log("dataInterval Update")
-          simulation.current.restart()
-        }
-      }
-      i++
-    }
-
+    
     //get data from processing
     const networkLoop = setInterval(networkInterval, timeout * 2)
     //look for current version
@@ -392,7 +400,7 @@ const Editor = ({
   const handlePatch = React.useCallback((app: TldrawApp, reason?: string) => {
     //console.log(reason)
     if(loadedFile.current === true){
-      drawInterval(simulation,app,graphData)
+      drawInterval()
     }
     
     switch (reason) {
@@ -439,7 +447,10 @@ const Editor = ({
             new Date().getTime() - timeSinceLastSelection.current < DOUBLE_CLICK_TIME
           ) {
             const idInteger = selectedShape.id.replace(/\D/g, '')
-            sendFork(idInteger,currentVersion)
+            sendFork(idInteger,currentVersion).then(response =>
+              {
+                networkInterval()
+              })
             console.log('send double click')
           } else {
             timeSinceLastSelection.current = new Date().getTime()
@@ -461,6 +472,7 @@ const Editor = ({
           if (!(lastSelection.current === selectedNode.current)) {
             const idInteger = selectedShape.id.replace(/\D/g, '')
             sendSelect(idInteger,currentVersion)
+            networkInterval()
             console.log('send select!', idInteger)
             timeSinceLastSelection.current = new Date().getTime()
           }
