@@ -38,8 +38,6 @@ import * as d3 from 'd3'
 import { SimulationNodeDatum, SimulationLinkDatum } from 'd3'
 import deepEqual from "deep-equal"
 import { 
-  sendFork, 
-  sendSelect, 
   saveToProcessing, 
   getIconImageURLNoTime, 
   getIconImageURL,
@@ -68,6 +66,7 @@ import {
   updateLinkShapes,
   updateNodeShapes
  } from 'utils/quickposeDrawing'
+import { dateTimestampInSeconds, timestampInSeconds } from '@sentry/utils'
 
 //declare const window: Window & { app: TldrawApp }
 
@@ -122,27 +121,33 @@ const Editor = ({
     simulation.current.restart()
   }
   const sendFork = async (id: string,currentVersion: { current: string; }) => {
-    await axios.get(LOCALHOST_BASE + '/fork/' + id, {
-      timeout: 10000,
-    })
-    .then(response => {
-      if(response.status === 200){
-        currentVersion.current = response.data.toString()
-        console.log("forked, currentVersion is  "+ currentVersion.current)
-        networkInterval()
-        dataInterval()
-        refreshSim()
-        drawInterval()
-        const app = rTldrawApp.current!
-        if(app !== undefined){
-          app.zoomToFit()
+    const start = timestampInSeconds()
+    const app = rTldrawApp.current!
+    if(app !== undefined){
+      app.appState.isLoading = true
+      await axios.get(LOCALHOST_BASE + '/fork/' + id, {
+        timeout: 600,
+      })
+      .then(response => {
+        if(response.status === 200){
+          currentVersion.current = response.data.toString()
+          console.log("forked, currentVersion is  "+ currentVersion.current,timestampInSeconds()-start)
+          networkInterval()
+          console.log("network", timestampInSeconds()-start)
+          dataInterval()
+          console.log("data",timestampInSeconds()-start)
+          refreshSim()
+          console.log("refresh",timestampInSeconds()-start)
+          drawInterval()
+          console.log("draw",timestampInSeconds()-start)
+          app.appState.isLoading = false
         }
-      }
-    })
-    .catch(error => {
-      //console.warn("error fetching current version: ", error);
-      return null
-    })
+      })
+      .catch(error => {
+        //console.warn("error fetching current version: ", error);
+        return null
+      })
+    }
 }
 const sendSelect = async (id: string,currentVersion: { current: string; }) => {
   await axios.get(LOCALHOST_BASE + '/select/' + id, {
@@ -171,7 +176,7 @@ const sendSelect = async (id: string,currentVersion: { current: string; }) => {
       loadedFile.current === true && !(app === undefined)){
       //console.log('drawInterval2')
       requestAnimationFrame(() => {
-        console.log('drawInterval3')
+        //console.log('drawInterval3')
         gData.nodes = [...sim.nodes()] //get simulation data out
         let tlNodes = app.getShapes().filter((shape) => nodeRegex.test(shape.id))
         const [addNodes, updateNodes] = updateNodeShapes(
