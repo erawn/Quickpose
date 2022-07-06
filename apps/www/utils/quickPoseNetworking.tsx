@@ -7,43 +7,11 @@ import RaxConfig from "axios-retry";
 import deepEqual from "deep-equal";
 import { useCallback } from "react";
 import axios from 'axios'
-const LOCALHOST_BASE = 'http://127.0.0.1:8080';
+export const LOCALHOST_BASE = 'http://127.0.0.1:8080';
 
 
-export const sendFork = async (id: string,currentVersion: { current: string; }) => {
-    //const response = await fetch(LOCALHOST_BASE + '/fork/' + id)
-    //return await response.json();
-    await axios.get(LOCALHOST_BASE + '/fork/' + id, {
-      timeout: 10000,
-      //signal: abortCurrentVersionController.signal
-    })
-    .then(response => {
-      if(response.status === 200){
-        currentVersion.current = response.data.toString()
-        
-        console.log("forked, currentVersion is  "+ currentVersion.current)
-      }
-    })
-    .catch(error => {
-      //console.warn("error fetching current version: ", error);
-      return null
-    })
-}
-export const sendSelect = async (id: string,currentVersion: { current: string; }) => {
-  await axios.get(LOCALHOST_BASE + '/select/' + id, {
-    timeout: 10000,
-    //signal: abortCurrentVersionController.signal
-  })
-  .then(function(response) {
-    if(response.status === 200){
-      currentVersion.current = response.data.toString()
-    }
-  })
-  .catch(error => {
-    //console.warn("error fetching current version: ", error);
-    return null
-  })
-}
+
+
 export function getIconImageURLNoTime(id:string){
     return LOCALHOST_BASE + "/image/" + id; //Add Time to avoid Caching so images update properly
 }
@@ -88,52 +56,37 @@ export const saveToProcessing = async (document: TDDocument, simData: string, al
     
     return true
 }
-export const loadFileFromProcessing = async(loadFile, netData, newData, abortFileController) => {
+export const loadFileFromProcessing = async(loadFile,abortFileController) => {
 
-    const getFile = axios.get(LOCALHOST_BASE+'/tldrfile', {
-      timeout: 2000,
-      signal: abortFileController.signal
+    const getFile = await axios.get(LOCALHOST_BASE+'/tldrfile', {
+      timeout: 500,
+     // signal: abortFileController.signal
     })
-
-    const getData = axios.get(LOCALHOST_BASE+'/versions.json', {
-        timeout: 2000,
-        signal: abortFileController.signal
-      })
-
-    axios.all([getFile,getData]).then(axios.spread((...responses) => {
-
-        const file = responses[0]
-        const data = responses[1]
-        if(file.status === 200 && data.data && loadFile.current === null){ //this third conditional is to avoid race conditions
-            loadFile.current = file.data
-            netData.current = data.data
-            abortFileController.abort()
-            console.log("loaded file - aborting file requests")
-        }else if(file.status === 201){
-            loadFile.current = undefined //this is the signal that we attempted to load a file, but it was missing
-        }
-
-        // use/access the results 
-      
-      })).catch(errors => {
-      
-        // react on errors.
-      
-      })
+    const fileStatus = await getFile.status;
+    const fileData = await getFile.data;
+    if(fileStatus === 200 && fileData && loadFile.current === null){ //this third conditional is to avoid race conditions
+      loadFile.current = fileData
+      abortFileController.abort()
+      console.log("loaded file - aborting file requests")
+    }else if(fileStatus === 201){
+      loadFile.current = undefined //this is the signal that we attempted to load a file, but it was missing
+      console.log("Found Session but no TLDR")
+      abortFileController.abort()
+   } 
   }
 
 export const updateVersions = async (netData, newData, abortVersionsController:AbortController) => {
     //Update Versions
     
     axios.get(LOCALHOST_BASE+'/versions.json', {
-      timeout: 100,
-      signal: abortVersionsController.signal
+      timeout: 500,
     })
     .then(response => {
-      if(!deepEqual(response.data,netData.current)){
+      //console.log(response.data)
+      if(response.data !== undefined && !deepEqual(response.data,netData.current)){
         newData.current = true;
         netData.current = response.data
-        //console.log("newdata",response.data)
+        console.log("newdata",response.data)
         //dataInterval()
       }else{
         //console.log("samedata",response.data)
@@ -170,23 +123,25 @@ export const updateThumbnail = async (selectedNode, rTldrawApp) => {
   }
 
   export const updateCurrentVersion = async (currentVersion, timeout,abortCurrentVersionController) => {
-    const client = axios.create()
-        axiosRetry(client, { 
-          retries: 1,
-          shouldResetTimeout: false,
-          onRetry(retryCount, error, requestConfig) {
-              console.log("retrying update",retryCount)
-          },
-         });
-    await client.get(LOCALHOST_BASE+'/currentVersion', {
-        timeout: timeout,
-        signal: abortCurrentVersionController.signal
+    // const client = axios.create()
+    //     axiosRetry(client, { 
+    //       retries: 1,
+    //       shouldResetTimeout: false,
+    //       onRetry(retryCount, error, requestConfig) {
+    //           //console.log("retrying update",retryCount)
+    //       },
+    //      });
+    //console.log("currentVersion is  "+ currentVersion.current)
+    axios.get(LOCALHOST_BASE+'/currentVersion', {
+        timeout: 500,
       })
       .then(response => {
-        if(response.data){
+        //console.log(response)
+        if(response.data !== undefined){
+          //console.log("currentVersion is  "+ currentVersion.current)
           currentVersion.current = response.data.toString()
           return true
-          //console.log("currentVersion is  "+ currentVersion.current)
+          
         }else{
           return false
         }
@@ -205,7 +160,7 @@ export const updateThumbnail = async (selectedNode, rTldrawApp) => {
       async (app: TldrawApp, file: File, id: string): Promise<string | false> => {
         const filename = encodeURIComponent(file.name)
         const url = LOCALHOST_BASE+"/assets/"+filename
-        console.log("making url",url)
+        //console.log("making url",url)
         const client = axios.create()
         axiosRetry(client, { 
           retries: 10,
@@ -277,7 +232,7 @@ export const updateThumbnail = async (selectedNode, rTldrawApp) => {
         .catch(error => {
           //console.error("error fetching: ", error);
           app.appState.currentProject = ''
-          currentProject.current = null
+          currentProject.current = ''
         })
       }
     }
