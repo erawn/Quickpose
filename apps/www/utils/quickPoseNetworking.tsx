@@ -256,19 +256,28 @@ export const updateThumbnail = async (selectedNode, rTldrawApp) => {
   }
 
 
-  export const getCurrentProject = async (currentProject,app:TldrawApp) => {
+  export const getCurrentProject = async (currentProjectRef,rTldrawApp) => {
     //Update Versions
+    let app:TldrawApp = rTldrawApp!
+    const currentProject = currentProjectRef!
+    //Update Thumbnail Image
+    if(app !== undefined && currentProject !== undefined){
+      app = rTldrawApp.current!
+      const current = currentProject.current
+      if(app !== undefined && current !== undefined){
     
-    axios.get(LOCALHOST_BASE+'/projectName', {
-      timeout: 100,
-    })
-    .then(response => {
-      currentProject.current = response.data
-      app.appState.currentProject = response.data
-    })
-    .catch(error => {
-      //console.error("error fetching: ", error);
-      app.appState.currentProject = ''
-      currentProject.current = null
-    })
+        axios.get(LOCALHOST_BASE+'/projectName', {
+          timeout: 100,
+        })
+        .then(response => {
+          currentProject.current = response.data
+          app.appState.currentProject = response.data
+        })
+        .catch(error => {
+          //console.error("error fetching: ", error);
+          app.appState.currentProject = ''
+          currentProject.current = null
+        })
+      }
+    }
   }
