@@ -93,7 +93,7 @@ const Editor = ({
   const lastSelection = React.useRef<string>(null)
   const currentVersion = React.useRef<string>(null)
   const timeSinceLastSelection = React.useRef<number>(0)
-
+  const centerPoint = React.useRef<number[]>([600,600])
   //file loading
   const loadFile = React.useRef<TDFile>(null)
   const loadedFile = React.useRef<boolean>(false)
@@ -311,6 +311,7 @@ const sendSelect = async (id: string,currentVersion: { current: string; }) => {
           if (app.getShape('loading')) {//remove loading sticky
             app.delete(['loading']) 
           }
+          simulation.current = d3Sim(centerPoint.current,app.rendererBounds)
           newData.current = true
           currentVersionInterval()
           dataInterval()
@@ -318,21 +319,22 @@ const sendSelect = async (id: string,currentVersion: { current: string; }) => {
           //simulation.current.alpha(ALPHA_TARGET_REFRESH)
           drawInterval()
           //make new file, do intro experience?
-        }else if(loadFile.current !== null && simulation.current){ //we have a file and data
+        }else if(loadFile.current !== null){ //we have a file and data
           abortFileController.abort()
           currentVersionInterval()
           //https://stackoverflow.com/questions/18206231/saving-and-reloading-a-force-layout-using-d3-js
           //Load the data
           const loadedData = JSON.parse(loadFile.current.assets["simData"].toString())
-          console.log('loaded data',loadedData)
+          //console.log('loaded data',loadedData)
           const importNodes = loadedData.nodes as dataNode[]
-          console.log(importNodes)
+          //console.log(importNodes)
           importNodes.forEach(node =>{
             node.fx = node.x
             node.fy = node.y
           })
           graphData.current.nodes = importNodes
           graphData.current.links = loadedData.links
+          simulation.current = d3Sim(centerPoint.current,app.rendererBounds)
           simulation.current.restart()
           simulation.current.nodes(graphData.current.nodes)
 
@@ -366,7 +368,7 @@ const sendSelect = async (id: string,currentVersion: { current: string; }) => {
       }else if(loadedFile.current === true){ //default update loop
         console.log('saving/updating...')
         if (!(app.document === undefined)) {
-          saveToProcessing(app.document, JSON.stringify(graphData.current), simulation.current.alpha(),null)
+          saveToProcessing(app.document, JSON.stringify(graphData.current), simulation.current.alpha(),centerPoint.current, null)
         }
         updateVersions(netData, newData, abortVersionsController)
         dataInterval()
@@ -401,12 +403,13 @@ const sendSelect = async (id: string,currentVersion: { current: string; }) => {
     loadFileFromProcessing(loadFile,abortFileController)
 
     rTldrawApp.current = app
-    simulation.current = d3Sim(app.centerPoint,app.rendererBounds)
+    centerPoint.current = app.centerPoint
+    
 
     //app.camera.zoom =
     //app.deleteAll() //replace this with make new document or something
     app.replacePageContent({},{},{})
-    app.createShapes(defaultSticky(app.centerPoint))
+    app.createShapes(defaultSticky(centerPoint.current))
     app.zoomToFit()
   }, [])
 
