@@ -14,7 +14,7 @@ export const linkRegex = new RegExp(/link\d/);
 export const d3Sim = (centerPoint,bounds:TLBounds) => {
     const coords = tldrawCoordstod3(...centerPoint as [number,number])
     const boundary = tldrawCoordstod3(bounds.maxX,bounds.maxY)
-    console.log(bounds,boundary)
+    //console.log(bounds,boundary)
     return d3.forceSimulation()
     .force("center", d3.forceCenter(coords[0],coords[1]).strength(.1))
     .force("boundary", forceBoundary(0,0,500,500))
@@ -178,9 +178,10 @@ export const updateBinding = (app:TldrawApp, link, startNode,endNode,drawLink) =
 
   export const updateNodeShapes = (graphData, tlNodes,currentVersion,centerPoint,selectedIds) => {
     const updateNodes = []
+    //console.log(graphData.nodes)
     const addNodes = graphData.nodes.map(function(node: dataNode){
       const tlDrawNode:VersionNodeShape = tlNodes.find(n => n.id === 'node'+node.id)
-      
+      //console.log(tlDrawNode)
       if(!tlDrawNode){
           const n = {
               id: 'node'+node.id,

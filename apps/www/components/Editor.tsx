@@ -121,58 +121,94 @@ const Editor = ({
     simulation.current.alpha(ALPHA_TARGET_REFRESH)
     simulation.current.restart()
   }
+  const sendFork = async (id: string,currentVersion: { current: string; }) => {
+    await axios.get(LOCALHOST_BASE + '/fork/' + id, {
+      timeout: 10000,
+    })
+    .then(response => {
+      if(response.status === 200){
+        currentVersion.current = response.data.toString()
+        console.log("forked, currentVersion is  "+ currentVersion.current)
+        networkInterval()
+        dataInterval()
+        refreshSim()
+        drawInterval()
+        const app = rTldrawApp.current!
+        if(app !== undefined){
+          app.zoomToFit()
+        }
+      }
+    })
+    .catch(error => {
+      //console.warn("error fetching current version: ", error);
+      return null
+    })
+}
+const sendSelect = async (id: string,currentVersion: { current: string; }) => {
+  await axios.get(LOCALHOST_BASE + '/select/' + id, {
+    timeout: 10000,
+    //signal: abortCurrentVersionController.signal
+  })
+  .then(function(response) {
+    if(response.status === 200){
+      currentVersion.current = response.data.toString()
+      drawInterval()
+    }
+  })
+  .catch(error => {
+    //console.warn("error fetching current version: ", error);
+    return null
+  })
+}
 
  function drawInterval(){
   //console.log('drawInterval')
   const sim = simulation.current!
   const app = rTldrawApp.current!
   const gData = graphData.current!
-    if(//simulation !== undefined //&&
-       sim !== undefined && gData !== undefined
-       //&& simulation.current.alpha > simulation.current.alphaMin
-       ){
-        //console.log('drawInterval2')
-      if (loadedFile.current === true && !(app === undefined)) {
-        requestAnimationFrame(() => {
-          console.log('drawInterval3')
-          gData.nodes = [...sim.nodes()] //get simulation data out
-          let tlNodes = app.getShapes().filter((shape) => nodeRegex.test(shape.id))
-          const [addNodes, updateNodes] = updateNodeShapes(
-            gData,
-            tlNodes,
-            currentVersion,
-            app.centerPoint,
-            app.selectedIds
-          )
-          if (addNodes.length > 0) {
-            app.createShapes(...addNodes)
-          }
-          if (updateNodes.length > 0) {
-            app.updateShapes(...updateNodes)
-          }
-          sim.nodes(gData.nodes)
+    if(sim !== undefined && gData !== undefined && 
+      //simulation.current.alpha > simulation.current.alphaMin && //Doesn't work when there's only one node
+      loadedFile.current === true && !(app === undefined)){
+      //console.log('drawInterval2')
+      requestAnimationFrame(() => {
+        console.log('drawInterval3')
+        gData.nodes = [...sim.nodes()] //get simulation data out
+        let tlNodes = app.getShapes().filter((shape) => nodeRegex.test(shape.id))
+        const [addNodes, updateNodes] = updateNodeShapes(
+          gData,
+          tlNodes,
+          currentVersion,
+          app.centerPoint,
+          app.selectedIds
+        )
+        if (addNodes.length > 0) {
+          app.createShapes(...addNodes)
+        }
+        if (updateNodes.length > 0) {
+          app.updateShapes(...updateNodes)
+        }
+        sim.nodes(gData.nodes)
 
-          const tlLinks = app.getShapes().filter((shape) => linkRegex.test(shape.id))
-          tlNodes = app.getShapes().filter((shape) => nodeRegex.test(shape.id))
-          const [newLinks, updateLinks] = updateLinkShapes(app, tlLinks, graphData, tlNodes)
-          if (updateLinks.length > 0) {
-            app.updateShapes(...updateLinks)
-          }
-          if (newLinks.length > 0) {
-            app.createShapes(...newLinks)
-            //deselect created links
-            const newIds: string[] = newLinks.map((link) => link.id)
-            app.select(...app.selectedIds.filter((id) => !newIds.includes(id)))
-          }
+        const tlLinks = app.getShapes().filter((shape) => linkRegex.test(shape.id))
+        tlNodes = app.getShapes().filter((shape) => nodeRegex.test(shape.id))
+        const [newLinks, updateLinks] = updateLinkShapes(app, tlLinks, graphData, tlNodes)
+        if (updateLinks.length > 0) {
+          app.updateShapes(...updateLinks)
+        }
+        if (newLinks.length > 0) {
+          app.createShapes(...newLinks)
+          //deselect created links
+          const newIds: string[] = newLinks.map((link) => link.id)
+          app.select(...app.selectedIds.filter((id) => !newIds.includes(id)))
+        }
 
-          (sim.force('link') as d3.ForceLink<
-            d3.SimulationNodeDatum,
-            d3.SimulationLinkDatum<d3.SimulationNodeDatum>
-          >).links(gData.links)
-          sim.restart()
-        
-        })
-      }
+        (sim.force('link') as d3.ForceLink<
+          d3.SimulationNodeDatum,
+          d3.SimulationLinkDatum<d3.SimulationNodeDatum>
+        >).links(gData.links)
+        sim.restart()
+      
+      })
     }
   }
   //check for new data, if so, update graph data
@@ -235,7 +271,8 @@ const Editor = ({
         console.log('netdata', netData.current)
         console.log('graphData', graphData.current)
         console.log("dataInterval Update")
-        simulation.current.restart()
+        //simulation.current.restart()
+        refreshSim()
         drawInterval()
       }
     }
@@ -251,7 +288,8 @@ const Editor = ({
 
         if(loadFile.current === null){
           console.log('requesting file...')
-          loadFileFromProcessing(loadFile,netData,newData, abortFileController)
+          updateVersions(netData, newData, abortVersionsController)
+          loadFileFromProcessing(loadFile,abortFileController)
           currentVersionInterval()
           if (app.getShape('loading')) {
             const loadingDot = '.'
@@ -262,9 +300,19 @@ const Editor = ({
           }
         }else if(loadFile.current === undefined){
           loadedFile.current = true
+          updateVersions(netData, newData, abortVersionsController)
           console.log('no file found!')
+          abortFileController.abort()
+          if (app.getShape('loading')) {//remove loading sticky
+            app.delete(['loading']) 
+          }
+          newData.current = true
+          currentVersionInterval()
+          dataInterval()
+          refreshSim()
+          drawInterval()
           //make new file, do intro experience?
-        }else if(loadFile.current && simulation.current){ //we have a file and data
+        }else if(loadFile.current !== null && simulation.current){ //we have a file and data
           abortFileController.abort()
           currentVersionInterval()
           //https://stackoverflow.com/questions/18206231/saving-and-reloading-a-force-layout-using-d3-js
@@ -281,10 +329,10 @@ const Editor = ({
           graphData.current.links = loadedData.links
           simulation.current.restart()
           simulation.current.nodes(graphData.current.nodes)
-          //simulation.current.force('link',d3.forceLink(graphData.current.links))
+
           const forceLink = simulation.current.force('link') as d3.ForceLink<
-          d3.SimulationNodeDatum,
-          d3.SimulationLinkDatum<d3.SimulationNodeDatum>
+            d3.SimulationNodeDatum,
+            d3.SimulationLinkDatum<d3.SimulationNodeDatum>
           >
           forceLink.links(graphData.current.links)
           simulation.current.alpha(parseInt(loadFile.current.assets["alpha"].toString()))
@@ -301,10 +349,11 @@ const Editor = ({
           }
           console.log("loaded file",loadFile.current.document)
           console.log('loaded graphdata',graphData.current)
+          newData.current = true
           dataInterval()
+          refreshSim()
           drawInterval()
           app.zoomToFit()
-          //simulation.current.restart()
           loadedFile.current = true
         }
       }else if(loadedFile.current === true){ //default update loop
@@ -312,11 +361,11 @@ const Editor = ({
         if (!(app.document === undefined)) {
           saveToProcessing(app.document, JSON.stringify(graphData.current), simulation.current.alpha(),null)
         }
-        
-
         updateVersions(netData, newData, abortVersionsController)
         dataInterval()
-        refreshSim()
+        updateCurrentVersion(currentVersion, timeout, abortCurrentVersionController)
+        //console.log(currentVersion.current)
+        //console.log(netData.current)
       }else{
         console.log(loadFile.current)
       }
@@ -325,7 +374,6 @@ const Editor = ({
 
     //Update Current Version — (we want to do this very fast)
   const currentVersionInterval = () => {
-    console.log('update current version interval')
     updateCurrentVersion(currentVersion, timeout, abortCurrentVersionController)
   }
 
@@ -343,7 +391,7 @@ const Editor = ({
 
     console.log('requesting startup file...')
     const abortFileController = new AbortController()
-    loadFileFromProcessing(loadFile,netData,newData,abortFileController)
+    loadFileFromProcessing(loadFile,abortFileController)
 
     rTldrawApp.current = app
     simulation.current = d3Sim(app.centerPoint,app.rendererBounds)
@@ -377,7 +425,7 @@ const Editor = ({
     //get data from processing
     const networkLoop = setInterval(networkInterval, timeout * 2)
     //look for current version
-    //const currentVersionLoop = setInterval(currentVersionInterval, 10000)
+    const currentVersionLoop = setInterval(currentVersionInterval, 500)
     const thumbnailLoop = setInterval(updateThumbnailInterval,200);
     //put it into the graph
     const dataLoop = setInterval(dataInterval, 3000)
@@ -386,7 +434,7 @@ const Editor = ({
 
     return () => {
       clearInterval(networkLoop)
-      //clearInterval(currentVersionLoop)
+      clearInterval(currentVersionLoop)
       clearInterval(thumbnailLoop)
       clearInterval(dataLoop)
       clearInterval(drawLoop)
