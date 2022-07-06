@@ -20,13 +20,15 @@ export function getIconImageURL(id:string){
     return LOCALHOST_BASE + "/image/" + id + "?" + ((new Date()).getTime()); //Add Time to avoid Caching so images update properly
 }
 
-export const saveToProcessing = async (document: TDDocument, simData: string, alpha, fileHandle: FileSystemHandle | null) => {
+export const saveToProcessing = async (document: TDDocument, simData: string, alpha, centerPoint: [number,number], fileHandle: FileSystemHandle | null) => {
     const file: TDFile = {
         name: 'quickpose.tldr',
         fileHandle: fileHandle ?? null,
         document,
         assets: {"simData":simData,
-                "alpha":alpha.toString()
+                "alpha":alpha.toString(),
+                "centerPoint": centerPoint.toString,
+                ...document.assets
                 },
       }
     // Serialize to JSON
