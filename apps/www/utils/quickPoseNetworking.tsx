@@ -20,6 +20,7 @@ export const sendFork = async (id: string,currentVersion: { current: string; }) 
     .then(response => {
       if(response.status === 200){
         currentVersion.current = response.data.toString()
+        
         console.log("forked, currentVersion is  "+ currentVersion.current)
       }
     })
@@ -153,7 +154,7 @@ export const updateThumbnail = async (selectedNode, rTldrawApp) => {
           const selectedShape = app.getShape(('node'+select).toString())
           if( !(selectedShape === undefined) && selectedShape.type == TDShapeType.VersionNode){
             const idInteger = selectedShape.id.replace(/\D/g,"")
-            const res = await axios.get(getIconImageURL(idInteger),{timeout:20})
+            const res = await axios.get(getIconImageURL(idInteger),{timeout:100})
             const status = await res.status
             if(status === 200){
               selectedShape.imgLink = getIconImageURL(idInteger)//refresh the thumbnail image
