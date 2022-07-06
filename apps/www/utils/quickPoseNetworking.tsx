@@ -142,16 +142,28 @@ export const updateVersions = async (netData, newData, abortVersionsController:A
       //console.error("error fetching: ", error);
     })
   }
-export const updateThumbnail = (selectedNode, rTldrawApp) => {
+export const updateThumbnail = async (selectedNode, rTldrawApp) => {
+    let app:TldrawApp = rTldrawApp!
+    let select = selectedNode!
     //Update Thumbnail Image
-    if(selectedNode.current){
-      const app = rTldrawApp.current!
-      
-      const selectedShape = app.getShape(selectedNode.current)
-      if(!(selectedShape === undefined) && selectedShape.type == TDShapeType.VersionNode){
-        const idInteger = selectedShape.id.replace(/\D/g,"")
-        selectedShape.imgLink = getIconImageURL(idInteger)//refresh the thumbnail image
-        app.updateShapes(selectedShape)
+    if(app !== undefined && select !== undefined){
+      app = rTldrawApp.current!
+      select = selectedNode.current!
+      if(app !== undefined && select !== undefined){
+          const selectedShape = app.getShape(('node'+select).toString())
+          if( !(selectedShape === undefined) && selectedShape.type == TDShapeType.VersionNode){
+            const idInteger = selectedShape.id.replace(/\D/g,"")
+            const res = await axios.get(getIconImageURL(idInteger),{timeout:20})
+            const status = await res.status
+            if(status === 200){
+              selectedShape.imgLink = getIconImageURL(idInteger)//refresh the thumbnail image
+              app.updateShapes(selectedShape)
+            }else{
+              return false
+            }
+           
+            //console.log("update thumbnail")
+          }
       }
     }
   }
