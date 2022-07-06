@@ -208,9 +208,7 @@ const Editor = ({
     
       const app = rTldrawApp.current!
       if (!(app === undefined)) {
-        if(currentProject.current !== undefined){
-          getCurrentProject(currentProject,app)
-        }
+
         //load/save file
         if (loadedFile.current === false) {
 
@@ -290,6 +288,9 @@ const Editor = ({
       //BUG = have to do this more slowly, or else firefox will get angry
       //cant change url before last image has loaded - thats why its in the slower interval
       updateThumbnail(currentVersion, rTldrawApp)
+      if(currentProject.current !== undefined){
+        getCurrentProject(currentProject,rTldrawApp)
+      }
     }
     
 
