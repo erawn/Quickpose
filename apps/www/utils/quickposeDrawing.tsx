@@ -18,7 +18,7 @@ export const d3Sim = (centerPoint,bounds:TLBounds) => {
     return d3.forceSimulation()
     .force("center", d3.forceCenter(coords[0],coords[1]).strength(.1))
     .force("boundary", forceBoundary(0,0,500,500))
-    .force('charge', d3.forceManyBody().strength(-10))
+    .force('charge', d3.forceManyBody().strength(-5))
     .force("link", d3.forceLink()
       .id(function(d:dataNode,i) {
         return d.id
@@ -32,11 +32,11 @@ export const d3Sim = (centerPoint,bounds:TLBounds) => {
         }else{
           return 20
         }
-      })
+      }).strength(1)
     )
-    .force('collision', d3.forceCollide().radius(function(d: dataNode) {return d.r + 20} ))
+    .force('collision', d3.forceCollide().radius(function(d: dataNode) {return d.r + 10} ))
     .alpha(3)
-    .alphaDecay(.01)
+    .alphaDecay(.03)
 }
 
 export const defaultSticky = (centerPoint) => {
