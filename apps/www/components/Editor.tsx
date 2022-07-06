@@ -117,7 +117,7 @@ const Editor = ({
   const timeout = 2000
 
   const refreshSim = () => {
-    simulation.current.alpha(ALPHA_TARGET_REFRESH)
+    //simulation.current.alpha(ALPHA_TARGET_REFRESH)
     simulation.current.restart()
   }
   const sendFork = async (id: string,currentVersion: { current: string; }) => {
@@ -151,7 +151,7 @@ const Editor = ({
 }
 const sendSelect = async (id: string,currentVersion: { current: string; }) => {
   await axios.get(LOCALHOST_BASE + '/select/' + id, {
-    timeout: 10000,
+    timeout: 600,
     //signal: abortCurrentVersionController.signal
   })
   .then(function(response) {
@@ -315,6 +315,7 @@ const sendSelect = async (id: string,currentVersion: { current: string; }) => {
           currentVersionInterval()
           dataInterval()
           refreshSim()
+          //simulation.current.alpha(ALPHA_TARGET_REFRESH)
           drawInterval()
           //make new file, do intro experience?
         }else if(loadFile.current !== null && simulation.current){ //we have a file and data
@@ -343,10 +344,10 @@ const sendSelect = async (id: string,currentVersion: { current: string; }) => {
           simulation.current.alpha(parseInt(loadFile.current.assets["alpha"].toString()))
           //simulation.current.tick(1)
           
-          graphData.current.nodes.forEach(node =>{
-            node.fx = null
-            node.fy = null
-          })
+          // graphData.current.nodes.forEach(node =>{
+          //   node.fx = null
+          //   node.fy = null
+          // })
           app.loadDocument(loadFile.current.document)
 
           if (app.getShape('loading')) {//remove loading sticky
@@ -357,6 +358,7 @@ const sendSelect = async (id: string,currentVersion: { current: string; }) => {
           newData.current = true
           dataInterval()
           refreshSim()
+          simulation.current.alpha(ALPHA_TARGET_REFRESH)
           drawInterval()
           app.zoomToFit()
           loadedFile.current = true
