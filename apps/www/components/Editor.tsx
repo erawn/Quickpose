@@ -115,7 +115,7 @@ const Editor = ({
     simulation.current.restart()
   }
 
- function drawInterval(simdd,appd,graphDatad){
+ function drawInterval(){
   //console.log('drawInterval')
   const sim = simulation.current!
   const app = rTldrawApp.current!
@@ -127,7 +127,7 @@ const Editor = ({
         //console.log('drawInterval2')
       if (loadedFile.current === true && !(app === undefined)) {
         requestAnimationFrame(() => {
-          //console.log('drawInterval3')
+          console.log('drawInterval3')
           gData.nodes = [...sim.nodes()] //get simulation data out
           let tlNodes = app.getShapes().filter((shape) => nodeRegex.test(shape.id))
           const [addNodes, updateNodes] = updateNodeShapes(
@@ -252,11 +252,6 @@ const Editor = ({
             d3.SimulationLinkDatum<d3.SimulationNodeDatum>
             >
             forceLink.links(graphData.current.links)
-            // const forceLink = simulation.current.force('link') as d3.ForceLink<
-            //   d3.SimulationNodeDatum,
-            //   d3.SimulationLinkDatum<d3.SimulationNodeDatum>
-            // >
-            // forceLink.links(graphData.current.links)
             simulation.current.alpha(parseInt(loadFile.current.assets["alpha"].toString()))
             //simulation.current.tick(1)
             
@@ -272,9 +267,9 @@ const Editor = ({
             console.log("loaded file",loadFile.current.document)
             console.log('loaded graphdata',graphData.current)
             dataInterval()
-            drawInterval(simulation,app,graphData)
+            drawInterval()
             app.zoomToFit()
-            simulation.current.restart()
+            //simulation.current.restart()
             loadedFile.current = true
           }
         }else if(loadedFile.current === true){ //default update loop
@@ -282,9 +277,7 @@ const Editor = ({
           if (!(app.document === undefined)) {
             saveToProcessing(app.document, JSON.stringify(graphData.current), simulation.current.alpha(),null)
           }
-          //BUG = have to do this more slowly, or else firefox will get angry
-          //cant change url before last image has loaded - thats why its in the slower interval
-          updateThumbnail(selectedNode, rTldrawApp)
+          
 
           updateVersions(netData, newData, abortVersionsController)
           refreshSim()
@@ -293,6 +286,12 @@ const Editor = ({
         }
       }
     }
+   const updateThumbnailInterval = () =>{
+      //BUG = have to do this more slowly, or else firefox will get angry
+      //cant change url before last image has loaded - thats why its in the slower interval
+      updateThumbnail(currentVersion, rTldrawApp)
+    }
+    
 
     //Update Current Version — (we want to do this very fast)
     const currentVersionInterval = () => {
@@ -370,6 +369,7 @@ const Editor = ({
     const networkLoop = setInterval(networkInterval, timeout * 2)
     //look for current version
     //const currentVersionLoop = setInterval(currentVersionInterval, 10000)
+    const thumbnailLoop = setInterval(updateThumbnailInterval,200);
     //put it into the graph
     const dataLoop = setInterval(dataInterval, 3000)
     //draw the graph
@@ -378,6 +378,7 @@ const Editor = ({
     return () => {
       clearInterval(networkLoop)
       //clearInterval(currentVersionLoop)
+      clearInterval(thumbnailLoop)
       clearInterval(dataLoop)
       clearInterval(drawLoop)
       abortVersionsController.abort()
