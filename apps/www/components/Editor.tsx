@@ -342,7 +342,7 @@ const sendSelect = async (id: string,currentVersion: { current: string; }) => {
           >
           forceLink.links(graphData.current.links)
           simulation.current.alpha(parseInt(loadFile.current.assets["alpha"].toString()))
-          //simulation.current.tick(1)
+          simulation.current.tick(20)
           
           // graphData.current.nodes.forEach(node =>{
           //   node.fx = null
