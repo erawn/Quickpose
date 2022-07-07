@@ -16,9 +16,9 @@ export const d3Sim = (centerPoint,bounds:TLBounds) => {
     const boundary = tldrawCoordstod3(bounds.maxX,bounds.maxY)
     //console.log(bounds,boundary)
     return d3.forceSimulation()
-    .force("center", d3.forceCenter(coords[0],coords[1]).strength(.1))
     .force("boundary", forceBoundary(0,0,500,500))
-    .force('charge', d3.forceManyBody().strength(-5))
+    //.force("center", d3.forceCenter(coords[0],coords[1]).strength(.1))
+    .force('charge', d3.forceManyBody().strength(-2))
     .force("link", d3.forceLink()
       .id(function(d:dataNode,i) {
         return d.id
@@ -35,7 +35,6 @@ export const d3Sim = (centerPoint,bounds:TLBounds) => {
       }).strength(1)
     )
     .force('collision', d3.forceCollide().radius(function(d: dataNode) {return d.r + 10} ))
-    .alpha(3)
     .alphaDecay(.03)
 }
 
