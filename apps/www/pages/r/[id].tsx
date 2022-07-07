@@ -1,5 +1,6 @@
 import * as React from 'react'
-import type { GetServerSideProps } from 'next'
+
+import { getSession } from 'next-auth/react'
 import dynamic from 'next/dynamic'
 
 const IFrameWarning = dynamic(() => import('components/IFrameWarning'), {
@@ -20,14 +21,4 @@ export default function Room({ id }: RoomProps) {
   }
 
   return <MultiplayerEditor roomId={id} />
-}
-
-export const getServerSideProps: GetServerSideProps = async (context) => {
-  const id = context.query.id?.toString()
-
-  return {
-    props: {
-      id,
-    },
-  }
 }
