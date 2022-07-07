@@ -1,4 +1,4 @@
-import type { GetServerSideProps } from 'next'
+
 import { getSession } from 'next-auth/react'
 import dynamic from 'next/dynamic'
 import Head from 'next/head'
@@ -28,13 +28,4 @@ const Home: FC<PageProps> = ({ isUser, isSponsor }) => {
 
 export default Home
 
-export const getServerSideProps: GetServerSideProps = async (context) => {
-  const session = await getSession(context)
 
-  return {
-    props: {
-      isUser: session?.user ? true : false,
-      isSponsor: session?.isSponsor || false,
-    },
-  }
-}

@@ -26,6 +26,7 @@ module.exports = withPWA({
     disable: !isProduction,
     dest: 'public',
   },
+  devtool: 'source-map',
   productionBrowserSourceMaps: true,
   env: {
     NEXT_PUBLIC_COMMIT_SHA: VERCEL_GIT_COMMIT_SHA,
@@ -37,14 +38,20 @@ module.exports = withPWA({
     if (!options.isServer) {
       config.resolve.alias['@sentry/node'] = '@sentry/browser'
     }
-    console.log(options)
-    console.log(JSON.stringify(options.isServer.toString()))
     config.plugins.push(
       new options.webpack.DefinePlugin({
-        'process.env.NEXT_IS_SERVER': JSON.stringify(options.isServer.toString()),
+        'process.env.NEXT_IS_SERVER': JSON.stringify('production'),
       })
     )
-
+    config.plugins.push(
+      new options.webpack.DefinePlugin({
+        'process.env': {
+            // This has effect on the react lib size
+            'NODE_ENV': JSON.stringify('production'),
+        }
+      })
+    )
+    
     config.module.rules.push({
       test: /.*packages.*\.js$/,
       use: ['source-map-loader'],
@@ -59,7 +66,6 @@ module.exports = withPWA({
       VERCEL_GIT_COMMIT_SHA &&
       isProduction
     ) {
-      console.log("sentry")
       config.plugins.push(
         new SentryWebpackPlugin({
           include: '.next',
