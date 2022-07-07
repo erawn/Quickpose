@@ -47,7 +47,8 @@ export class VersionNodeUtil extends TDShapeUtil<T, E> {
         style: defaultStyle,
         label: '',
         labelPoint: [0.5, 0.5],
-        imgLink: ''
+        imgLink: '',
+        isCurrent: false
       },
       props
     )
@@ -69,7 +70,7 @@ export class VersionNodeUtil extends TDShapeUtil<T, E> {
       },
       ref
     ) => {
-      const { id, radius, style, label = '', labelPoint = LABEL_POINT, imgLink } = shape
+      const { id, radius, style, label = '', labelPoint = LABEL_POINT, imgLink, isCurrent } = shape
       const font = getFontStyle(shape.style)
       const styles = getShapeStyle(style, meta.isDarkMode)
       const strokeWidth = styles.strokeWidth
@@ -111,6 +112,7 @@ export class VersionNodeUtil extends TDShapeUtil<T, E> {
               isSelected={isSelected}
               isDarkMode={meta.isDarkMode}
               imgLink={imgLink}
+              isCurrent={isCurrent}
             />
           </SVGContainer>
         </FullWrapper>
