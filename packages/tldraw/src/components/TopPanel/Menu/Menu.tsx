@@ -325,10 +325,137 @@ export const Menu = React.memo(function Menu({ readOnly }: MenuProps) {
             </DMItem>
           </DMSubMenu>
           <Divider />
-          <PreferencesMenu />
-        </DMContent>
-      </DropdownMenu.Root>
-      <FilenameDialog isOpen={openDialog} onClose={() => setOpenDialog(false)} />
-    </>
+          <DMItem
+            onSelect={preventEvent}
+            onClick={handleSelectAll}
+            kbd="#A"
+            id="TD-MenuItem-Select_All"
+          >
+            <FormattedMessage id="select.all" />
+          </DMItem>
+          <DMItem
+            onSelect={preventEvent}
+            disabled={!hasSelection}
+            onClick={handleSelectNone}
+            id="TD-MenuItem-Select_None"
+          >
+            <FormattedMessage id="select.none" />
+          </DMItem>
+          <Divider />
+          <DMItem onSelect={handleDelete} disabled={!hasSelection} kbd="⌫" id="TD-MenuItem-Delete">
+            <FormattedMessage id="delete" />
+          </DMItem>
+        </DMSubMenu>
+        <DMSubMenu label={intl.formatMessage({ id: 'menu.view' })} id="TD-MenuItem-Edit">
+          <DMItem
+            onSelect={preventEvent}
+            onClick={app.zoomIn}
+            kbd="#+"
+            id="TD-MenuItem-View-ZoomIn"
+          >
+            <FormattedMessage id="zoom.in" />
+          </DMItem>
+          <DMItem
+            onSelect={preventEvent}
+            onClick={app.zoomOut}
+            kbd="#-"
+            id="TD-MenuItem-View-ZoomOut"
+          >
+            <FormattedMessage id="zoom.out" />
+          </DMItem>
+          <DMItem
+            onSelect={preventEvent}
+            onClick={handleZoomTo100}
+            kbd="⇧+0"
+            id="TD-MenuItem-View-ZoomTo100"
+          >
+            <FormattedMessage id="zoom.to" /> 100%
+          </DMItem>
+          <DMItem
+            onSelect={preventEvent}
+            onClick={app.zoomToFit}
+            kbd="⇧+1"
+            id="TD-MenuItem-View-ZoomToFit"
+          >
+            <FormattedMessage id="zoom.to.fit" />
+          </DMItem>
+          <DMItem
+            onSelect={preventEvent}
+            onClick={app.zoomToSelection}
+            kbd="⇧+2"
+            id="TD-MenuItem-View-ZoomToSelection"
+          >
+            <FormattedMessage id="zoom.to.selection" />
+          </DMItem>
+        </DMSubMenu>
+        <Divider />
+        <PreferencesMenu />
+        <DMDivider dir="ltr" />
+        <LanguageMenu />
+        <DMDivider dir="ltr" />
+        <a href="https://github.com/erawn/quickpose" target="_blank" rel="nofollow">
+          <DMItem id="TD-MenuItem-Github">
+            GitHub
+            <SmallIcon>
+              <GitHubLogoIcon />
+            </SmallIcon>
+          </DMItem>
+        </a>
+        {/* <a href="https://twitter.com/Tldraw" target="_blank" rel="nofollow">
+          <DMItem id="TD-MenuItem-Twitter">
+            Twitter
+            <SmallIcon>
+              <TwitterLogoIcon />
+            </SmallIcon>
+          </DMItem>
+        </a>
+        <a href="https://discord.gg/SBBEVCA4PG" target="_blank" rel="nofollow">
+          <DMItem id="TD-MenuItem-Discord">
+            Discord
+            <SmallIcon>
+              <DiscordIcon />
+            </SmallIcon>
+          </DMItem>
+        </a>
+        {sponsor === false && (
+          <a href="https://github.com/sponsors/steveruizok" target="_blank" rel="nofollow">
+            <DMItem isSponsor id="TD-MenuItem-Become_a_Sponsor">
+              <FormattedMessage id="become.a.sponsor" />{' '}
+              <SmallIcon>
+                <HeartIcon />
+              </SmallIcon>
+            </DMItem>
+          </a>
+        )} */}
+        {/* {sponsor === true && (
+          <a href="https://github.com/sponsors/steveruizok" target="_blank" rel="nofollow">
+            <DMItem id="TD-MenuItem-is_a_Sponsor">
+              <FormattedMessage id="sponsored" />!
+              <SmallIcon>
+                <HeartFilledIcon />
+              </SmallIcon>
+            </DMItem>
+          </a>
+        )}
+        {showSignInOutMenu && (
+          <>
+            <DMDivider dir="ltr" />{' '}
+            {app.callbacks.onSignIn && (
+              <DMItem onSelect={handleSignIn} id="TD-MenuItem-Sign_in">
+                <FormattedMessage id="menu.sign.in" />
+              </DMItem>
+            )}
+            {app.callbacks.onSignOut && (
+              <DMItem onSelect={handleSignOut} id="TD-MenuItem-Sign_out">
+                <FormattedMessage id="menu.sign.out" />
+                <SmallIcon>
+                  <ExitIcon />
+                </SmallIcon>
+              </DMItem>
+            )}
+          </>
+        )} */}
+      </DMContent>
+    </DropdownMenu.Root>
   )
 })
