@@ -8,7 +8,7 @@ import deepEqual from "deep-equal";
 import { useCallback } from "react";
 import axios from 'axios'
 export const LOCALHOST_BASE = 'http://127.0.0.1:8080';
-
+import {AxiosResponse} from 'axios'
 
 
 
@@ -20,14 +20,14 @@ export function getIconImageURL(id:string){
     return LOCALHOST_BASE + "/image/" + id + "?" + ((new Date()).getTime()); //Add Time to avoid Caching so images update properly
 }
 
-export const saveToProcessing = async (document: TDDocument, simData: string, alpha, centerPoint: [number,number], fileHandle: FileSystemHandle | null) => {
+export const saveToProcessing = async (document: TDDocument, simData: string, alpha, centerPoint: [number,number], fileHandle: FileSystemHandle | null,abortController) => {
     const file: TDFile = {
         name: 'quickpose.tldr',
         fileHandle: fileHandle ?? null,
         document,
         assets: {"simData":simData,
                 "alpha":alpha.toString(),
-                "centerPoint": centerPoint.toString,
+                "centerPoint": centerPoint.toString(),
                 ...document.assets
                 },
       }
@@ -47,7 +47,8 @@ export const saveToProcessing = async (document: TDDocument, simData: string, al
       headers: {
         'Content-Type': 'multipart/form-data',
         "Content-Disposition": "filename=quickpose.tldr.png"
-      }
+      },
+      signal: abortController.signal
     })
     .then(function (response) {
       //console.log(response);
@@ -61,20 +62,23 @@ export const saveToProcessing = async (document: TDDocument, simData: string, al
 export const loadFileFromProcessing = async(loadFile,abortFileController) => {
 
     const getFile = await axios.get(LOCALHOST_BASE+'/tldrfile', {
-      timeout: 500,
      // signal: abortFileController.signal
+    }).then(function (response) {
+      const fileStatus = response.status
+      const fileData = response.data
+      if(fileStatus === 200 && fileData && loadFile.current === null){ //this third conditional is to avoid race conditions
+        loadFile.current = fileData
+        abortFileController.abort()
+        console.log("loaded file - aborting file requests")
+      }else if(fileStatus === 201){
+        loadFile.current = undefined //this is the signal that we attempted to load a file, but it was missing
+        console.log("Found Session but no TLDR")
+        abortFileController.abort()
+    } 
     })
-    const fileStatus = await getFile.status;
-    const fileData = await getFile.data;
-    if(fileStatus === 200 && fileData && loadFile.current === null){ //this third conditional is to avoid race conditions
-      loadFile.current = fileData
-      abortFileController.abort()
-      console.log("loaded file - aborting file requests")
-    }else if(fileStatus === 201){
-      loadFile.current = undefined //this is the signal that we attempted to load a file, but it was missing
-      console.log("Found Session but no TLDR")
-      abortFileController.abort()
-   } 
+    .catch(function (error) {
+      //console.log(error);
+    });
   }
 
 export const updateVersions = async (netData, newData, abortVersionsController:AbortController) => {

@@ -35,7 +35,7 @@ import React from 'react'
 import * as gtag from 'utils/gtag'
 import axios from 'axios'
 import * as d3 from 'd3'
-import { SimulationNodeDatum, SimulationLinkDatum } from 'd3'
+import { SimulationNodeDatum, SimulationLinkDatum, zoom } from 'd3'
 import deepEqual from "deep-equal"
 import { 
   saveToProcessing, 
@@ -63,10 +63,12 @@ import {
    graphBaseData,
    linkRegex,
   nodeRegex,
+  tldrawCoordstod3,
   updateLinkShapes,
   updateNodeShapes
  } from 'utils/quickposeDrawing'
 import { dateTimestampInSeconds, timestampInSeconds } from '@sentry/utils'
+import { useHotkeys } from 'react-hotkeys-hook'
 
 //declare const window: Window & { app: TldrawApp }
 
@@ -93,7 +95,7 @@ const Editor = ({
   const lastSelection = React.useRef<string>(null)
   const currentVersion = React.useRef<string>(null)
   const timeSinceLastSelection = React.useRef<number>(0)
-  const centerPoint = React.useRef<number[]>([600,600])
+  const centerPoint = React.useRef<[number,number]>([600,600])
   //file loading
   const loadFile = React.useRef<TDFile>(null)
   const loadedFile = React.useRef<boolean>(false)
@@ -114,7 +116,7 @@ const Editor = ({
   const abortCurrentVersionController = new AbortController()
   const abortFileController = new AbortController()
   const abortVersionsController = new AbortController()
-  const timeout = 2000
+  const timeout = 500
 
   const refreshSim = () => {
     //simulation.current.alpha(ALPHA_TARGET_REFRESH)
@@ -183,7 +185,7 @@ const sendSelect = async (id: string,currentVersion: { current: string; }) => {
           gData,
           tlNodes,
           currentVersion,
-          app.centerPoint,
+          centerPoint.current,
           app.selectedIds
         )
         if (addNodes.length > 0) {
@@ -212,12 +214,10 @@ const sendSelect = async (id: string,currentVersion: { current: string; }) => {
           d3.SimulationLinkDatum<d3.SimulationNodeDatum>
         >).links(gData.links)
         sim.restart()
-      
       })
     }
   }
   //check for new data, if so, update graph data
-    
   const dataInterval = () => {
       
     // if(process.env["NEXT_PUBLIC_VERCEL_EN"] == '1'){
@@ -231,7 +231,7 @@ const sendSelect = async (id: string,currentVersion: { current: string; }) => {
     //https://medium.com/ninjaconcept/interactive-dynamic-force-directed-graphs-with-d3-da720c6d7811
     if (newData.current === true && netData.current && graphData.current) {
       //if we have new data come in
-      console.log('dataInterval')
+      //console.log('dataInterval')
       let changed = true
       newData.current = false
 
@@ -289,9 +289,9 @@ const sendSelect = async (id: string,currentVersion: { current: string; }) => {
     if (!(app === undefined)) {
 
       //load/save file
-      if (loadedFile.current === false) {
+      if (loadedFile.current === false) { //still need to handle opening
 
-        if(loadFile.current === null){
+        if(loadFile.current === null){ //haven't found a file yet, so keep looking
           console.log('requesting file...')
           updateVersions(netData, newData, abortVersionsController)
           loadFileFromProcessing(loadFile,abortFileController)
@@ -303,7 +303,7 @@ const sendSelect = async (id: string,currentVersion: { current: string; }) => {
               text: ' Quickpose is looking for a Processing Session' + loadingDot.repeat(loadingTicks.current % 6),
             })
           }
-        }else if(loadFile.current === undefined){
+        }else if(loadFile.current === undefined){ //there is no file, we need to start fresh
           loadedFile.current = true
           updateVersions(netData, newData, abortVersionsController)
           console.log('no file found!')
@@ -311,20 +311,31 @@ const sendSelect = async (id: string,currentVersion: { current: string; }) => {
           if (app.getShape('loading')) {//remove loading sticky
             app.delete(['loading']) 
           }
-          simulation.current = d3Sim(centerPoint.current,app.rendererBounds)
+          centerPoint.current = app.centerPoint as [number,number];
+          simulation.current = d3Sim(centerPoint.current,app.rendererBounds).alpha(3)
           newData.current = true
           currentVersionInterval()
           dataInterval()
           refreshSim()
           //simulation.current.alpha(ALPHA_TARGET_REFRESH)
           drawInterval()
+          app.zoomToContent()
           //make new file, do intro experience?
-        }else if(loadFile.current !== null){ //we have a file and data
+        }else if(loadFile.current !== null){ //we found an existing file
           abortFileController.abort()
           currentVersionInterval()
           //https://stackoverflow.com/questions/18206231/saving-and-reloading-a-force-layout-using-d3-js
           //Load the data
           const loadedData = JSON.parse(loadFile.current.assets["simData"].toString())
+          if(loadFile.current.assets["centerPoint"] !== undefined){
+            centerPoint.current = JSON.parse(loadFile.current.assets["centerPoint"].toString()) as [number,number]
+          }
+          console.log("centerPoint", centerPoint.current)
+          app.loadDocument(loadFile.current.document)
+         
+          if (app.getShape('loading')) {//remove loading sticky
+            app.delete(['loading']) 
+          }
           //console.log('loaded data',loadedData)
           const importNodes = loadedData.nodes as dataNode[]
           //console.log(importNodes)
@@ -334,8 +345,9 @@ const sendSelect = async (id: string,currentVersion: { current: string; }) => {
           })
           graphData.current.nodes = importNodes
           graphData.current.links = loadedData.links
-          simulation.current = d3Sim(centerPoint.current,app.rendererBounds)
+          simulation.current = d3Sim(centerPoint.current,app.rendererBounds).alpha(3)
           simulation.current.restart()
+          
           simulation.current.nodes(graphData.current.nodes)
 
           const forceLink = simulation.current.force('link') as d3.ForceLink<
@@ -350,45 +362,48 @@ const sendSelect = async (id: string,currentVersion: { current: string; }) => {
           //   node.fx = null
           //   node.fy = null
           // })
-          app.loadDocument(loadFile.current.document)
-
-          if (app.getShape('loading')) {//remove loading sticky
-            app.delete(['loading']) 
-          }
-          console.log("loaded file",loadFile.current.document)
-          console.log('loaded graphdata',graphData.current)
+          
+          
           newData.current = true
-          dataInterval()
-          refreshSim()
           simulation.current.alpha(ALPHA_TARGET_REFRESH)
+          refreshSim()
           drawInterval()
-          app.zoomToFit()
+          
           loadedFile.current = true
+          // const selection = app.selectedIds
+          // app.select(...app.getShapes().filter((shape) => nodeRegex.test(shape.id)).map(n=>n.id))
+          // app.zoomToSelection();
+          // app.zoomOut();
+          // app.zoomOut();
+          // app.zoomOut();
+          // app.zoomOut();
+          // //app.select(...selection)
+          app.resetZoom()
+          
         }
       }else if(loadedFile.current === true){ //default update loop
         console.log('saving/updating...')
         if (!(app.document === undefined)) {
-          saveToProcessing(app.document, JSON.stringify(graphData.current), simulation.current.alpha(),centerPoint.current, null)
+          saveToProcessing(app.document, JSON.stringify(graphData.current), simulation.current.alpha(),centerPoint.current, null,abortCurrentVersionController)
         }
         updateVersions(netData, newData, abortVersionsController)
         dataInterval()
         updateCurrentVersion(currentVersion, timeout, abortCurrentVersionController)
-        //console.log(currentVersion.current)
-        //console.log(netData.current)
-      }else{
+      }else{ //This shouldnt be reached
         console.log(loadFile.current)
       }
     }
   }
-
-    //Update Current Version — (we want to do this very fast)
+  //Update Current Version — (we want to do this very fast)
   const currentVersionInterval = () => {
     updateCurrentVersion(currentVersion, timeout, abortCurrentVersionController)
   }
-
-    
- 
-
+  const handleSave = React.useCallback((app: TldrawApp, e?:KeyboardEvent)=>{
+    if(e !== undefined){
+      e.preventDefault();
+    }
+    saveToProcessing(app.document, JSON.stringify(graphData.current), simulation.current.alpha(),centerPoint.current, null,abortCurrentVersionController)
+  },[])
   const handleMount = React.useCallback((app: TldrawApp) => {
     // if(process.env["NEXT_PUBLIC_VERCEL_EN"] == '1'){
     //   console.log("im in vercel!")
@@ -397,17 +412,12 @@ const sendSelect = async (id: string,currentVersion: { current: string; }) => {
     //   console.log("im local!")
     //   app = rTldrawApp.current!
     // }
-
-    console.log('requesting startup file...')
+    
     const abortFileController = new AbortController()
     loadFileFromProcessing(loadFile,abortFileController)
 
     rTldrawApp.current = app
-    centerPoint.current = app.centerPoint
-    
-
-    //app.camera.zoom =
-    //app.deleteAll() //replace this with make new document or something
+    centerPoint.current = app.centerPoint as [number,number]
     app.replacePageContent({},{},{})
     app.createShapes(defaultSticky(centerPoint.current))
     app.zoomToFit()
@@ -417,8 +427,6 @@ const sendSelect = async (id: string,currentVersion: { current: string; }) => {
     //https://sparkjava.com/documentation#examples-and-faq
     //https://stackoverflow.com/questions/18206231/saving-and-reloading-a-force-layout-using-d3-js
    
-
-    
    const updateThumbnailInterval = () =>{
       //BUG = have to do this more slowly, or else firefox will get angry
       //cant change url before last image has loaded - thats why its in the slower interval
@@ -428,19 +436,11 @@ const sendSelect = async (id: string,currentVersion: { current: string; }) => {
       }
     }
     
-
- 
-
-    
-    //get data from processing
-    const networkLoop = setInterval(networkInterval, timeout * 2)
-    //look for current version
-    const currentVersionLoop = setInterval(currentVersionInterval, 500)
+    const networkLoop = setInterval(networkInterval, timeout * 2) //get data from processing
+    const currentVersionLoop = setInterval(currentVersionInterval, 500)//update current version
     const thumbnailLoop = setInterval(updateThumbnailInterval,200);
-    //put it into the graph
-    const dataLoop = setInterval(dataInterval, 3000)
-    //draw the graph
-    const drawLoop = setInterval(drawInterval, 100)
+    const dataLoop = setInterval(dataInterval, 3000)//put it into the graph
+    const drawLoop = setInterval(drawInterval, 100)//draw the graph
 
     return () => {
       clearInterval(networkLoop)
@@ -456,13 +456,21 @@ const sendSelect = async (id: string,currentVersion: { current: string; }) => {
 
   //https://codesandbox.io/s/tldraw-context-menu-wen03q
   const handlePatch = React.useCallback((app: TldrawApp, reason?: string) => {
-    //console.log(reason)
+    console.log(reason)
     if(loadedFile.current === true){
       drawInterval()
     }
     
     switch (reason) {
       case 'set_status:translating': {
+        // started translating...
+        rIsDragging.current = true
+        //simulation.current.force("center",null)
+        //simulation.current.force("charge",null)
+        //simulation.current.force("link",null)
+        break
+      }
+      case 'set_status:creating': {
         // started translating...
         rIsDragging.current = true
         break
@@ -478,7 +486,14 @@ const sendSelect = async (id: string,currentVersion: { current: string; }) => {
         if (rIsDragging.current) {
           // stopped translating...
           rIsDragging.current = false
+          if (!(app.document === undefined)) {
+            saveToProcessing(app.document, JSON.stringify(graphData.current), simulation.current.alpha(),centerPoint.current, null,abortCurrentVersionController)
+          }
         }
+        const coords = tldrawCoordstod3(...centerPoint.current as [number,number])
+        //simulation.current.force("center", d3.forceCenter(coords[0],coords[1]).strength(.1))
+        //simulation.current.force('charge', d3.forceManyBody().strength(-2))
+        refreshSim()
         break
       }
       //scaling
@@ -558,18 +573,20 @@ const sendSelect = async (id: string,currentVersion: { current: string; }) => {
   return (
     <div className="tldraw">
       <Tldraw
+        {...fileSystemEvents}
         id={id}
         autofocus
         showPages={false}
         onMount={handleMount}
         onPatch={handlePatch}
+        onSaveProject={handleSave}
         showSponsorLink={false}
         onSignIn={undefined}
         onSignOut={undefined}
         onAssetUpload={onAssetUpload}
         onAssetCreate={onAssetUpload}
         onAssetDelete={onAssetDelete}
-        {...fileSystemEvents}
+        
         {...rest}
       />
       <BetaNotification />
