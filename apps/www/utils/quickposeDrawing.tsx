@@ -214,11 +214,9 @@ export const updateBinding = (app:TldrawApp, link, startNode,endNode,drawLink) =
             node.fy = null
           }
           if(currentVersion.current && tlDrawNode.id.replace(/\D/g,"") === currentVersion.current){ //If our node is the current version
-              tlDrawNode.style.color = ColorStyle.Green
-              tlDrawNode.style.size = SizeStyle.Large
+              tlDrawNode.isCurrent = true
           }else{
-              tlDrawNode.style.color = ColorStyle.Black
-              tlDrawNode.style.size = SizeStyle.Small
+              tlDrawNode.isCurrent = false
           }
           
           let newCoords = tlDrawNode.point

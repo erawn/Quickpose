@@ -345,6 +345,7 @@ export interface VersionNodeShape extends TDBaseShape {
   labelPoint?: number[]
   assetId?:string
   imgLink:string
+  isCurrent:boolean
 }
 
 export interface TriangleShape extends TDBaseShape {

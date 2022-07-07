@@ -1,6 +1,6 @@
 import * as React from 'react'
 import { getShapeStyle } from '~state/shapes/shared'
-import type { ShapeStyles } from '~types'
+import { ColorStyle, DashStyle, ShapeStyles, SizeStyle } from '~types'
 import { getEllipseIndicatorPath, getEllipsePath } from './ellipseHelpers'
 
 interface VersionNodeSvgProps {
@@ -10,6 +10,7 @@ interface VersionNodeSvgProps {
   isSelected: boolean
   isDarkMode: boolean
   imgLink:string
+  isCurrent:boolean
 }
 
 
@@ -19,12 +20,20 @@ export const DrawEllipse = React.memo(function DrawEllipse({
   style,
   isSelected,
   isDarkMode,
-  imgLink
+  imgLink,
+  isCurrent
 }: VersionNodeSvgProps) {
-  const { stroke, strokeWidth, fill } = getShapeStyle(style, isDarkMode)
+  const { stroke, strokeWidth, fill} = getShapeStyle(style, isDarkMode)
   const innerPath = getEllipsePath(id, radius, style)
   const imgId = "img"+id.toString()
   style.isFilled = true 
+
+  const selectStyle: ShapeStyles = {
+    color: ColorStyle.Violet,
+    isFilled: true,
+    dash: DashStyle.Dashed,
+    size: style.size,
+    }
 
   return (
     <>
@@ -51,15 +60,24 @@ export const DrawEllipse = React.memo(function DrawEllipse({
           pointerEvents="none"
         />
       )}
+      
       <path
         d={innerPath}
         fill={stroke}
         stroke={stroke}
         strokeWidth={strokeWidth}
-        pointerEvents="none"
+        pointerEvents="all"
         strokeLinecap="round"
         strokeLinejoin="round"
       />
+      {isCurrent && (
+        <path
+          d={getEllipsePath(id, radius.map(r=>r*1.2), selectStyle)}
+          stroke={stroke}
+          fill={stroke}
+          pointerEvents="all"
+        />
+      )}
     </>
   )
 })
