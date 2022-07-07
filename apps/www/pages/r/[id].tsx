@@ -29,13 +29,3 @@ export default function Room({ id }: RoomProps) {
     </>
   )
 }
-
-export const getServerSideProps: GetServerSideProps = async (context) => {
-  const id = context.query.id?.toString()
-
-  return {
-    props: {
-      id,
-    },
-  }
-}

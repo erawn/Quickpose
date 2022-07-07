@@ -1,0 +1,12 @@
+{
+	"folders": [
+		{
+			"path": "."
+		}
+	],
+	"settings": {
+		"editor.defaultFormatter": "esbenp.prettier-vscode",
+		"workbench.startupEditor": "readme",
+		"workbench.editor.sharedViewState": true
+	}
+}
