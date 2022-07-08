@@ -111,7 +111,7 @@ export const updateThumbnail = async (selectedNode, rTldrawApp) => {
           const selectedShape = app.getShape(('node'+select).toString())
           if( !(selectedShape === undefined) && selectedShape.type == TDShapeType.VersionNode){
             const idInteger = selectedShape.id.replace(/\D/g,"")
-            const res = await axios.get(getIconImageURL(idInteger),{timeout:100})
+            const res = await axios.get(getIconImageURL(idInteger),{timeout:500})
             const status = await res.status
             if(status === 200){
               selectedShape.imgLink = getIconImageURL(idInteger)//refresh the thumbnail image
@@ -227,7 +227,7 @@ export const updateThumbnail = async (selectedNode, rTldrawApp) => {
       if(app !== undefined && current !== undefined){
     
         axios.get(LOCALHOST_BASE+'/projectName', {
-          timeout: 100,
+          timeout: 500,
         })
         .then(response => {
           currentProject.current = response.data
