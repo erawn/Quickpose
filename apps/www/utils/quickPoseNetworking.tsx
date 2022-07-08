@@ -25,7 +25,7 @@ export const saveToProcessing = async (document: TDDocument, simData: string, al
         document,
         assets: {"simData":simData,
                 "alpha":alpha.toString(),
-                "centerPoint": centerPoint.toString(),
+                "centerPoint": JSON.stringify(centerPoint),
                 ...document.assets
                 },
       }
