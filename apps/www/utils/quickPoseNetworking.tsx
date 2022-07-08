@@ -2,13 +2,11 @@ import { TDDocument, TDFile, TDShapeType, TldrawApp } from "@tldraw/tldraw";
 import FormData from 'form-data'
 import type { FileSystemHandle } from '@tldraw/tldraw'
 
-import axiosRetry, { exponentialDelay } from 'axios-retry';
-import RaxConfig from "axios-retry";
+import axiosRetry from 'axios-retry';
 import deepEqual from "deep-equal";
 import { useCallback } from "react";
 import axios from 'axios'
 export const LOCALHOST_BASE = 'http://127.0.0.1:8080';
-import {AxiosResponse} from 'axios'
 
 
 
