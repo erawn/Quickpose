@@ -3,10 +3,9 @@ import { dataLink, dataNode, inputShape, inputVersionNodeShape } from "./quickPo
 import deepEqual from "deep-equal";
 import { ALPHA_TARGET_REFRESH, d3TlScale, D3_LINK_DISTANCE, TL_DRAW_RADIUS } from "components/Editor";
 import { getIconImageURLNoTime } from "./quickPoseNetworking"
-import * as d3 from 'd3'
+import { forceSimulation, forceManyBody, forceLink, forceCollide} from "d3";
 import forceBoundary from 'd3-force-boundary'
-import { MutableRefObject } from "react";
-import { TLBounds } from "@tldraw/core";
+import type  {TLBounds} from "@tldraw/core";
 
 export const nodeRegex = new RegExp(/node\d/);
 export const linkRegex = new RegExp(/link\d/);
@@ -15,11 +14,11 @@ export const d3Sim = (centerPoint,bounds:TLBounds) => {
     const coords = tldrawCoordstod3(...centerPoint as [number,number])
     const boundary = tldrawCoordstod3(bounds.maxX,bounds.maxY)
     //console.log(bounds,boundary)
-    return d3.forceSimulation()
+    return forceSimulation()
     .force("boundary", forceBoundary(0,0,500,500))
     //.force("center", d3.forceCenter(coords[0],coords[1]).strength(.1))
-    .force('charge', d3.forceManyBody().strength(-2))
-    .force("link", d3.forceLink()
+    .force('charge', forceManyBody().strength(-2))
+    .force("link", forceLink()
       .id(function(d:dataNode,i) {
         return d.id
       })
@@ -34,7 +33,7 @@ export const d3Sim = (centerPoint,bounds:TLBounds) => {
         }
       }).strength(1)
     )
-    .force('collision', d3.forceCollide().radius(function(d: dataNode) {return d.r + 10} ))
+    .force('collision', forceCollide().radius(function(d: dataNode) {return d.r + 10} ))
     .alphaDecay(.03)
 }
 
@@ -188,7 +187,7 @@ export const updateBinding = (app:TldrawApp, link, startNode,endNode,drawLink) =
               type: TDShapeType.VersionNode,
               style:{
                   size: "small",
-                  dash: DashStyle.Solid,
+                  dash: DashStyle.Dotted,
                   isFilled:true,
                   color: "black"
               },

@@ -1,5 +1,5 @@
-import { TDShapeType, TDShape, VersionNodeShape } from "@tldraw/tldraw";
-import { SimulationNodeDatum, SimulationLinkDatum } from "d3";
+import type { TDShapeType, TDShape, VersionNodeShape } from "@tldraw/tldraw";
+import type { SimulationNodeDatum, SimulationLinkDatum } from "d3";
 
 export interface EditorProps {
     id?: string

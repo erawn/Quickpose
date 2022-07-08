@@ -5,37 +5,14 @@ import {
   TldrawProps, 
   useFileSystem, 
   TDShapeType, 
-  ColorStyle, 
-  SizeStyle,
-  TDShape, 
-  shapeUtils, 
-  ArrowBinding,
-  ArrowShape,
-  TDAssetType,
-  TDImageAsset,
-  VersionNodeShape,
-  TDDocument,
   TDFile
 } from '@tldraw/tldraw'
-import {
-  TLBoundsCorner,
-  TLBoundsEdge,
-  TLBoundsEventHandler,
-  TLBoundsHandleEventHandler,
-  TLCanvasEventHandler,
-  TLPointerEventHandler,
-  TLKeyboardEventHandler,
-  TLShapeCloneHandler,
-  Utils,
-  TLBinding
-} from '@tldraw/core'
-import { useAccountHandlers } from 'hooks/useAccountHandlers'
+
 //import { useUploadAssets } from 'hooks/useUploadAssets'
 import React from 'react'
 import * as gtag from 'utils/gtag'
 import axios from 'axios'
-import * as d3 from 'd3'
-import { SimulationNodeDatum, SimulationLinkDatum, zoom } from 'd3'
+import { SimulationNodeDatum } from 'd3'
 import deepEqual from "deep-equal"
 import { 
   saveToProcessing, 
@@ -68,7 +45,6 @@ import {
   updateNodeShapes
  } from 'utils/quickposeDrawing'
 import { dateTimestampInSeconds, timestampInSeconds } from '@sentry/utils'
-import { useHotkeys } from 'react-hotkeys-hook'
 
 //declare const window: Window & { app: TldrawApp }
 
@@ -229,7 +205,7 @@ const sendSelect = async (id: string,currentVersion: { current: string; }) => {
     // }
 
     //https://medium.com/ninjaconcept/interactive-dynamic-force-directed-graphs-with-d3-da720c6d7811
-    if (newData.current === true && netData.current && graphData.current) {
+    if (newData.current === true && netData.current && graphData.current && simulation.current) {
       //if we have new data come in
       //console.log('dataInterval')
       let changed = true

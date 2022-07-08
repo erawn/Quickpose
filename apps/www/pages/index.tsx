@@ -1,5 +1,3 @@
-
-import { getSession } from 'next-auth/react'
 import dynamic from 'next/dynamic'
 import Head from 'next/head'
 import { useRouter } from 'next/router'
