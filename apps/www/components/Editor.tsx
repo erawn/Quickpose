@@ -249,9 +249,9 @@ const sendSelect = async (id: string,currentVersion: { current: string; }) => {
           d3.SimulationLinkDatum<d3.SimulationNodeDatum>
         >
         forceLink.links(graphData.current.links)
-        console.log('netdata', netData.current)
-        console.log('graphData', graphData.current)
-        console.log("dataInterval Update")
+        // console.log('netdata', netData.current)
+        // console.log('graphData', graphData.current)
+        // console.log("dataInterval Update")
         //simulation.current.restart()
         refreshSim()
         drawInterval()
@@ -414,7 +414,7 @@ const sendSelect = async (id: string,currentVersion: { current: string; }) => {
     
     const networkLoop = setInterval(networkInterval, timeout * 2) //get data from processing
     const currentVersionLoop = setInterval(currentVersionInterval, 500)//update current version
-    const thumbnailLoop = setInterval(updateThumbnailInterval,200);
+    const thumbnailLoop = setInterval(updateThumbnailInterval,1000);
     const dataLoop = setInterval(dataInterval, 3000)//put it into the graph
     const drawLoop = setInterval(drawInterval, 100)//draw the graph
 
@@ -432,7 +432,7 @@ const sendSelect = async (id: string,currentVersion: { current: string; }) => {
 
   //https://codesandbox.io/s/tldraw-context-menu-wen03q
   const handlePatch = React.useCallback((app: TldrawApp, reason?: string) => {
-    console.log(reason)
+    //console.log(reason)
     if(loadedFile.current === true){
       drawInterval()
     }
