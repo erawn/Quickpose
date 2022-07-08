@@ -424,7 +424,7 @@ const sendSelect = async (id: string,currentVersion: { current: string; }) => {
     const currentVersionLoop = setInterval(currentVersionInterval, 500)//update current version
     const thumbnailLoop = setInterval(updateThumbnailInterval,1000);
     const dataLoop = setInterval(dataInterval, 3000)//put it into the graph
-    const drawLoop = setInterval(drawInterval, 100)//draw the graph
+    const drawLoop = setInterval(drawInterval, 150)//draw the graph
 
     return () => {
       clearInterval(networkLoop)
