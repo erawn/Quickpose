@@ -154,6 +154,7 @@ const sendSelect = async (id: string,currentVersion: { current: string; }) => {
       loadedFile.current === true && !(app === undefined)){
       //console.log('drawInterval2')
       requestAnimationFrame(() => {
+        const currentStyle = app.getAppState().currentStyle
         //console.log('drawInterval3')
         gData.nodes = [...sim.nodes()] //get simulation data out
         let tlNodes = app.getShapes().filter((shape) => nodeRegex.test(shape.id))
@@ -190,6 +191,13 @@ const sendSelect = async (id: string,currentVersion: { current: string; }) => {
           d3.SimulationLinkDatum<d3.SimulationNodeDatum>
         >).links(gData.links)
         sim.restart()
+        app.patchState({
+          ...app.state,
+          appState: {
+            ...app.getAppState,
+            currentStyle:currentStyle
+          },
+        })
       })
     }
   }
