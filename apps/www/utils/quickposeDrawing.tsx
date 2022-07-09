@@ -1,11 +1,12 @@
-import { ArrowBinding, ArrowShape, ColorStyle, DashStyle, shapeUtils, SizeStyle, TDShape, TDShapeType, TldrawApp, VersionNodeShape } from "@tldraw/tldraw"
+import { ArrowBinding, ArrowShape, ColorStyle, DashStyle, shapeUtils, SizeStyle, TDBinding, TDShape, TDShapeType, TldrawApp, VersionNodeShape } from "@tldraw/tldraw"
 import { dataLink, dataNode, inputShape, inputVersionNodeShape } from "./quickPoseTypes"
 import deepEqual from "deep-equal";
 import { ALPHA_TARGET_REFRESH, d3TlScale, D3_LINK_DISTANCE, TL_DRAW_RADIUS } from "components/Editor";
 import { getIconImageURLNoTime } from "./quickPoseNetworking"
 import { forceSimulation, forceManyBody, forceLink, forceCollide} from "d3";
 import forceBoundary from 'd3-force-boundary'
-import type  {TLBounds} from "@tldraw/core";
+import type  {Patch, TLBounds} from "@tldraw/core";
+import next from "next";
 
 export const nodeRegex = new RegExp(/node\d/);
 export const linkRegex = new RegExp(/link\d/);
@@ -113,7 +114,7 @@ export const makeArrow = (parentId, link): ArrowShape => {
       }
     })
   }
-export const updateBinding = (app:TldrawApp, link, startNode,endNode,drawLink) => {
+export const updateBinding = (app:TldrawApp, link, startNode,endNode,drawLink,nextBindings):boolean => {
     const newStartBinding: ArrowBinding = {
       id: 'link'+link.index+'start',
       fromId: 'link'+link.index,
@@ -130,26 +131,40 @@ export const updateBinding = (app:TldrawApp, link, startNode,endNode,drawLink) =
       distance: 16,
       point: [.5,.5]
     }
+    let changed = false
     let startBinding = app.getBinding('link'+link.index+'start')
     let endBinding = app.getBinding('link'+link.index+'end')
   
-    if(!startBinding){startBinding = newStartBinding}
-    if(!endBinding){endBinding = newTargetBinding}
-  
-    drawLink.handles.start.bindingId = 'link'+link.index+'start'
-    drawLink.handles.end.bindingId = 'link'+link.index+'end'
-  
-    app.page.bindings[startBinding.id] = startBinding
-    app.page.bindings[endBinding.id] = endBinding
+    if(!startBinding){
+      startBinding = newStartBinding
+    }
+    if(!endBinding){
+      endBinding = newTargetBinding
+    }
+    if(drawLink.handles.start.bindingId !== 'link'+link.index+'start'){
+      drawLink.handles.start.bindingId = 'link'+link.index+'start'
+      changed = true
+    }
+    if(drawLink.handles.end.bindingId !== 'link'+link.index+'end'){
+      drawLink.handles.end.bindingId = 'link'+link.index+'end'
+      changed = true
+    }
+    if(!deepEqual(app.page.bindings[startBinding.id], startBinding) ){
+      nextBindings[startBinding.id] = startBinding
+    }
+    if(!deepEqual(app.page.bindings[endBinding.id], endBinding) ){
+      nextBindings[endBinding.id] = endBinding
+    }
+    return changed;
   }
 
-  export const updateLinkShapes = (app: TldrawApp, tlLinks, graphData, tlNodes) => {
+  export const updateLinkShapes = (app: TldrawApp, tlLinks, graphData, tlNodes): [Patch<Record<string, TDShape>>,Patch<Record<string, TDBinding>>,TDShape[]] => {
     //draw links
-    const updateLinks: TDShape[] = [];
-    
-    const newLinks = graphData.current.links.map(function(link: dataLink){
+    const nextShapes: Patch<Record<string, TDShape>> = {}
+    const nextBindings: Patch<Record<string, TDBinding>> = {}
+    const createShapes: TDShape[] = []
+    graphData.current.links.map(function(link: dataLink){
       const tlDrawLink = tlLinks.find(l => l.id === 'link'+link.index)
-      const baseLink = {...tlDrawLink}
       const sourceNode = link.source as dataNode
       const targetNode = link.target as dataNode
       const startNode: TDShape = tlNodes.find(n => n.id === 'node'+sourceNode.id)
@@ -158,26 +173,26 @@ export const updateBinding = (app:TldrawApp, link, startNode,endNode,drawLink) =
       if(startNode && endNode){
         if(!tlDrawLink){
           const newArrow = makeArrow(app.currentPageId,link)
-          updateBinding(app, link, startNode,endNode,newArrow)
-          return newArrow
+          updateBinding(app, link, startNode,endNode,newArrow,nextBindings)
+          nextShapes[newArrow.id] = newArrow
+          createShapes.push(newArrow)
         }else{
-          updateBinding(app, link, startNode,endNode,tlDrawLink)
-          if(!deepEqual(baseLink,tlDrawLink)){
-            updateLinks.push(tlDrawLink)
+          if(updateBinding(app, link, startNode,endNode,tlDrawLink,nextBindings)){
+            nextShapes[tlDrawLink.id] = {...tlDrawLink}
           }
         }
         link.d = D3_LINK_DISTANCE + sourceNode.r + targetNode.r
         link.strength = 10
       }
       return null
-    }).filter(entry => entry !== null && !(entry === undefined)) as TDShape[]
-    return [newLinks,updateLinks]
+    })
+    return [nextShapes,nextBindings,createShapes]
   }
 
-  export const updateNodeShapes = (graphData, tlNodes,currentVersion,centerPoint,selectedIds) => {
-    const updateNodes = []
-    //console.log(graphData.nodes)
-    const addNodes = graphData.nodes.map(function(node: dataNode){
+  export const updateNodeShapes = (graphData, tlNodes,currentVersion,centerPoint,selectedIds):[Patch<Record<string, TDShape>>,inputVersionNodeShape[]] => {
+    const nextShapes: Patch<Record<string, TDShape>> = {}
+    const createShapes: inputVersionNodeShape[] = []
+    graphData.nodes.map(function(node: dataNode){
       const tlDrawNode:VersionNodeShape = tlNodes.find(n => n.id === 'node'+node.id)
       //console.log(tlDrawNode)
       if(!tlDrawNode){
@@ -196,10 +211,11 @@ export const updateBinding = (app:TldrawApp, link, startNode,endNode,drawLink) =
               imgLink: getIconImageURLNoTime(node.id.toString())
           } as inputVersionNodeShape
           node.r = n.radius[0] / d3TlScale
-          //console.log("input radius", node.r)
-          return n
+          console.log("found new shape")
+          //nextShapes[n.id] = n
+          createShapes.push(n)
 
-      }else if(tlDrawNode && tlDrawNode.type == TDShapeType.VersionNode){ 
+      }else if(tlDrawNode){ 
           const baseNode = {...tlDrawNode}
           if(selectedIds.includes(tlDrawNode.id)){ //If we have a node selected, update the d3 sim instead
               const d3Coords = tldrawCoordstod3(tlDrawNode.point[0],tlDrawNode.point[1])
@@ -212,34 +228,78 @@ export const updateBinding = (app:TldrawApp, link, startNode,endNode,drawLink) =
             node.fx = null
             node.fy = null
           }
-          if(currentVersion.current && tlDrawNode.id.replace(/\D/g,"") === currentVersion.current){ //If our node is the current version
-              tlDrawNode.isCurrent = true
+          if(currentVersion.current && tlDrawNode.id === 'node'+currentVersion.current){ //If our node is the current version
+              if(tlDrawNode.isCurrent === false){
+                nextShapes[tlDrawNode.id] = {...nextShapes[tlDrawNode.id], isCurrent: true}
+              }
           }else{
-              tlDrawNode.isCurrent = false
+            if(tlDrawNode.isCurrent === true){
+              nextShapes[tlDrawNode.id] = {...nextShapes[tlDrawNode.id], isCurrent: false}
+            }
           }
           
-          let newCoords = tlDrawNode.point
+          let newCoords = {...tlDrawNode.point}
           if(node.id === '0'){
               node.fx = tldrawCoordstod3(...centerPoint as [number,number])[0]
               node.fy = tldrawCoordstod3(...centerPoint as [number,number])[1]
               node.x = tldrawCoordstod3(...centerPoint as [number,number])[0]
               node.y = tldrawCoordstod3(...centerPoint as [number,number])[1]
               newCoords = centerPoint as [number,number]
-              tlDrawNode.point = d3toTldrawCoords(node.x ,node.y)
+              const newPoint = d3toTldrawCoords(node.x ,node.y)
+              if(newPoint !== tlDrawNode.point){
+                nextShapes[tlDrawNode.id] = {...nextShapes[tlDrawNode.id], point: newPoint}
+              }
           }else{
               newCoords = d3toTldrawCoords(node.x ,node.y)
           }
-          if (Math.abs(newCoords[0] - tlDrawNode.point[0]) > .1 || Math.abs(newCoords[0] - tlDrawNode.point[0]) > .1){
-              tlDrawNode.point = d3toTldrawCoords(node.x ,node.y)
+          if (Math.abs(newCoords[0] - tlDrawNode.point[0]) > .1 || Math.abs(newCoords[1] - tlDrawNode.point[1]) > .1){
+            nextShapes[tlDrawNode.id] = {...nextShapes[tlDrawNode.id], point: newCoords}
           }
-          //dont know why this optimization isn't updating style changes :(
-          //if(!deepEqual(baseNode,tlDrawNode) || baseNode.style.color !== tlDrawNode.style.color){
-          updateNodes.push(tlDrawNode)
-          //}
-      }else{
-          return null
       }
-    }).filter(entry => entry !== null && !(entry === undefined))
+    })
+    //console.log(nextShapes)
 
-    return [addNodes,updateNodes]
+    return [nextShapes,createShapes]
+  }
+
+  export function updateGraphData(netData: JSON, graphData: { nodes: any[]; links: any[]; }){
+
+    //https://medium.com/ninjaconcept/interactive-dynamic-force-directed-graphs-with-d3-da720c6d7811
+      //if we have new data come in
+      //console.log('dataInterval')
+      let changed = false
+      //console.log("updatenetdata",netData)
+      //and we have our datasources ready
+      //add new links and nodes from netData into graphData
+      //only --adding-- nodes and links, so we can just append new incoming data to graphData
+      netData["Nodes"].forEach(function (netNode: dataNode) {
+        if (!graphData.nodes.some((graphNode) => graphNode.id === netNode.id)) {
+          const parentLink = netData["Edges"].find((link) => link.target === netNode.id)
+          if (!(parentLink === undefined)) {
+            const parent: dataNode = graphData.nodes.find(
+              (node) => node.id === parentLink.source
+            )
+            if (!(parent === undefined)) { //spawn new nodes near their parents
+              netNode.x = parent.x + 10
+              netNode.y = parent.y + 10
+            }
+          }
+          graphData.nodes.push(netNode)
+          //graphData.nodes = [...graphData.nodes, { ...netNode }]
+          changed = true
+        }
+      })
+      netData["Edges"].forEach(function (netLink) {
+        if (
+          !graphData.links.some(
+            (graphLink) =>
+              graphLink.source.id === netLink.source && graphLink.target.id === netLink.target
+          )
+        ) {
+          graphData.links.push(netLink)
+          //graphData.links = [...graphData.links, { ...netLink }]
+          changed = true
+        }
+      })
+      return changed
   }

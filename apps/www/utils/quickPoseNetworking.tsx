@@ -86,11 +86,13 @@ export const updateVersions = async (netData, newData, abortVersionsController:A
       timeout: 500,
     })
     .then(response => {
-      //console.log(response.data)
-      if(response.data !== undefined && !deepEqual(response.data,netData.current)){
+      
+      if(response.data !== undefined){
+        //console.log(response.data)
         newData.current = true;
         netData.current = response.data
-        console.log("newdata",response.data)
+        // .nodes = parsedData["Nodes"]
+        // netData.current.links = parsedData["Edges"]
         //dataInterval()
       }else{
         //console.log("samedata",response.data)
@@ -101,12 +103,12 @@ export const updateVersions = async (netData, newData, abortVersionsController:A
     })
   }
 export const updateThumbnail = async (selectedNode, rTldrawApp) => {
-    let app:TldrawApp = rTldrawApp!
+    let app = rTldrawApp!
     let select = selectedNode!
     //Update Thumbnail Image
     if(app !== undefined && select !== undefined){
-      app = rTldrawApp.current!
-      select = selectedNode.current!
+      app = app.current!
+      select = select.current!
       if(app !== undefined && select !== undefined){
           const selectedShape = app.getShape(('node'+select).toString())
           if( !(selectedShape === undefined) && selectedShape.type == TDShapeType.VersionNode){

@@ -13,6 +13,7 @@ export interface dataNode extends SimulationNodeDatum {
     y: number;
     r: number;
   }
+export type forceLink = d3.ForceLink<d3.SimulationNodeDatum,d3.SimulationLinkDatum<d3.SimulationNodeDatum>>
   
 export interface dataLink extends SimulationLinkDatum<SimulationNodeDatum> {
     d: number;
