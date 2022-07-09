@@ -5,15 +5,20 @@ import {
   TldrawProps, 
   useFileSystem, 
   TDShapeType, 
-  TDFile
+  TDFile,
+  Patch,
+  TDShape,
+  PagePartial,
+  TDPage
 } from '@tldraw/tldraw'
 
 //import { useUploadAssets } from 'hooks/useUploadAssets'
 import React from 'react'
 import * as gtag from 'utils/gtag'
 import axios from 'axios'
-import { SimulationNodeDatum } from 'd3'
-import deepEqual from "deep-equal"
+import { Simulation, SimulationNodeDatum } from 'd3'
+import {throttle} from 'underscore'
+import asyncLock from 'async-lock'
 import { 
   saveToProcessing, 
   getIconImageURLNoTime, 
@@ -31,7 +36,8 @@ import {
   dataNode,
   dataLink,
   inputShape,
-  inputVersionNodeShape
+  inputVersionNodeShape,
+  forceLink
  } from 'utils/quickPoseTypes'
 
  import {
@@ -41,6 +47,7 @@ import {
    linkRegex,
   nodeRegex,
   tldrawCoordstod3,
+  updateGraphData,
   updateLinkShapes,
   updateNodeShapes
  } from 'utils/quickposeDrawing'
@@ -93,33 +100,42 @@ const Editor = ({
   const abortFileController = new AbortController()
   const abortVersionsController = new AbortController()
   const timeout = 500
+  const lock = new asyncLock;
 
-  const refreshSim = () => {
-    //simulation.current.alpha(ALPHA_TARGET_REFRESH)
-    simulation.current.restart()
+  function refreshSim(simulation){
+    if(simulation.current !== undefined){
+      //simulation.current.alpha(ALPHA_TARGET_REFRESH)
+      simulation.current.restart()
+    }
   }
-  const sendFork = async (id: string,currentVersion: { current: string; }) => {
+  const sendFork = (id: string,currentVersion: { current: string; }) => throttle(sendForkThrottled(id,currentVersion),1000)
+
+  const sendForkThrottled = async (id: string,currentVersion: { current: string; }) => {
     const start = timestampInSeconds()
     const app = rTldrawApp.current!
     if(app !== undefined){
       app.appState.isLoading = true
-      await axios.get(LOCALHOST_BASE + '/fork/' + id, {
-        timeout: 600,
-      })
-      .then(response => {
-        if(response.status === 200){
-          currentVersion.current = response.data.toString()
-          console.log("forked, currentVersion is  "+ currentVersion.current,timestampInSeconds()-start)
-          networkInterval()
-          console.log("network", timestampInSeconds()-start)
-          dataInterval()
-          console.log("data",timestampInSeconds()-start)
-          refreshSim()
-          console.log("refresh",timestampInSeconds()-start)
-          drawInterval()
-          console.log("draw",timestampInSeconds()-start)
-          app.appState.isLoading = false
-        }
+      lock.aquire("select", async function() {
+        await axios.get(LOCALHOST_BASE + '/fork/' + id, {
+          timeout: 600,
+        })
+        .then(response => {
+          if(response.status === 200){
+            console.log("forkdata",JSON.parse(response.data));
+            newData.current = true;
+            netData.current = response.data
+            dataInterval(newData,netData,graphData,simulation)
+            drawInterval()
+            app.appState.isLoading = false
+            //app.select()
+          }
+        })
+        .catch(error => {
+          //console.warn("error fetching current version: ", error);
+          return null
+        })
+      }).then(function(){
+        app.appState.isLoading = false
       })
       .catch(error => {
         //console.warn("error fetching current version: ", error);
@@ -127,142 +143,136 @@ const Editor = ({
       })
     }
 }
-const sendSelect = async (id: string,currentVersion: { current: string; }) => {
-  await axios.get(LOCALHOST_BASE + '/select/' + id, {
-    timeout: 600,
-    //signal: abortCurrentVersionController.signal
-  })
-  .then(function(response) {
-    if(response.status === 200){
-      currentVersion.current = response.data.toString()
-      drawInterval()
-    }
-  })
-  .catch(error => {
-    //console.warn("error fetching current version: ", error);
-    return null
-  })
+const sendSelect = (id: string,currentVersion: { current: string; }) => throttle(sendSelectThrottled(id,currentVersion),100)
+
+const sendSelectThrottled = async (id: string,currentVersion: { current: string; }) => {
+  const app = rTldrawApp.current!
+  if(app !== undefined){
+    app.appState.isLoading = true
+    lock.aquire("select", async function() {
+      await axios.get(LOCALHOST_BASE + '/select/' + id, {
+        timeout: 600,
+        //signal: abortCurrentVersionController.signal
+      })
+      .then(function(response) {
+        if(response.status === 200){
+          currentVersion.current = response.data.toString()
+          drawInterval()
+        }
+      })
+      .catch(error => {
+        //console.warn("error fetching current version: ", error);
+        return null
+      })
+    }).then(function(){
+      app.appState.isLoading = false
+    })
+  }
 }
 
  function drawInterval(){
-  //console.log('drawInterval')
+  console.timeStamp("startDraw")
+
   const sim = simulation.current!
   const app = rTldrawApp.current!
   const gData = graphData.current!
     if(sim !== undefined && gData !== undefined && 
       //simulation.current.alpha > simulation.current.alphaMin && //Doesn't work when there's only one node
       loadedFile.current === true && !(app === undefined)){
-      //console.log('drawInterval2')
-      requestAnimationFrame(() => {
         const currentStyle = app.getAppState().currentStyle
         //console.log('drawInterval3')
         gData.nodes = [...sim.nodes()] //get simulation data out
         let tlNodes = app.getShapes().filter((shape) => nodeRegex.test(shape.id))
-        const [addNodes, updateNodes] = updateNodeShapes(
+        
+        
+      //console.log('drawInterval2')
+      console.timeStamp("preanimframe")
+      requestAnimationFrame(() => {
+        const [nextNodeShapes,createNodeShapes] =  updateNodeShapes(
           gData,
           tlNodes,
           currentVersion,
           centerPoint.current,
           app.selectedIds
         )
-        if (addNodes.length > 0) {
-          app.createShapes(...addNodes)
-        }
-        if (updateNodes.length > 0) {
-          app.updateShapes(...updateNodes)
-        }
-        sim.nodes(gData.nodes)
-
         const tlLinks = app.getShapes().filter((shape) => linkRegex.test(shape.id))
         tlNodes = app.getShapes().filter((shape) => nodeRegex.test(shape.id))
-        const [newLinks, updateLinks] = updateLinkShapes(app, tlLinks, graphData, tlNodes)
-        if (updateLinks.length > 0) {
-          app.updateShapes(...updateLinks)
+        const [nextLinkShapes, nextLinkBindings, createLinkShapes] = updateLinkShapes(app, tlLinks, graphData, tlNodes)
+        
+        if (createNodeShapes.length > 0) {
+          console.log("new shapes",createNodeShapes)
+          app.createShapes(...createNodeShapes)
+          //addNodes.forEach((node) => (nextShapes[node.id] = {point: }))
         }
-        if (newLinks.length > 0) {
-          app.createShapes(...newLinks)
-          //deselect created links
-          const newIds: string[] = newLinks.map((link) => link.id)
-          app.select(...app.selectedIds.filter((id) => !newIds.includes(id)))
+        if (createLinkShapes.length > 0) {
+          //shapeUpdate.push(...updateNodes)
+          app.updateShapes(...createLinkShapes)
         }
 
-        (sim.force('link') as d3.ForceLink<
-          d3.SimulationNodeDatum,
-          d3.SimulationLinkDatum<d3.SimulationNodeDatum>
-        >).links(gData.links)
-        sim.restart()
-        app.patchState({
-          ...app.state,
+        const nextShapes = {...nextNodeShapes,...nextLinkShapes} as Patch<TDPage['shapes']>
+        const nextBindings = {...nextLinkBindings} as Patch<TDPage['bindings']>
+        const nextPage: PagePartial = {
+          shapes: nextShapes,
+          bindings: nextBindings,
+        }
+        sim.nodes(gData.nodes);
+        (sim.force('link') as forceLink).links(gData.links);
+        sim.restart();
+        console.timeStamp("post updatenodes")
+        // if (updateLinks.length > 0) {
+        //   //app.updateShapes(...updateLinks)
+        //   shapeUpdate.push(...updateLinks)
+        // }
+        // if (newLinks.length > 0) {
+        //   //app.createShapes(...newLinks)
+        //   //shapeUpdate.push(...newLinks)
+        //   //deselect created links
+        //   const newIds: string[] = newLinks.map((link) => link.id)
+        //   app.select(...app.selectedIds.filter((id) => !newIds.includes(id)))
+        // }
+        // console.timeStamp("post updatelinks");
+
+        
+        
+        // console.timeStamp("sim");
+        const currentPageId = app.currentPageId
+        const patch = {
           appState: {
-            ...app.getAppState,
             currentStyle:currentStyle
           },
-        })
+          document: {
+            pages: {
+              [currentPageId]: {
+                ...nextPage
+              },
+            },
+          },
+        }
+        app.patchState(patch,"Quickpose Draw Update")
+        //console.timeStamp("patch");
       })
+      console.timeStamp("end animframe");
     }
   }
   //check for new data, if so, update graph data
-  const dataInterval = () => {
-      
-    // if(process.env["NEXT_PUBLIC_VERCEL_EN"] == '1'){
-    //   console.log("im in vercel!")
-    //   app = window.app
-    // }else{
-    //   console.log("im local!")
-    //   app = rTldrawApp.current!
-    // }
-
+  function dataInterval(
+    newData: React.MutableRefObject<boolean>,
+    netData: React.MutableRefObject<JSON>,
+    graphData: React.MutableRefObject< { nodes: any[]; links: any[]; }>,
+    simulation: React.MutableRefObject<Simulation<SimulationNodeDatum, undefined>>)
+    {
+      //console.log(netData.current,graphData.current,simulation.current)
     //https://medium.com/ninjaconcept/interactive-dynamic-force-directed-graphs-with-d3-da720c6d7811
-    if (newData.current === true && netData.current && graphData.current && simulation.current) {
-      //if we have new data come in
-      //console.log('dataInterval')
-      let changed = true
-      newData.current = false
-
-      //and we have our datasources ready
-      //add new links and nodes from netData into graphData
-      //only --adding-- nodes and links, so we can just append new incoming data to graphData
-      netData.current[0].forEach(function (netNode: dataNode) {
-        if (!graphData.current.nodes.some((graphNode) => graphNode.id === netNode.id)) {
-          const parentLink = netData.current[1].find((link) => link.target === netNode.id)
-          if (!(parentLink === undefined)) {
-            const parent: dataNode = graphData.current.nodes.find(
-              (node) => node.id === parentLink.source
-            )
-            if (!(parent === undefined)) {
-              netNode.x = parent.x + 10
-              netNode.y = parent.y + 10
-            }
-          }
-          graphData.current.nodes = [...graphData.current.nodes, { ...netNode }]
-          changed = true
-        }
-      })
-      netData.current[1].forEach(function (netLink) {
-        if (
-          !graphData.current.links.some(
-            (graphLink) =>
-              graphLink.source.id === netLink.source && graphLink.target.id === netLink.target
-          )
-        ) {
-          graphData.current.links = [...graphData.current.links, { ...netLink }]
-          changed = true
-        }
-      })
-      if (changed) {
-        
+    if (netData.current && graphData.current && simulation.current) {
+      //console.log("datainterval")
+      if (updateGraphData(netData.current,graphData.current)) {
+        currentVersion.current = netData.current["CurrentNode"].toString()
         simulation.current.nodes(graphData.current.nodes)
-        const forceLink = simulation.current.force('link') as d3.ForceLink<
-          d3.SimulationNodeDatum,
-          d3.SimulationLinkDatum<d3.SimulationNodeDatum>
-        >
+        const forceLink = simulation.current.force('link') as forceLink
         forceLink.links(graphData.current.links)
-        // console.log('netdata', netData.current)
-        // console.log('graphData', graphData.current)
-        // console.log("dataInterval Update")
-        //simulation.current.restart()
-        refreshSim()
+        refreshSim(simulation)
         drawInterval()
+        //console.log("update sim data")
       }
     }
     loadingTicks.current++ 
@@ -274,8 +284,9 @@ const sendSelect = async (id: string,currentVersion: { current: string; }) => {
 
       //load/save file
       if (loadedFile.current === false) { //still need to handle opening
-
+        
         if(loadFile.current === null){ //haven't found a file yet, so keep looking
+          app.appState.isLoading = true
           console.log('requesting file...')
           updateVersions(netData, newData, abortVersionsController)
           loadFileFromProcessing(loadFile,abortFileController)
@@ -297,13 +308,13 @@ const sendSelect = async (id: string,currentVersion: { current: string; }) => {
           }
           centerPoint.current = app.centerPoint as [number,number];
           simulation.current = d3Sim(centerPoint.current,app.rendererBounds).alpha(3)
-          newData.current = true
           currentVersionInterval()
-          dataInterval()
-          refreshSim()
+          dataInterval(newData,netData,graphData,simulation)
+          refreshSim(simulation)
           //simulation.current.alpha(ALPHA_TARGET_REFRESH)
           drawInterval()
           app.zoomToContent()
+          app.appState.isLoading = false
           //make new file, do intro experience?
         }else if(loadFile.current !== null){ //we found an existing file
           abortFileController.abort()
@@ -341,6 +352,7 @@ const sendSelect = async (id: string,currentVersion: { current: string; }) => {
           forceLink.links(graphData.current.links)
           simulation.current.alpha(parseInt(loadFile.current.assets["alpha"].toString()))
           simulation.current.tick(20)
+          app.appState.isLoading = false
           
           // graphData.current.nodes.forEach(node =>{
           //   node.fx = null
@@ -348,9 +360,8 @@ const sendSelect = async (id: string,currentVersion: { current: string; }) => {
           // })
           
           
-          newData.current = true
           simulation.current.alpha(ALPHA_TARGET_REFRESH)
-          refreshSim()
+          refreshSim(simulation)
           drawInterval()
           
           loadedFile.current = true
@@ -366,12 +377,12 @@ const sendSelect = async (id: string,currentVersion: { current: string; }) => {
           
         }
       }else if(loadedFile.current === true){ //default update loop
-        console.log('saving/updating...')
+        //console.log('saving/updating...')
         if (!(app.document === undefined)) {
           saveToProcessing(app.document, JSON.stringify(graphData.current), simulation.current.alpha(),centerPoint.current, null,abortCurrentVersionController)
         }
         updateVersions(netData, newData, abortVersionsController)
-        dataInterval()
+        dataInterval(newData,netData,graphData,simulation)
         updateCurrentVersion(currentVersion, timeout, abortCurrentVersionController)
       }else{ //This shouldnt be reached
         console.log(loadFile.current)
@@ -423,14 +434,14 @@ const sendSelect = async (id: string,currentVersion: { current: string; }) => {
     const networkLoop = setInterval(networkInterval, timeout * 2) //get data from processing
     const currentVersionLoop = setInterval(currentVersionInterval, 500)//update current version
     const thumbnailLoop = setInterval(updateThumbnailInterval,1000);
-    const dataLoop = setInterval(dataInterval, 3000)//put it into the graph
-    const drawLoop = setInterval(drawInterval, 150)//draw the graph
+    //const dataLoop = setInterval(dataInterval, 3000)//put it into the graph
+    const drawLoop = setInterval(drawInterval, 100)//draw the graph
 
     return () => {
       clearInterval(networkLoop)
       clearInterval(currentVersionLoop)
       clearInterval(thumbnailLoop)
-      clearInterval(dataLoop)
+      //clearInterval(dataLoop)
       clearInterval(drawLoop)
       abortVersionsController.abort()
       abortCurrentVersionController.abort()
@@ -442,7 +453,7 @@ const sendSelect = async (id: string,currentVersion: { current: string; }) => {
   const handlePatch = React.useCallback((app: TldrawApp, reason?: string) => {
     //console.log(reason)
     if(loadedFile.current === true){
-      drawInterval()
+     // drawInterval()
     }
     
     switch (reason) {
@@ -452,32 +463,35 @@ const sendSelect = async (id: string,currentVersion: { current: string; }) => {
         //simulation.current.force("center",null)
         //simulation.current.force("charge",null)
         //simulation.current.force("link",null)
+        lastSelection.current = null
         break
       }
       case 'set_status:creating': {
         // started translating...
         rIsDragging.current = true
+        lastSelection.current = null
         break
       }
       case 'session:TranslateSession': {
         if (rIsDragging.current) {
-          refreshSim()
+          refreshSim(simulation)
           // Dragging...
         }
+        lastSelection.current = null
         break
       }
       case 'set_status:idle': {
         if (rIsDragging.current) {
           // stopped translating...
           rIsDragging.current = false
-          if (!(app.document === undefined)) {
-            saveToProcessing(app.document, JSON.stringify(graphData.current), simulation.current.alpha(),centerPoint.current, null,abortCurrentVersionController)
-          }
+          // if (!(app.document === undefined)) {
+          //   saveToProcessing(app.document, JSON.stringify(graphData.current), simulation.current.alpha(),centerPoint.current, null,abortCurrentVersionController)
+          // }
         }
-        const coords = tldrawCoordstod3(...centerPoint.current as [number,number])
+        //const coords = tldrawCoordstod3(...centerPoint.current as [number,number])
         //simulation.current.force("center", d3.forceCenter(coords[0],coords[1]).strength(.1))
         //simulation.current.force('charge', d3.forceManyBody().strength(-2))
-        refreshSim()
+        refreshSim(simulation)
         break
       }
       //scaling
@@ -488,34 +502,13 @@ const sendSelect = async (id: string,currentVersion: { current: string; }) => {
         ) {
           //console.log(graphData.current.nodes)
         }
+        lastSelection.current = null
         break
       }
       //double click on shape
       case 'set_status:pointingBounds': {
-        if (
-          app.selectedIds.length == 1 &&
-          app.getShape(app.selectedIds[0]).type === TDShapeType.VersionNode &&
-          app.selectedIds[0] === selectedNode.current
-        ) {
-          const selectedShape = app.getShape(selectedNode.current)
-          if (
-            !(selectedShape === undefined) &&
-            selectedShape.type == TDShapeType.VersionNode &&
-            new Date().getTime() - timeSinceLastSelection.current < DOUBLE_CLICK_TIME
-          ) {
-            const idInteger = selectedShape.id.replace(/\D/g, '')
-            sendFork(idInteger,currentVersion).then(response =>
-              {
-                networkInterval()
-              })
-            console.log('send double click')
-          } else {
-            timeSinceLastSelection.current = new Date().getTime()
-          }
-        } else {
-          //selectedNode.current = undefined
-        }
-        break
+
+        /* falls through */
       }
       case 'selected': {
         //Select Node
@@ -525,16 +518,17 @@ const sendSelect = async (id: string,currentVersion: { current: string; }) => {
           app.getShape(app.selectedIds[0]).type === TDShapeType.VersionNode
         ) {
           selectedNode.current = app.selectedIds[0]
+          //console.log(app.selectedIds[0])
           const selectedShape = app.getShape(selectedNode.current)
-          if (!(lastSelection.current === selectedNode.current)) {
-            const idInteger = selectedShape.id.replace(/\D/g, '')
+          const idInteger = selectedShape.id.replace(/\D/g, '')
+          if((lastSelection.current === selectedNode.current) && new Date().getTime() - timeSinceLastSelection.current < DOUBLE_CLICK_TIME){
+            sendFork(idInteger,currentVersion)
+            console.log('send fork!', idInteger)
+          }else{
             sendSelect(idInteger,currentVersion)
-            networkInterval()
             console.log('send select!', idInteger)
-            timeSinceLastSelection.current = new Date().getTime()
           }
-        } else {
-          selectedNode.current = undefined
+          timeSinceLastSelection.current = new Date().getTime()
         }
         break
       }
@@ -542,14 +536,14 @@ const sendSelect = async (id: string,currentVersion: { current: string; }) => {
   }, [])
 
   // Send events to gtag as actions.
-  const handlePersist = React.useCallback((_app: TldrawApp, reason?: string) => {
-    gtag.event({
-      action: reason ?? '',
-      category: 'editor',
-      label: reason ?? 'persist',
-      value: 0,
-    })
-  }, [])
+  // const handlePersist = React.useCallback((_app: TldrawApp, reason?: string) => {
+  //   gtag.event({
+  //     action: reason ?? '',
+  //     category: 'editor',
+  //     label: reason ?? 'persist',
+  //     value: 0,
+  //   })
+  // }, [])
 
   const fileSystemEvents = useFileSystem()
   const { onAssetUpload , onAssetDelete} = useUploadAssets()
