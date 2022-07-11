@@ -18,7 +18,7 @@ import * as gtag from 'utils/gtag'
 import axios from 'axios'
 import { Simulation, SimulationNodeDatum } from 'd3'
 import {throttle} from 'underscore'
-import asyncLock from 'async-lock'
+import AsyncLock from 'async-lock'
 import { 
   saveToProcessing, 
   getIconImageURLNoTime, 
@@ -100,7 +100,7 @@ const Editor = ({
   const abortFileController = new AbortController()
   const abortVersionsController = new AbortController()
   const timeout = 500
-  const lock = new asyncLock;
+  const lock = new AsyncLock;
 
   function refreshSim(simulation){
     if(simulation.current !== undefined){
@@ -115,7 +115,7 @@ const Editor = ({
     const app = rTldrawApp.current!
     if(app !== undefined){
       app.appState.isLoading = true
-      lock.aquire("select", async function() {
+      lock.acquire("select", async function() {
         await axios.get(LOCALHOST_BASE + '/fork/' + id, {
           timeout: 600,
         })
@@ -149,7 +149,7 @@ const sendSelectThrottled = async (id: string,currentVersion: { current: string;
   const app = rTldrawApp.current!
   if(app !== undefined){
     app.appState.isLoading = true
-    lock.aquire("select", async function() {
+    lock.acquire("select", async function() {
       await axios.get(LOCALHOST_BASE + '/select/' + id, {
         timeout: 600,
         //signal: abortCurrentVersionController.signal
@@ -289,6 +289,7 @@ const sendSelectThrottled = async (id: string,currentVersion: { current: string;
           app.appState.isLoading = true
           console.log('requesting file...')
           updateVersions(netData, newData, abortVersionsController)
+          getCurrentProject(currentProject,rTldrawApp)
           loadFileFromProcessing(loadFile,abortFileController)
           currentVersionInterval()
           if (app.getShape('loading')) {
@@ -297,17 +298,23 @@ const sendSelectThrottled = async (id: string,currentVersion: { current: string;
               id: 'loading',
               text: ' Quickpose is looking for a Processing Session' + loadingDot.repeat(loadingTicks.current % 6),
             })
+            loadingTicks.current++
           }
         }else if(loadFile.current === undefined){ //there is no file, we need to start fresh
           loadedFile.current = true
           updateVersions(netData, newData, abortVersionsController)
+          getCurrentProject(currentProject,rTldrawApp)
           console.log('no file found!')
           abortFileController.abort()
           if (app.getShape('loading')) {//remove loading sticky
             app.delete(['loading']) 
-          }
+          } 
           centerPoint.current = app.centerPoint as [number,number];
           simulation.current = d3Sim(centerPoint.current,app.rendererBounds).alpha(3)
+          if(netData.current !== undefined && netData.current !== null && netData.current["ProjectName"]){
+            currentProject.current = netData.current["ProjectName"]
+          }
+          console.log(netData.current)
           currentVersionInterval()
           dataInterval(newData,netData,graphData,simulation)
           refreshSim(simulation)
@@ -318,10 +325,16 @@ const sendSelectThrottled = async (id: string,currentVersion: { current: string;
           //make new file, do intro experience?
         }else if(loadFile.current !== null){ //we found an existing file
           abortFileController.abort()
+          netData.current = null
+          graphData.current = null
+          app.replacePageContent({},{},{})
+
           currentVersionInterval()
           //https://stackoverflow.com/questions/18206231/saving-and-reloading-a-force-layout-using-d3-js
           //Load the data
           const loadedData = JSON.parse(loadFile.current.assets["simData"].toString())
+          currentProject.current = loadFile.current.document.name
+          app.document.name = currentProject.current
           if(loadFile.current.assets["centerPoint"] !== undefined){
             centerPoint.current = JSON.parse(loadFile.current.assets["centerPoint"].toString()) as [number,number]
           }
@@ -408,9 +421,11 @@ const sendSelectThrottled = async (id: string,currentVersion: { current: string;
     //   app = rTldrawApp.current!
     // }
     
+
     const abortFileController = new AbortController()
     loadFileFromProcessing(loadFile,abortFileController)
-
+    console.log("mount")
+    
     rTldrawApp.current = app
     centerPoint.current = app.centerPoint as [number,number]
     app.replacePageContent({},{},{})
@@ -446,6 +461,8 @@ const sendSelectThrottled = async (id: string,currentVersion: { current: string;
       abortVersionsController.abort()
       abortCurrentVersionController.abort()
       abortFileController.abort()
+
+      netData.current = null
     }
   },[])
 

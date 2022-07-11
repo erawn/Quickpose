@@ -104,13 +104,13 @@ export const DrawEllipse = React.memo(function DrawEllipse({
         rx={radius[0]}
         ry={radius[1]}
       />
-      <ellipse
+      {/* <ellipse
         cx={radius[0]}
         cy={radius[1]}
         rx={rx}
         ry={ry}
         fill={"url(#"+imgId+")"}
-      />
+      /> */}
       <ellipse
         cx={radius[0]}
         cy={radius[1]}
