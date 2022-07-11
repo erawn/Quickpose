@@ -12,7 +12,7 @@ const Home = () => {
   return (
     <>
       <Head>
-        <title>tldraw</title>
+        <title>Quickpose</title>
       </Head>
       <Editor id="home" showUI={!isExportMode} />
     </>
