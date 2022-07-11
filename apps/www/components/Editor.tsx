@@ -78,6 +78,7 @@ const Editor = ({
   const lastSelection = React.useRef<string>(null)
   const currentVersion = React.useRef<string>(null)
   const timeSinceLastSelection = React.useRef<number>(0)
+  const timeSinceLastFork = React.useRef<number>(0);
   const centerPoint = React.useRef<[number,number]>([600,600])
   //file loading
   const loadFile = React.useRef<TDFile>(null)
@@ -108,26 +109,32 @@ const Editor = ({
       simulation.current.restart()
     }
   }
-  const sendFork = (id: string,currentVersion: { current: string; }) => throttle(sendForkThrottled(id,currentVersion),1000)
+  const sendFork = (id: string,currentVersion: { current: string; }) => throttle(sendForkThrottled(id,currentVersion),2000)
 
   const sendForkThrottled = async (id: string,currentVersion: { current: string; }) => {
     const start = timestampInSeconds()
     const app = rTldrawApp.current!
     if(app !== undefined){
       app.appState.isLoading = true
+      console.log("send fork",id)
       lock.acquire("select", async function() {
         await axios.get(LOCALHOST_BASE + '/fork/' + id, {
           timeout: 600,
         })
         .then(response => {
           if(response.status === 200){
-            console.log("forkdata",JSON.parse(response.data));
             newData.current = true;
             netData.current = response.data
             dataInterval(newData,netData,graphData,simulation)
             drawInterval()
-            app.appState.isLoading = false
-            //app.select()
+            app.appState.isLoading = false;
+            const maxId = Math.max(...(graphData.current.nodes as dataNode[]).map(n => parseInt(n.id)))
+            console.log(maxId)
+            if(app.getShapes().map(n => n.id).includes('node'+maxId)){
+              app.zoomTo(app.zoom,app.getShape('node'+maxId).point)
+              //app.select('node'+maxId)
+            }
+            
           }
         })
         .catch(error => {
@@ -149,6 +156,7 @@ const sendSelectThrottled = async (id: string,currentVersion: { current: string;
   const app = rTldrawApp.current!
   if(app !== undefined){
     app.appState.isLoading = true
+    console.log("send select",id)
     lock.acquire("select", async function() {
       await axios.get(LOCALHOST_BASE + '/select/' + id, {
         timeout: 600,
@@ -157,6 +165,11 @@ const sendSelectThrottled = async (id: string,currentVersion: { current: string;
       .then(function(response) {
         if(response.status === 200){
           currentVersion.current = response.data.toString()
+
+          console.log(currentVersion.current.toString())
+          const v = 'node'+currentVersion.current
+          console.log(v)
+          //app.pageState.selectedIds = ['node'+currentVersion]
           drawInterval()
         }
       })
@@ -199,16 +212,19 @@ const sendSelectThrottled = async (id: string,currentVersion: { current: string;
         tlNodes = app.getShapes().filter((shape) => nodeRegex.test(shape.id))
         const [nextLinkShapes, nextLinkBindings, createLinkShapes] = updateLinkShapes(app, tlLinks, graphData, tlNodes)
         
+        //const createShapes = {...createLinkShapes,...createNodeShapes as TDShape[]} as TDShape[]
+        //const selection = app.selectedIds
         if (createNodeShapes.length > 0) {
           console.log("new shapes",createNodeShapes)
           app.createShapes(...createNodeShapes)
-          //addNodes.forEach((node) => (nextShapes[node.id] = {point: }))
+          
         }
+        const newIds: string[] = createNodeShapes.map((n) => n.id)
         if (createLinkShapes.length > 0) {
-          //shapeUpdate.push(...updateNodes)
           app.updateShapes(...createLinkShapes)
         }
 
+        //app.pageState.selectedIds = selection //breaks everything
         const nextShapes = {...nextNodeShapes,...nextLinkShapes} as Patch<TDPage['shapes']>
         const nextBindings = {...nextLinkBindings} as Patch<TDPage['bindings']>
         const nextPage: PagePartial = {
@@ -218,22 +234,7 @@ const sendSelectThrottled = async (id: string,currentVersion: { current: string;
         sim.nodes(gData.nodes);
         (sim.force('link') as forceLink).links(gData.links);
         sim.restart();
-        console.timeStamp("post updatenodes")
-        // if (updateLinks.length > 0) {
-        //   //app.updateShapes(...updateLinks)
-        //   shapeUpdate.push(...updateLinks)
-        // }
-        // if (newLinks.length > 0) {
-        //   //app.createShapes(...newLinks)
-        //   //shapeUpdate.push(...newLinks)
-        //   //deselect created links
-        //   const newIds: string[] = newLinks.map((link) => link.id)
-        //   app.select(...app.selectedIds.filter((id) => !newIds.includes(id)))
-        // }
-        // console.timeStamp("post updatelinks");
 
-        
-        
         // console.timeStamp("sim");
         const currentPageId = app.currentPageId
         const patch = {
@@ -250,6 +251,14 @@ const sendSelectThrottled = async (id: string,currentVersion: { current: string;
         }
         app.patchState(patch,"Quickpose Draw Update")
         //console.timeStamp("patch");
+        if(newIds.includes('node0')){
+            app.selectNone()
+            sim.tick(2);
+            setTimeout(()=>{ 
+              app.zoomToFit()
+              app.zoomOut()
+            },500)
+        }
       })
       console.timeStamp("end animframe");
     }
@@ -386,7 +395,9 @@ const sendSelectThrottled = async (id: string,currentVersion: { current: string;
           // app.zoomOut();
           // app.zoomOut();
           // //app.select(...selection)
-          app.resetZoom()
+          //app.resetZoom()
+          //app.zoomToSelection();
+          //app.selectNone();
           
         }
       }else if(loadedFile.current === true){ //default update loop
@@ -448,7 +459,7 @@ const sendSelectThrottled = async (id: string,currentVersion: { current: string;
     
     const networkLoop = setInterval(networkInterval, timeout * 2) //get data from processing
     const currentVersionLoop = setInterval(currentVersionInterval, 500)//update current version
-    const thumbnailLoop = setInterval(updateThumbnailInterval,1000);
+    const thumbnailLoop = setInterval(updateThumbnailInterval,2000);
     //const dataLoop = setInterval(dataInterval, 3000)//put it into the graph
     const drawLoop = setInterval(drawInterval, 100)//draw the graph
 
@@ -468,7 +479,7 @@ const sendSelectThrottled = async (id: string,currentVersion: { current: string;
 
   //https://codesandbox.io/s/tldraw-context-menu-wen03q
   const handlePatch = React.useCallback((app: TldrawApp, reason?: string) => {
-    //console.log(reason)
+    console.log(reason)
     if(loadedFile.current === true){
      // drawInterval()
     }
@@ -523,29 +534,66 @@ const sendSelectThrottled = async (id: string,currentVersion: { current: string;
         break
       }
       //double click on shape
-      case 'set_status:pointingBounds': {
-
-        /* falls through */
-      }
-      case 'selected': {
-        //Select Node
+      case 'set_status:pointingBounds': { //pointing bounds can never trigger selects
         lastSelection.current = selectedNode.current
         if (
           app.selectedIds.length == 1 &&
           app.getShape(app.selectedIds[0]).type === TDShapeType.VersionNode
         ) {
+
           selectedNode.current = app.selectedIds[0]
-          //console.log(app.selectedIds[0])
           const selectedShape = app.getShape(selectedNode.current)
           const idInteger = selectedShape.id.replace(/\D/g, '')
-          if((lastSelection.current === selectedNode.current) && new Date().getTime() - timeSinceLastSelection.current < DOUBLE_CLICK_TIME){
+          
+          if(app.shiftKey && new Date().getTime() - timeSinceLastFork.current > 2000){
             sendFork(idInteger,currentVersion)
-            console.log('send fork!', idInteger)
-          }else{
-            sendSelect(idInteger,currentVersion)
-            console.log('send select!', idInteger)
+            timeSinceLastFork.current = new Date().getTime()
+            timeSinceLastSelection.current = new Date().getTime()
+         }
+         const timeSinceLastSelect = new Date().getTime() - timeSinceLastSelection.current
+          if(timeSinceLastSelect > 500 && 
+          lastSelection.current !== selectedNode.current){
+              sendSelect(idInteger,currentVersion)
+              timeSinceLastSelection.current = new Date().getTime()
           }
-          timeSinceLastSelection.current = new Date().getTime()
+
+          if(timeSinceLastSelect > 500 && 
+          lastSelection.current === selectedNode.current){
+            const then = new Date().getTime()
+            setTimeout(()=>{ //if we dont get a selected event in the next half second
+              if(then > timeSinceLastSelection.current){
+                sendSelect(idInteger,currentVersion)
+                timeSinceLastSelection.current = new Date().getTime()
+              }
+            },500)
+          }
+          
+        }
+        break;
+      }
+      case 'selected': { //select events are never the second click, so they can never trigger forks
+        //Select Node
+        
+        lastSelection.current = selectedNode.current
+        if (
+          app.selectedIds.length == 1 &&
+          app.getShape(app.selectedIds[0]).type === TDShapeType.VersionNode
+        ) {
+
+          selectedNode.current = app.selectedIds[0]
+          const selectedShape = app.getShape(selectedNode.current)
+          const idInteger = selectedShape.id.replace(/\D/g, '')
+
+          if(app.shiftKey && new Date().getTime() - timeSinceLastFork.current > 2000){
+            sendFork(idInteger,currentVersion)
+            timeSinceLastFork.current = new Date().getTime()
+            timeSinceLastSelection.current = new Date().getTime()
+         }
+          if(new Date().getTime() - timeSinceLastSelection.current > 500 &&
+          lastSelection.current !== selectedNode.current){
+              sendSelect(idInteger,currentVersion)
+              timeSinceLastSelection.current = new Date().getTime()
+          }
         }
         break
       }
