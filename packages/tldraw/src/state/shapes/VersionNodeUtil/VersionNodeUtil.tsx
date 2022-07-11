@@ -33,6 +33,15 @@ export class VersionNodeUtil extends TDShapeUtil<T, E> {
 
   hideResizeHandles = false
 
+  hasLoaded = false
+
+  onImageLoad = () => { 
+    this.hasLoaded = true
+  }
+
+
+
+
 
   getShape = (props: Partial<T>): T => {
     return Utils.deepMerge<T>(
@@ -50,6 +59,7 @@ export class VersionNodeUtil extends TDShapeUtil<T, E> {
         labelPoint: [0.5, 0.5],
         imgLink: '',
         isCurrent: false,
+        hasLoaded:false,
       },
       props
     )
@@ -72,6 +82,12 @@ export class VersionNodeUtil extends TDShapeUtil<T, E> {
       ref
     ) => {
       const rImage = React.useRef<HTMLImageElement>(null)
+      
+      if(rImage.current !== null){
+        rImage.current.addEventListener('load', this.onImageLoad);
+        this.hasLoaded = false;
+      }
+      
       const { id, radius, style, label = '', labelPoint = LABEL_POINT, imgLink, isCurrent } = shape
       const font = getFontStyle(shape.style)
       const styles = getShapeStyle(style, meta.isDarkMode)
@@ -85,6 +101,7 @@ export class VersionNodeUtil extends TDShapeUtil<T, E> {
         (label: string) => onShapeChange?.({ id, label }),
         [onShapeChange]
       )
+
       return (
         <FullWrapper ref={ref} {...events}>
           <TextLabel
@@ -127,7 +144,7 @@ export class VersionNodeUtil extends TDShapeUtil<T, E> {
               src={imgLink}
               draggable={false}
               width={imgWidth*2}
-              // onLoad={onImageLoad}
+              onLoad={this.onImageLoad}
             />
         </FullWrapper>
       )
@@ -210,7 +227,7 @@ export class VersionNodeUtil extends TDShapeUtil<T, E> {
   }
 
   shouldRender = (prev: T, next: T): boolean => {
-    return next.radius !== prev.radius || next.style !== prev.style || next.label !== prev.label || next.imgLink !== prev.imgLink || next.isCurrent !== prev.isCurrent
+    return next.radius !== prev.radius || next.style !== prev.style || next.label !== prev.label || (prev.hasLoaded === false && next.hasLoaded === true) || next.isCurrent !== prev.isCurrent
   }
 
   getCenter = (shape: T): number[] => {
