@@ -19,7 +19,6 @@ import axios from 'axios'
 import { Simulation, SimulationNodeDatum } from 'd3'
 import {throttle} from 'underscore'
 import AsyncLock from 'async-lock'
-import starter from './starter.tldr'
 import { 
   saveToProcessing, 
   getIconImageURLNoTime, 
@@ -95,7 +94,7 @@ const Editor = ({
   //data structs
   const netData = React.useRef<any>()
   const newData = React.useRef<boolean>(false)
-  const graphData = React.useRef<any>()
+  const graphData = React.useRef<any>(graphBaseData)
   graphData.current = graphBaseData
   const loadingTicks = React.useRef<number>(0); //Counter for sticky loading dots
   
@@ -356,7 +355,7 @@ const sendSelectThrottled = async (id: string,currentVersion: { current: string;
             currentProject.current = netData.current["ProjectName"]
            }
             const importNodes = loadedData.nodes as dataNode[]
-            //console.log(importNodes)
+            console.log(importNodes)
             importNodes.forEach(node =>{
               node.fx = node.x
               node.fy = node.y
@@ -485,7 +484,7 @@ const sendSelectThrottled = async (id: string,currentVersion: { current: string;
 
   //https://codesandbox.io/s/tldraw-context-menu-wen03q
   const handlePatch = React.useCallback((app: TldrawApp, reason?: string) => {
-    console.log(reason)
+    //console.log(reason)
     if(loadedFile.current === true){
      // drawInterval()
     }
