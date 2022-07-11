@@ -46,13 +46,13 @@ export const saveToProcessing = async (document: TDDocument, simData: string, al
         'Content-Type': 'multipart/form-data',
         "Content-Disposition": "filename=quickpose.tldr.png"
       },
-      signal: abortController.signal
+      //signal: abortController.signal
     })
     .then(function (response) {
-      //console.log(response);
+      console.log(response);
     })
     .catch(function (error) {
-      //console.log(error);
+      console.log(error);
     });
     
     return true
