@@ -53,6 +53,7 @@ import {
   updateNodeShapes
  } from 'utils/quickposeDrawing'
 import { dateTimestampInSeconds, timestampInSeconds } from '@sentry/utils'
+import { TLBounds } from '@tldraw/core'
 
 //declare const window: Window & { app: TldrawApp }
 
@@ -477,8 +478,22 @@ const sendSelectThrottled = async (id: string,currentVersion: { current: string;
       abortVersionsController.abort()
       abortCurrentVersionController.abort()
       abortFileController.abort()
-
+      
+      const bounds: TLBounds = {
+        minX: 0,
+        maxX: 640,
+        minY: 0,
+        maxY: 480,
+        width: 640,
+        height: 480,
+      }
+      simulation.current = d3Sim([0,0],bounds);
       netData.current = null
+      graphData.current = graphBaseData
+      currentVersion.current = null
+      loadFile.current = null
+      loadedFile.current = false
+      currentProject.current = null
     }
   },[])
 
