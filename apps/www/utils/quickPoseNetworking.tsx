@@ -67,10 +67,10 @@ export const loadFileFromProcessing = async(loadFile,abortFileController) => {
       if(fileStatus === 200 && fileData && loadFile.current === null){ //this third conditional is to avoid race conditions
         loadFile.current = fileData
         abortFileController.abort()
-        console.log("loaded file - aborting file requests")
+        //console.log("loaded file - aborting file requests")
       }else if(fileStatus === 201){
         loadFile.current = undefined //this is the signal that we attempted to load a file, but it was missing
-        console.log("Found Session but no TLDR")
+        //console.log("Found Session but no TLDR")
         abortFileController.abort()
     } 
     })
@@ -102,6 +102,16 @@ export const updateVersions = async (netData, newData, abortVersionsController:A
       //console.error("error fetching: ", error);
     })
   }
+const checkImage = path => {
+  return new Promise(resolve => {
+    const img = new Image();
+    img.onload = () => resolve({img, status: 'ok'});
+    img.onerror = () => resolve({img, status: 'error'});
+
+    img.src = path;
+}); 
+}
+  
 export const updateThumbnail = async (selectedNode, rTldrawApp) => {
     let app = rTldrawApp!
     let select = selectedNode!
@@ -113,14 +123,37 @@ export const updateThumbnail = async (selectedNode, rTldrawApp) => {
           const selectedShape = app.getShape(('node'+select).toString())
           if( !(selectedShape === undefined) && selectedShape.type == TDShapeType.VersionNode){
             const idInteger = selectedShape.id.replace(/\D/g,"")
-            const res = await axios.get(getIconImageURL(idInteger),{timeout:500})
-            const status = await res.status
-            if(status === 200){
-              selectedShape.imgLink = getIconImageURL(idInteger)//refresh the thumbnail image
-              app.updateShapes(selectedShape)
-            }else{
-              return false
-            }
+            const url = getIconImageURL(idInteger)
+            await checkImage(url).then((res)=>{
+              if(res["status"] === 'ok'){
+                selectedShape.imgLink = url
+                app.updateShapes(selectedShape)
+              }else{
+                console.log("image didnt load")
+              }
+              
+            }).catch(e =>{
+              console.log("invalid image",e)
+            })
+            // const res = await axios.get(url,{timeout:500})
+            // const status = await res.status
+       
+            // if(status === 200){
+            //   //refresh the thumbnail image
+            //   // const patch = {
+            //   //   document: {
+            //   //     pages: {
+            //   //       [app.currentPageId]: {
+            //   //         nodes: {...selectedShape}
+            //   //       },
+            //   //     },
+            //   //   },
+            //   // }
+            //   // app.patchState(patch,"Quickpose Thumbnail Update")
+              
+            // }else{
+            //   return false
+            // }
            
             //console.log("update thumbnail")
           }

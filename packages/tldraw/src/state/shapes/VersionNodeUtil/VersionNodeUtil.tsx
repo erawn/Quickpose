@@ -1,5 +1,5 @@
 import * as React from 'react'
-import { Utils, SVGContainer, TLBounds } from '@tldraw/core'
+import { Utils, SVGContainer, TLBounds, HTMLContainer } from '@tldraw/core'
 import { Vec } from '@tldraw/vec'
 import { defaultStyle, getShapeStyle, getFontStyle } from '~state/shapes/shared'
 import { VersionNodeShape, DashStyle, TDShapeType, TDShape, TransformInfo, TDMeta } from '~types'
@@ -14,6 +14,7 @@ import { getEllipseIndicatorPath } from './ellipseHelpers'
 import { DrawEllipse } from './DrawEllipse'
 import { TextLabel } from '../shared/TextLabel'
 import { styled } from '~styles'
+
 
 type T = VersionNodeShape
 type E = HTMLDivElement
@@ -48,7 +49,7 @@ export class VersionNodeUtil extends TDShapeUtil<T, E> {
         label: '',
         labelPoint: [0.5, 0.5],
         imgLink: '',
-        isCurrent: false
+        isCurrent: false,
       },
       props
     )
@@ -70,11 +71,13 @@ export class VersionNodeUtil extends TDShapeUtil<T, E> {
       },
       ref
     ) => {
+      const rImage = React.useRef<HTMLImageElement>(null)
       const { id, radius, style, label = '', labelPoint = LABEL_POINT, imgLink, isCurrent } = shape
       const font = getFontStyle(shape.style)
       const styles = getShapeStyle(style, meta.isDarkMode)
       const strokeWidth = styles.strokeWidth
       const sw = 1 + strokeWidth * 1.618
+      const imgWidth = Math.max(0, radius[0] - sw);
       const rx = Math.max(0, radius[0] - sw / 2)
       const ry = Math.max(0, radius[1] - sw / 2)
       const Component = DrawEllipse
@@ -94,6 +97,7 @@ export class VersionNodeUtil extends TDShapeUtil<T, E> {
             offsetX={(labelPoint[0] - 0.5) * bounds.width}
             offsetY={(labelPoint[1] - 0.5) * bounds.height}
           />
+           
           <SVGContainer id={shape.id + '_svg'} opacity={isGhost ? GHOSTED_OPACITY : 1}>
             {isBinding && (
               <ellipse
@@ -105,6 +109,7 @@ export class VersionNodeUtil extends TDShapeUtil<T, E> {
                 strokeWidth={this.bindingDistance}
               />
             )}
+            
             <Component
               id={id}
               radius={radius}
@@ -115,6 +120,15 @@ export class VersionNodeUtil extends TDShapeUtil<T, E> {
               isCurrent={isCurrent}
             />
           </SVGContainer>
+          
+          <ImageElement
+              id={shape.id + '_image'}
+              ref={rImage}
+              src={imgLink}
+              draggable={false}
+              width={imgWidth*2}
+              // onLoad={onImageLoad}
+            />
         </FullWrapper>
       )
     }
@@ -320,4 +334,22 @@ export class VersionNodeUtil extends TDShapeUtil<T, E> {
   }
 }
 
-const FullWrapper = styled('div', { width: '100%', height: '100%' })
+const FullWrapper = styled('div', {
+   width: '100%', 
+   height: '100%', 
+   position:'relative'
+  })
+
+const ImageElement = styled('img', {
+  position: 'absolute',
+  pointerEvents: 'none',
+  objectFit: 'cover',
+  userSelect: 'none',
+  margin: 'auto',
+  display: 'flex',
+  top: '50%',
+  left: '50%',
+  borderRadius: '50%',
+  transform: 'translate(-50%,-50%)',
+  zIndex: 5,
+})
