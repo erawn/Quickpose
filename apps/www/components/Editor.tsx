@@ -19,6 +19,7 @@ import axios from 'axios'
 import { Simulation, SimulationNodeDatum } from 'd3'
 import {throttle} from 'underscore'
 import AsyncLock from 'async-lock'
+import starter from './starter.tldr'
 import { 
   saveToProcessing, 
   getIconImageURLNoTime, 
@@ -296,7 +297,7 @@ const sendSelectThrottled = async (id: string,currentVersion: { current: string;
       if (loadedFile.current === false) { //still need to handle opening
         
         if(loadFile.current === null){ //haven't found a file yet, so keep looking
-          app.appState.isLoading = true
+          //app.appState.isLoading = true
           console.log('requesting file...')
           updateVersions(netData, newData, abortVersionsController)
           getCurrentProject(currentProject,rTldrawApp)
@@ -312,6 +313,8 @@ const sendSelectThrottled = async (id: string,currentVersion: { current: string;
           }
         }else if(loadFile.current === undefined){ //there is no file, we need to start fresh
           loadedFile.current = true
+          app.resetDocument()
+          
           updateVersions(netData, newData, abortVersionsController)
           getCurrentProject(currentProject,rTldrawApp)
           console.log('no file found!')
@@ -328,22 +331,59 @@ const sendSelectThrottled = async (id: string,currentVersion: { current: string;
           currentVersionInterval()
           dataInterval(newData,netData,graphData,simulation)
           refreshSim(simulation)
+          app.document.name = currentProject.current
           //simulation.current.alpha(ALPHA_TARGET_REFRESH)
           drawInterval()
           app.zoomToContent()
-          app.appState.isLoading = false
+          //app.appState.isLoading = false
           //make new file, do intro experience?
         }else if(loadFile.current !== null){ //we found an existing file
           abortFileController.abort()
           netData.current = null
-          graphData.current = null
+          graphData.current = graphBaseData
           app.replacePageContent({},{},{})
 
           currentVersionInterval()
           //https://stackoverflow.com/questions/18206231/saving-and-reloading-a-force-layout-using-d3-js
           //Load the data
-          const loadedData = JSON.parse(loadFile.current.assets["simData"].toString())
-          currentProject.current = loadFile.current.document.name
+          let loadedData = {
+            nodes: [],
+            links: []
+           }
+          if(loadFile.current.assets["simData"] !== "" && loadFile.current.assets["simData"] !== undefined ){
+           loadedData = JSON.parse(loadFile.current.assets["simData"].toString())
+           if(netData.current !== undefined && netData.current !== null && netData.current["ProjectName"]){
+            currentProject.current = netData.current["ProjectName"]
+           }
+            const importNodes = loadedData.nodes as dataNode[]
+            //console.log(importNodes)
+            importNodes.forEach(node =>{
+              node.fx = node.x
+              node.fy = node.y
+            })
+            graphData.current.nodes = importNodes
+            graphData.current.links = loadedData.links
+            simulation.current = d3Sim(centerPoint.current,app.rendererBounds).alpha(3)
+            simulation.current.restart()
+            
+            simulation.current.nodes(graphData.current.nodes)
+  
+            const forceLink = simulation.current.force('link') as d3.ForceLink<
+              d3.SimulationNodeDatum,
+              d3.SimulationLinkDatum<d3.SimulationNodeDatum>
+            >
+            forceLink.links(graphData.current.links)
+            simulation.current.alpha(parseInt(loadFile.current.assets["alpha"].toString()))
+            simulation.current.tick(20)
+                      
+          // graphData.current.nodes.forEach(node =>{
+          //   node.fx = null
+          //   node.fy = null
+          // })
+            simulation.current.alpha(ALPHA_TARGET_REFRESH)
+            refreshSim(simulation)
+          }
+          //currentProject.current = loadFile.current.document.name
           app.document.name = currentProject.current
           if(loadFile.current.assets["centerPoint"] !== undefined){
             centerPoint.current = JSON.parse(loadFile.current.assets["centerPoint"].toString()) as [number,number]
@@ -355,56 +395,20 @@ const sendSelectThrottled = async (id: string,currentVersion: { current: string;
             app.delete(['loading','installHelper1','installHelper2','installHelper3']) 
           }
           //console.log('loaded data',loadedData)
-          const importNodes = loadedData.nodes as dataNode[]
-          //console.log(importNodes)
-          importNodes.forEach(node =>{
-            node.fx = node.x
-            node.fy = node.y
-          })
-          graphData.current.nodes = importNodes
-          graphData.current.links = loadedData.links
-          simulation.current = d3Sim(centerPoint.current,app.rendererBounds).alpha(3)
-          simulation.current.restart()
-          
-          simulation.current.nodes(graphData.current.nodes)
 
-          const forceLink = simulation.current.force('link') as d3.ForceLink<
-            d3.SimulationNodeDatum,
-            d3.SimulationLinkDatum<d3.SimulationNodeDatum>
-          >
-          forceLink.links(graphData.current.links)
-          simulation.current.alpha(parseInt(loadFile.current.assets["alpha"].toString()))
-          simulation.current.tick(20)
-          app.appState.isLoading = false
-          
-          // graphData.current.nodes.forEach(node =>{
-          //   node.fx = null
-          //   node.fy = null
-          // })
-          
-          
-          simulation.current.alpha(ALPHA_TARGET_REFRESH)
-          refreshSim(simulation)
+          //app.appState.isLoading = false
+          dataInterval(newData,netData,graphData,simulation)
           drawInterval()
-          
+          app.zoomToFit()
           loadedFile.current = true
-          // const selection = app.selectedIds
-          // app.select(...app.getShapes().filter((shape) => nodeRegex.test(shape.id)).map(n=>n.id))
-          // app.zoomToSelection();
-          // app.zoomOut();
-          // app.zoomOut();
-          // app.zoomOut();
-          // app.zoomOut();
-          // //app.select(...selection)
-          //app.resetZoom()
-          //app.zoomToSelection();
-          //app.selectNone();
-          
         }
       }else if(loadedFile.current === true){ //default update loop
-        //console.log('saving/updating...')
+        console.log('saving/updating?')
         if (!(app.document === undefined)) {
+          console.log('saving/updating...')
           saveToProcessing(app.document, JSON.stringify(graphData.current), simulation.current.alpha(),centerPoint.current, null,abortCurrentVersionController)
+        }else{
+          app.document.name = currentProject.current
         }
         updateVersions(netData, newData, abortVersionsController)
         dataInterval(newData,netData,graphData,simulation)
