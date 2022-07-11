@@ -39,6 +39,10 @@ function MyApp({ Component, pageProps }: any) {
         <meta property="og:url" content={APP_URL} />
         <meta property="og:image" content={IMAGE} />
 
+        <meta httpEquiv='cache-control' content='no-cache'/>
+        <meta httpEquiv='expires' content='0'/>
+        <meta httpEquiv='pragma' content='no-cache'/>
+
         <meta
           name="viewport"
           content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no"
