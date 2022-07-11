@@ -1,4 +1,4 @@
-import { ArrowBinding, ArrowShape, ColorStyle, DashStyle, shapeUtils, SizeStyle, TDBinding, TDShape, TDShapeType, TldrawApp, VersionNodeShape } from "@tldraw/tldraw"
+import { AlignStyle, ArrowBinding, ArrowShape, ColorStyle, DashStyle, shapeUtils, SizeStyle, TDBinding, TDShape, TDShapeType, TldrawApp, VersionNodeShape } from "@tldraw/tldraw"
 import { dataLink, dataNode, inputShape, inputVersionNodeShape } from "./quickPoseTypes"
 import deepEqual from "deep-equal";
 import { ALPHA_TARGET_REFRESH, d3TlScale, D3_LINK_DISTANCE, TL_DRAW_RADIUS } from "components/Editor";
@@ -61,6 +61,8 @@ export const defaultSticky = (centerPoint) => {
         }
   } as inputShape
 }
+
+
 
 export const graphBaseData = {
     nodes: [],
@@ -303,3 +305,59 @@ export const updateBinding = (app:TldrawApp, link, startNode,endNode,drawLink,ne
       })
       return changed
   }
+
+  export const installHelper = (centerPoint) => {
+    return [{
+      "id": "installHelper1",
+      "type": "text",
+      "name": "Text",
+      "point": [centerPoint[0]-220,centerPoint[1]+250],//[247.14, 653.4],
+      "rotation": 0,
+      "text": "1. Download Processing 3.5.4 from\n https://processing.org/download\n(you'll have to open it once to make your\n /Processing Folder appear in your Documents)",
+      "style": {
+        "color": "white",
+        "size": "small",
+        "isFilled": false,
+        "dash": "solid",
+        "scale": 0.9789379019143146,
+        "font": "script",
+        "textAlign": "middle"
+      }
+    } as inputShape,
+    {
+      "id": "installHelper2",
+      "type": "text",
+      "name": "Text",
+      "point": [centerPoint[0]+200,centerPoint[1]+250],//[670.88, 652.49],
+      "rotation": 0,
+      "text": "2. Extract Quickpose to /Processing/tools, \nrestart Processing,\nopen a new sketch (save first), \nand click Tools-> Quickpose. ",
+      "style": {
+        "color": "white",
+        "size": "small",
+        "isFilled": false,
+        "dash": "solid",
+        "scale": 1,
+        "font": "script",
+        "textAlign": "middle"
+      }
+    } as inputShape,
+    {
+      "id": "installHelper3",
+      "type": "text",
+      "name": "Text",
+      "point": [centerPoint[0]+130,centerPoint[1]+200],//[574.34, 607.04],
+      "rotation": 0,
+      "text": "To get started:",
+      "style": {
+        "color": "white",
+        "size": "small",
+        "isFilled": false,
+        "dash": "solid",
+        "scale": 1,
+        "font": "script",
+        "textAlign": "middle"
+      }
+    } as inputShape
+  ]
+
+}

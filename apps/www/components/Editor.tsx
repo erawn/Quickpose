@@ -44,6 +44,7 @@ import {
    d3Sim,
    defaultSticky,
    graphBaseData,
+   installHelper,
    linkRegex,
   nodeRegex,
   tldrawCoordstod3,
@@ -316,7 +317,7 @@ const sendSelectThrottled = async (id: string,currentVersion: { current: string;
           console.log('no file found!')
           abortFileController.abort()
           if (app.getShape('loading')) {//remove loading sticky
-            app.delete(['loading']) 
+            app.delete(['loading','installHelper1','installHelper2','installHelper3']) 
           } 
           centerPoint.current = app.centerPoint as [number,number];
           simulation.current = d3Sim(centerPoint.current,app.rendererBounds).alpha(3)
@@ -351,7 +352,7 @@ const sendSelectThrottled = async (id: string,currentVersion: { current: string;
           app.loadDocument(loadFile.current.document)
          
           if (app.getShape('loading')) {//remove loading sticky
-            app.delete(['loading']) 
+            app.delete(['loading','installHelper1','installHelper2','installHelper3']) 
           }
           //console.log('loaded data',loadedData)
           const importNodes = loadedData.nodes as dataNode[]
@@ -435,12 +436,13 @@ const sendSelectThrottled = async (id: string,currentVersion: { current: string;
 
     const abortFileController = new AbortController()
     loadFileFromProcessing(loadFile,abortFileController)
-    console.log("mount")
     
     rTldrawApp.current = app
     centerPoint.current = app.centerPoint as [number,number]
     app.replacePageContent({},{},{})
     app.createShapes(defaultSticky(centerPoint.current))
+    app.createShapes(...installHelper(centerPoint.current))
+    app.selectNone()
     app.zoomToFit()
   }, [])
 
