@@ -18,7 +18,13 @@ export function getIconImageURL(id:string){
     return LOCALHOST_BASE + "/image/" + id + "?" + ((new Date()).getTime()); //Add Time to avoid Caching so images update properly
 }
 
-export const saveToProcessing = async (document: TDDocument, simData: string, alpha, centerPoint: [number,number], fileHandle: FileSystemHandle | null,abortController) => {
+export const saveToProcessing = async (
+  document: TDDocument, 
+  simData: string, alpha, 
+  centerPoint: [number,number], 
+  fileHandle: FileSystemHandle | null,
+  abortController,
+  projectName) => {
     const file: TDFile = {
         name: 'quickpose.tldr',
         fileHandle: fileHandle ?? null,
@@ -44,8 +50,11 @@ export const saveToProcessing = async (document: TDDocument, simData: string, al
     axios.post(LOCALHOST_BASE+'/tldrfile', formData, {
       headers: {
         'Content-Type': 'multipart/form-data',
-        "Content-Disposition": "filename=quickpose.tldr.png"
+        "Content-Disposition": "filename=quickpose.tldr.png",
       },
+      params: {
+        ProjectName: {projectName}
+      }
       //signal: abortController.signal
     })
     .then(function (response) {
