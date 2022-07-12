@@ -331,7 +331,6 @@ const sendSelectThrottled = async (id: string,currentVersion: { current: string;
           currentVersionInterval()
           dataInterval(newData,netData,graphData,simulation)
           refreshSim(simulation)
-          app.document.name = currentProject.current
           //simulation.current.alpha(ALPHA_TARGET_REFRESH)
           drawInterval()
           app.zoomToContent()
@@ -384,7 +383,7 @@ const sendSelectThrottled = async (id: string,currentVersion: { current: string;
             refreshSim(simulation)
           }
           //currentProject.current = loadFile.current.document.name
-          app.document.name = currentProject.current
+      
           if(loadFile.current.assets["centerPoint"] !== undefined){
             centerPoint.current = JSON.parse(loadFile.current.assets["centerPoint"].toString()) as [number,number]
           }
@@ -406,8 +405,9 @@ const sendSelectThrottled = async (id: string,currentVersion: { current: string;
         console.log('saving/updating?')
         if (!(app.document === undefined)) {
           console.log('saving/updating...')
-          saveToProcessing(app.document, JSON.stringify(graphData.current), simulation.current.alpha(),centerPoint.current, null,abortCurrentVersionController)
-        }else{
+          saveToProcessing(app.document, JSON.stringify(graphData.current), simulation.current.alpha(),centerPoint.current, null,abortCurrentVersionController,app.document.name)
+        }
+        if(app.document.name === null){
           app.document.name = currentProject.current
         }
         updateVersions(netData, newData, abortVersionsController)
@@ -426,18 +426,10 @@ const sendSelectThrottled = async (id: string,currentVersion: { current: string;
     if(e !== undefined){
       e.preventDefault();
     }
-    saveToProcessing(app.document, JSON.stringify(graphData.current), simulation.current.alpha(),centerPoint.current, null,abortCurrentVersionController)
+    saveToProcessing(app.document, JSON.stringify(graphData.current), simulation.current.alpha(),centerPoint.current, null,abortCurrentVersionController,app.document.name)
   },[])
-  const handleMount = React.useCallback((app: TldrawApp) => {
-    // if(process.env["NEXT_PUBLIC_VERCEL_EN"] == '1'){
-    //   console.log("im in vercel!")
-    //   app = window.app
-    // }else{
-    //   console.log("im local!")
-    //   app = rTldrawApp.current!
-    // }
-    
 
+  const handleMount = React.useCallback((app: TldrawApp) => {
     const abortFileController = new AbortController()
     loadFileFromProcessing(loadFile,abortFileController)
     
