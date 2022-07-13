@@ -296,6 +296,7 @@ export enum TDShapeType {
   Image = 'image',
   Video = 'video',
   VersionNode = 'versionNode',
+  IFrame = 'iFrame'
 }
 
 export enum Decoration {
@@ -386,6 +387,12 @@ export interface ImageShape extends TDBaseShape {
   assetId: string
 }
 
+export interface IFrameShape extends TDBaseShape {
+  type: TDShapeType.IFrame
+  size: number[]
+  link: string
+}
+
 export interface VideoShape extends TDBaseShape {
   type: TDShapeType.Video
   size: number[]
@@ -427,6 +434,7 @@ export type TDShape =
   | ImageShape
   | VideoShape
   | VersionNodeShape
+  | IFrameShape
 
 /* ------------------ Shape Styles ------------------ */
 

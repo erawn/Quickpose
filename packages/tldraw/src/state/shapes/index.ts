@@ -11,6 +11,7 @@ import { TextUtil } from './TextUtil'
 import { TriangleUtil } from './TriangleUtil'
 import { VideoUtil } from './VideoUtil'
 import { VersionNodeUtil } from './VersionNodeUtil'
+import { IFrameUtil } from './IFrameUtil'
 
 export const Rectangle = new RectangleUtil()
 export const Triangle = new TriangleUtil()
@@ -23,6 +24,7 @@ export const Sticky = new StickyUtil()
 export const Image = new ImageUtil()
 export const Video = new VideoUtil()
 export const VersionNode = new VersionNodeUtil()
+export const IFrame = new IFrameUtil()
 
 export const shapeUtils = {
   [TDShapeType.Rectangle]: Rectangle,
@@ -35,7 +37,8 @@ export const shapeUtils = {
   [TDShapeType.Sticky]: Sticky,
   [TDShapeType.Image]: Image,
   [TDShapeType.Video]: Video,
-  [TDShapeType.VersionNode]: VersionNode
+  [TDShapeType.VersionNode]: VersionNode,
+  [TDShapeType.IFrame]: IFrame
 }
 
 export const getShapeUtil = <T extends TDShape>(shape: T | T['type']) => {
