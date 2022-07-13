@@ -1273,6 +1273,7 @@ export class TldrawApp extends StateManager<TDSnapshot> {
   updateDocument = (document: TDDocument, reason = 'updated_document'): this => {
     const prevState = this.state
 
+    // eslint-disable-next-line prefer-const
     let nextState = { ...prevState, document: { ...prevState.document } }
 
     if (!document.pages[this.currentPageId]) {

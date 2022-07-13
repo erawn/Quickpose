@@ -9,7 +9,8 @@ import {
   Patch,
   TDShape,
   PagePartial,
-  TDPage
+  TDPage,
+  TldrawPatch
 } from '@tldraw/tldraw'
 
 //import { useUploadAssets } from 'hooks/useUploadAssets'
@@ -410,6 +411,17 @@ const sendSelectThrottled = async (id: string,currentVersion: { current: string;
         if(app.document.name === null){
           app.document.name = currentProject.current
         }
+        // app.createShapes({
+        //   id: 'iframe',
+        //   type: TDShapeType.IFrame,
+        //   name: 'iframe',
+        //   parentId: app.currentPageId,
+        //   childIndex: 1,
+        //   point: [0, 0],
+        //   size: centerPoint.current,
+        //   rotation: 0,
+        //   link: 'https://github.com/erawn/Quickpose',
+        // })
         updateVersions(netData, newData, abortVersionsController)
         dataInterval(newData,netData,graphData,simulation)
         updateCurrentVersion(currentVersion, timeout, abortCurrentVersionController)
@@ -440,6 +452,7 @@ const sendSelectThrottled = async (id: string,currentVersion: { current: string;
     app.createShapes(...installHelper(centerPoint.current))
     app.selectNone()
     app.zoomToFit()
+
   }, [])
 
   React.useEffect(() => {
@@ -490,7 +503,7 @@ const sendSelectThrottled = async (id: string,currentVersion: { current: string;
   },[])
 
   //https://codesandbox.io/s/tldraw-context-menu-wen03q
-  const handlePatch = React.useCallback((app: TldrawApp, reason?: string) => {
+  const handlePatch = React.useCallback((app: TldrawApp, patch: TldrawPatch, reason?: string) => {
     //console.log(reason)
     if(loadedFile.current === true){
      // drawInterval()
