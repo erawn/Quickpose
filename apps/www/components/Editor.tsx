@@ -30,7 +30,8 @@ import {
   updateCurrentVersion,
   loadFileFromProcessing,
   useUploadAssets,
-  getCurrentProject
+  getCurrentProject,
+  sendToLog
 } from 'utils/quickPoseNetworking'
 
 import { 
@@ -48,6 +49,7 @@ import {
    graphBaseData,
    installHelper,
    linkRegex,
+  loadTldrFile,
   nodeRegex,
   tldrawCoordstod3,
   updateGraphData,
@@ -56,6 +58,7 @@ import {
  } from 'utils/quickposeDrawing'
 import { dateTimestampInSeconds, timestampInSeconds } from '@sentry/utils'
 import { TLBounds } from '@tldraw/core'
+import { constants } from 'fs'
 
 //declare const window: Window & { app: TldrawApp }
 
@@ -84,6 +87,8 @@ const Editor = ({
   const timeSinceLastSelection = React.useRef<number>(0)
   const timeSinceLastFork = React.useRef<number>(0);
   const centerPoint = React.useRef<[number,number]>([600,600])
+
+  const timeSinceLastSave = React.useRef<number>(0);
   //file loading
   const loadFile = React.useRef<TDFile>(null)
   const loadedFile = React.useRef<boolean>(false)
@@ -113,10 +118,10 @@ const Editor = ({
       simulation.current.restart()
     }
   }
-  const sendFork = (id: string,currentVersion: { current: string; }) => throttle(sendForkThrottled(id,currentVersion),2000)
+  //const sendFork = (id: string) => throttle(sendForkThrottled(id),2000)
 
-  const sendForkThrottled = async (id: string,currentVersion: { current: string; }) => {
-    const start = timestampInSeconds()
+  const sendFork = async (id: string) => {
+    //const start = timestampInSeconds()
     const app = rTldrawApp.current!
     if(app !== undefined){
       app.appState.isLoading = true
@@ -132,13 +137,6 @@ const Editor = ({
             dataInterval(newData,netData,graphData,simulation)
             drawInterval()
             app.appState.isLoading = false;
-            const maxId = Math.max(...(graphData.current.nodes as dataNode[]).map(n => parseInt(n.id)))
-            console.log(maxId)
-            if(app.getShapes().map(n => n.id).includes('node'+maxId)){
-              app.zoomTo(app.zoom,app.getShape('node'+maxId).point)
-              //app.select('node'+maxId)
-            }
-            
           }
         })
         .catch(error => {
@@ -154,9 +152,9 @@ const Editor = ({
       })
     }
 }
-const sendSelect = (id: string,currentVersion: { current: string; }) => throttle(sendSelectThrottled(id,currentVersion),100)
+//const sendSelect = (id: string,currentVersion: { current: string; }) => throttle(sendSelectThrottled(id,currentVersion),100)
 
-const sendSelectThrottled = async (id: string,currentVersion: { current: string; }) => {
+const sendSelect = async (id: string,currentVersion: { current: string; }) => {
   const app = rTldrawApp.current!
   if(app !== undefined){
     app.appState.isLoading = true
@@ -173,7 +171,7 @@ const sendSelectThrottled = async (id: string,currentVersion: { current: string;
           console.log(currentVersion.current.toString())
           const v = 'node'+currentVersion.current
           console.log(v)
-          //app.pageState.selectedIds = ['node'+currentVersion]
+          app.pageState.selectedIds = ['node'+currentVersion.current]
           drawInterval()
         }
       })
@@ -196,15 +194,11 @@ const sendSelectThrottled = async (id: string,currentVersion: { current: string;
     if(sim !== undefined && gData !== undefined && 
       //simulation.current.alpha > simulation.current.alphaMin && //Doesn't work when there's only one node
       loadedFile.current === true && !(app === undefined)){
-        const currentStyle = app.getAppState().currentStyle
-        //console.log('drawInterval3')
-        gData.nodes = [...sim.nodes()] //get simulation data out
-        let tlNodes = app.getShapes().filter((shape) => nodeRegex.test(shape.id))
-        
-        
-      //console.log('drawInterval2')
       console.timeStamp("preanimframe")
       requestAnimationFrame(() => {
+        const currentStyle = app.getAppState().currentStyle
+        gData.nodes = [...sim.nodes()] //get simulation data out
+        const tlNodes = app.getShapes().filter((shape) => nodeRegex.test(shape.id))
         const [nextNodeShapes,createNodeShapes] =  updateNodeShapes(
           gData,
           tlNodes,
@@ -213,23 +207,21 @@ const sendSelectThrottled = async (id: string,currentVersion: { current: string;
           app.selectedIds
         )
         const tlLinks = app.getShapes().filter((shape) => linkRegex.test(shape.id))
-        tlNodes = app.getShapes().filter((shape) => nodeRegex.test(shape.id))
         const [nextLinkShapes, nextLinkBindings, createLinkShapes] = updateLinkShapes(app, tlLinks, graphData, tlNodes)
         
-        //const createShapes = {...createLinkShapes,...createNodeShapes as TDShape[]} as TDShape[]
-        //const selection = app.selectedIds
         if (createNodeShapes.length > 0) {
-          console.log("new shapes",createNodeShapes)
+          //console.log("new shapes",createNodeShapes)
           app.patchCreate(createNodeShapes as VersionNodeShape[])
           app.selectNone()
+          if(createNodeShapes.length === 1){
+            app.zoomTo(app.zoom,app.getShape(createNodeShapes[0].id).point)
+            }
         }
-        const newIds: string[] = createNodeShapes.map((n) => n.id)
         if (createLinkShapes.length > 0) {
           app.patchCreate(createLinkShapes)
           app.selectNone()
         }
 
-        //app.pageState.selectedIds = selection //breaks everything
         const nextShapes = {...nextNodeShapes,...nextLinkShapes} as Patch<TDPage['shapes']>
         const nextBindings = {...nextLinkBindings} as Patch<TDPage['bindings']>
         const nextPage: PagePartial = {
@@ -240,7 +232,6 @@ const sendSelectThrottled = async (id: string,currentVersion: { current: string;
         (sim.force('link') as forceLink).links(gData.links);
         sim.restart();
 
-        // console.timeStamp("sim");
         const currentPageId = app.currentPageId
         const patch = {
           appState: {
@@ -256,14 +247,14 @@ const sendSelectThrottled = async (id: string,currentVersion: { current: string;
         }
         app.patchState(patch,"Quickpose Draw Update")
         //console.timeStamp("patch");
-        if(newIds.includes('node0')){
-            app.selectNone()
-            sim.tick(2);
-            setTimeout(()=>{ 
-              app.zoomToFit()
-              app.zoomOut()
-            },500)
-        }
+        // if(newIds.includes('node0')){
+        //     app.selectNone()
+        //     sim.tick(2);
+        //     setTimeout(()=>{ 
+        //       app.zoomToFit()
+        //       app.zoomOut()
+        //     },500)
+        // }
       })
       console.timeStamp("end animframe");
     }
@@ -278,7 +269,6 @@ const sendSelectThrottled = async (id: string,currentVersion: { current: string;
       //console.log(netData.current,graphData.current,simulation.current)
     //https://medium.com/ninjaconcept/interactive-dynamic-force-directed-graphs-with-d3-da720c6d7811
     if (netData.current && graphData.current && simulation.current) {
-      //console.log("datainterval")
       if (updateGraphData(netData.current,graphData.current)) {
         currentVersion.current = netData.current["CurrentNode"].toString()
         simulation.current.nodes(graphData.current.nodes)
@@ -286,7 +276,6 @@ const sendSelectThrottled = async (id: string,currentVersion: { current: string;
         forceLink.links(graphData.current.links)
         refreshSim(simulation)
         drawInterval()
-        //console.log("update sim data")
       }
     }
     loadingTicks.current++ 
@@ -298,28 +287,31 @@ const sendSelectThrottled = async (id: string,currentVersion: { current: string;
 
       //load/save file
       if (loadedFile.current === false) { //still need to handle opening
-        
+        updateVersions(netData, newData, abortVersionsController)
+        getCurrentProject(currentProject,rTldrawApp)
         if(loadFile.current === null){ //haven't found a file yet, so keep looking
           //app.appState.isLoading = true
           console.log('requesting file...')
-          updateVersions(netData, newData, abortVersionsController)
-          getCurrentProject(currentProject,rTldrawApp)
           loadFileFromProcessing(loadFile,abortFileController)
-          currentVersionInterval()
           if (app.getShape('loading')) {
             const loadingDot = '.'
-            app.updateShapes({
-              id: 'loading',
-              text: ' Quickpose is looking for a Processing Session' + loadingDot.repeat(loadingTicks.current % 6),
-            })
+            const currentPageId = app.currentPageId
+            const patch = {
+              document: {
+                pages: {
+                  [currentPageId]: {
+                    shapes: {
+                      ['loading']: {
+                        text: ' Quickpose is looking for a Processing Session' + loadingDot.repeat(loadingTicks.current % 6),
+                      },},},},},
+            }
+            app.patchState(patch, 'Quickpose Loading Update')
             loadingTicks.current++
           }
         }else if(loadFile.current === undefined){ //there is no file, we need to start fresh
           loadedFile.current = true
           app.resetDocument()
           
-          updateVersions(netData, newData, abortVersionsController)
-          getCurrentProject(currentProject,rTldrawApp)
           console.log('no file found!')
           abortFileController.abort()
           if (app.getShape('loading')) {//remove loading sticky
@@ -330,7 +322,7 @@ const sendSelectThrottled = async (id: string,currentVersion: { current: string;
           if(netData.current !== undefined && netData.current !== null && netData.current["ProjectName"]){
             currentProject.current = netData.current["ProjectName"]
           }
-          console.log(netData.current)
+          //console.log(netData.current)
           currentVersionInterval()
           dataInterval(newData,netData,graphData,simulation)
           refreshSim(simulation)
@@ -341,76 +333,37 @@ const sendSelectThrottled = async (id: string,currentVersion: { current: string;
           //make new file, do intro experience?
         }else if(loadFile.current !== null){ //we found an existing file
           abortFileController.abort()
+          //reset data
           netData.current = null
+          currentProject.current = ""
+          currentVersion.current = ""
+          app.document.name = 'null'
           graphData.current = graphBaseData
-          app.replacePageContent({},{},{})
 
-          currentVersionInterval()
-          //https://stackoverflow.com/questions/18206231/saving-and-reloading-a-force-layout-using-d3-js
-          //Load the data
-          let loadedData = {
-            nodes: [],
-            links: []
-           }
-          if(loadFile.current.assets["simData"] !== "" && loadFile.current.assets["simData"] !== undefined ){
-           loadedData = JSON.parse(loadFile.current.assets["simData"].toString())
-           if(netData.current !== undefined && netData.current !== null && netData.current["ProjectName"]){
-            currentProject.current = netData.current["ProjectName"]
-           }
-            const importNodes = loadedData.nodes as dataNode[]
-            console.log(importNodes)
-            importNodes.forEach(node =>{
-              node.fx = node.x
-              node.fy = node.y
-            })
-            graphData.current.nodes = importNodes
-            graphData.current.links = loadedData.links
-            simulation.current = d3Sim(centerPoint.current,app.rendererBounds).alpha(3)
-            simulation.current.restart()
-            
-            simulation.current.nodes(graphData.current.nodes)
-  
-            const forceLink = simulation.current.force('link') as d3.ForceLink<
-              d3.SimulationNodeDatum,
-              d3.SimulationLinkDatum<d3.SimulationNodeDatum>
-            >
-            forceLink.links(graphData.current.links)
-            simulation.current.alpha(parseInt(loadFile.current.assets["alpha"].toString()))
-            simulation.current.tick(20)
-                      
-          // graphData.current.nodes.forEach(node =>{
-          //   node.fx = null
-          //   node.fy = null
-          // })
-            simulation.current.alpha(ALPHA_TARGET_REFRESH)
-            refreshSim(simulation)
-          }
-          //currentProject.current = loadFile.current.document.name
-      
-          if(loadFile.current.assets["centerPoint"] !== undefined){
-            centerPoint.current = JSON.parse(loadFile.current.assets["centerPoint"].toString()) as [number,number]
-          }
-          console.log("centerPoint", centerPoint.current)
-          app.loadDocument(loadFile.current.document)
-         
-          if (app.getShape('loading')) {//remove loading sticky
-            app.delete(['loading','installHelper1','installHelper2','installHelper3']) 
-          }
-          //console.log('loaded data',loadedData)
-
-          //app.appState.isLoading = false
+          loadTldrFile(app,netData,graphData,simulation,centerPoint,currentProject,loadFile)
+          refreshSim(simulation)
           dataInterval(newData,netData,graphData,simulation)
           drawInterval()
-          app.zoomToFit()
           loadedFile.current = true
         }
       }else if(loadedFile.current === true){ //default update loop
-        console.log('saving/updating?')
+        //console.log('saving/updating?')
         if (!(app.document === undefined)) {
           console.log('saving/updating...')
-          saveToProcessing(app.document, JSON.stringify(graphData.current), simulation.current.alpha(),centerPoint.current, null,abortCurrentVersionController,app.document.name)
+          saveToProcessing(
+            app.document, 
+            JSON.stringify(graphData.current),
+             simulation.current.alpha(),
+             centerPoint.current,
+              null,
+              abortCurrentVersionController,
+              app.document.name,
+              false)
         }
-        if(app.document.name === null){
+        // console.log("currentProject",currentProject.current)
+        // console.log(app.document.name)
+        if(app.document.name === 'null'){
+          //console.log("currentProject",currentProject.current)
           app.document.name = currentProject.current
         }
         // app.createShapes({
@@ -440,7 +393,15 @@ const sendSelectThrottled = async (id: string,currentVersion: { current: string;
     if(e !== undefined){
       e.preventDefault();
     }
-    saveToProcessing(app.document, JSON.stringify(graphData.current), simulation.current.alpha(),centerPoint.current, null,abortCurrentVersionController,app.document.name)
+    saveToProcessing(
+      app.document, 
+      JSON.stringify(graphData.current), 
+      simulation.current.alpha(),
+      centerPoint.current,
+       null,
+       abortCurrentVersionController,
+       app.document.name,
+       false)
   },[])
 
   const handleMount = React.useCallback((app: TldrawApp) => {
@@ -508,17 +469,27 @@ const sendSelectThrottled = async (id: string,currentVersion: { current: string;
   const handlePatch = React.useCallback((app: TldrawApp, patch: TldrawPatch, reason?: string) => {
     //console.log(reason)
     if(loadedFile.current === true){
-     // drawInterval()
+      if(new Date().getTime() - timeSinceLastSave.current > 5 * 60 * 1000){
+        saveToProcessing(
+          app.document, 
+          JSON.stringify(graphData.current), 
+          simulation.current.alpha(),
+          centerPoint.current,
+          null,
+          abortCurrentVersionController,
+          app.document.name,
+          true)
+        timeSinceLastSave.current = new Date().getTime()
+      }
+      
     }
     
     switch (reason) {
       case 'set_status:translating': {
         // started translating...
         rIsDragging.current = true
-        //simulation.current.force("center",null)
-        //simulation.current.force("charge",null)
-        //simulation.current.force("link",null)
         lastSelection.current = null
+        sendToLog("translate")
         break
       }
       case 'set_status:creating': {
@@ -539,20 +510,13 @@ const sendSelectThrottled = async (id: string,currentVersion: { current: string;
         if (rIsDragging.current) {
           // stopped translating...
           rIsDragging.current = false
-          // if (!(app.document === undefined)) {
-          //   saveToProcessing(app.document, JSON.stringify(graphData.current), simulation.current.alpha(),centerPoint.current, null,abortCurrentVersionController)
-          // }
         }
-        //const coords = tldrawCoordstod3(...centerPoint.current as [number,number])
-        //simulation.current.force("center", d3.forceCenter(coords[0],coords[1]).strength(.1))
-        //simulation.current.force('charge', d3.forceManyBody().strength(-2))
         refreshSim(simulation)
         break
       }
       //scaling
       case 'session:TransformSingleSession': {
-        if (
-          app.selectedIds.length == 1 &&
+        if (app.selectedIds.length == 1 &&
           app.getShape(app.selectedIds[0]).type === TDShapeType.VersionNode
         ) {
           //console.log(graphData.current.nodes)
@@ -563,8 +527,7 @@ const sendSelectThrottled = async (id: string,currentVersion: { current: string;
       //double click on shape
       case 'set_status:pointingBounds': { //pointing bounds can never trigger selects
         lastSelection.current = selectedNode.current
-        if (
-          app.selectedIds.length == 1 &&
+        if (app.selectedIds.length == 1 &&
           app.getShape(app.selectedIds[0]).type === TDShapeType.VersionNode
         ) {
 
@@ -573,11 +536,11 @@ const sendSelectThrottled = async (id: string,currentVersion: { current: string;
           const idInteger = selectedShape.id.replace(/\D/g, '')
           
           if(app.shiftKey && new Date().getTime() - timeSinceLastFork.current > 2000){
-            sendFork(idInteger,currentVersion)
+            sendFork(idInteger)
             timeSinceLastFork.current = new Date().getTime()
             timeSinceLastSelection.current = new Date().getTime()
-         }
-         const timeSinceLastSelect = new Date().getTime() - timeSinceLastSelection.current
+          }
+          const timeSinceLastSelect = new Date().getTime() - timeSinceLastSelection.current
           if(timeSinceLastSelect > 500 && 
           lastSelection.current !== selectedNode.current){
               sendSelect(idInteger,currentVersion)
@@ -594,7 +557,6 @@ const sendSelectThrottled = async (id: string,currentVersion: { current: string;
               }
             },500)
           }
-          
         }
         break;
       }
@@ -612,7 +574,7 @@ const sendSelectThrottled = async (id: string,currentVersion: { current: string;
           const idInteger = selectedShape.id.replace(/\D/g, '')
 
           if(app.shiftKey && new Date().getTime() - timeSinceLastFork.current > 2000){
-            sendFork(idInteger,currentVersion)
+            sendFork(idInteger)
             timeSinceLastFork.current = new Date().getTime()
             timeSinceLastSelection.current = new Date().getTime()
          }

@@ -1,4 +1,4 @@
-import { AlignStyle, ArrowBinding, ArrowShape, ColorStyle, DashStyle, shapeUtils, SizeStyle, TDBinding, TDShape, TDShapeType, TldrawApp, VersionNodeShape } from "@tldraw/tldraw"
+import { AlignStyle, ArrowBinding, ArrowShape, ColorStyle, DashStyle, shapeUtils, SizeStyle, TDBinding, TDShape, TDShapeType, TldrawApp, VersionNodeShape, TDFile} from "@tldraw/tldraw"
 import { dataLink, dataNode, inputShape, inputVersionNodeShape } from "./quickPoseTypes"
 import deepEqual from "deep-equal";
 import { ALPHA_TARGET_REFRESH, d3TlScale, D3_LINK_DISTANCE, TL_DRAW_RADIUS } from "components/Editor";
@@ -7,6 +7,7 @@ import { forceSimulation, forceManyBody, forceLink, forceCollide} from "d3";
 import forceBoundary from 'd3-force-boundary'
 import type  {Patch, TLBounds} from "@tldraw/core";
 import next from "next";
+import { MutableRefObject } from "react";
 
 export const nodeRegex = new RegExp(/node\d/);
 export const linkRegex = new RegExp(/link\d/);
@@ -205,7 +206,7 @@ export const updateBinding = (app:TldrawApp, link, startNode,endNode,drawLink,ne
               isFixed: false,
               style:{
                   size: "small",
-                  dash: DashStyle.Dotted,
+                  dash: DashStyle.Dashed,
                   isFilled:true,
                   color: "black"
               },
@@ -217,13 +218,12 @@ export const updateBinding = (app:TldrawApp, link, startNode,endNode,drawLink,ne
             n.isFixed = true;
           }
           node.r = n.radius[0] / d3TlScale
-          console.log("found new shape")
+          //console.log("found new shape")
           //nextShapes[n.id] = n
           createShapes.push(n)
           //nextShapes[n.id] = {...n}
 
       }else if(tlDrawNode){ 
-          const baseNode = {...tlDrawNode}
           if(selectedIds.includes(tlDrawNode.id)){ //If we have a node selected, update the d3 sim instead
               const d3Coords = tldrawCoordstod3(tlDrawNode.point[0],tlDrawNode.point[1])
               node.x = d3Coords[0]
@@ -309,6 +309,67 @@ export const updateBinding = (app:TldrawApp, link, startNode,endNode,drawLink,ne
         }
       })
       return changed
+  }
+
+  export function loadTldrFile(app:TldrawApp,netData,graphData,simulation,centerPoint,currentProject,loadFile:MutableRefObject<TDFile>){
+    app.replacePageContent({},{},{})
+
+    
+    //https://stackoverflow.com/questions/18206231/saving-and-reloading-a-force-layout-using-d3-js
+    //Load the data
+    let loadedData = {
+      nodes: [],
+      links: []
+      }
+    if(loadFile.current.assets["simData"] !== "" && loadFile.current.assets["simData"] !== undefined ){
+      loadedData = JSON.parse(loadFile.current.assets["simData"].toString())
+      if(netData.current !== undefined && netData.current !== null && netData.current["ProjectName"]){
+        currentProject.current = netData.current["ProjectName"]
+      }
+      const importNodes = loadedData.nodes as dataNode[]
+      //console.log(importNodes)
+      importNodes.forEach(node =>{
+        node.fx = node.x
+        node.fy = node.y
+      })
+      graphData.current.nodes = importNodes
+      graphData.current.links = loadedData.links
+      simulation.current = d3Sim(centerPoint.current,app.rendererBounds).alpha(3)
+      simulation.current.restart()
+      
+      simulation.current.nodes(graphData.current.nodes)
+
+      const forceLink = simulation.current.force('link') as d3.ForceLink<
+        d3.SimulationNodeDatum,
+        d3.SimulationLinkDatum<d3.SimulationNodeDatum>
+      >
+      forceLink.links(graphData.current.links)
+      simulation.current.alpha(parseInt(loadFile.current.assets["alpha"].toString()))
+      simulation.current.tick(20)
+                
+    // graphData.current.nodes.forEach(node =>{
+    //   node.fx = null
+    //   node.fy = null
+    // })
+      simulation.current.alpha(ALPHA_TARGET_REFRESH)
+    }
+    //currentProject.current = loadFile.current.document.name
+
+    if(loadFile.current.assets["centerPoint"] !== undefined){
+      centerPoint.current = JSON.parse(loadFile.current.assets["centerPoint"].toString()) as [number,number]
+    }
+    //console.log("centerPoint", centerPoint.current)
+    app.loadDocument(loadFile.current.document)
+    
+    if (app.getShape('loading')) {//remove loading sticky
+      app.delete(['loading','installHelper1','installHelper2','installHelper3']) 
+    }
+    //console.log('loaded data',loadedData)
+
+    //app.appState.isLoading = false
+    
+    //app.zoomToFit()
+    
   }
 
   export const installHelper = (centerPoint) => {
