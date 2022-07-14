@@ -136,7 +136,21 @@ export const updateThumbnail = async (selectedNode, rTldrawApp) => {
             await checkImage(url).then((res)=>{
               if(res["status"] === 'ok'){
                 selectedShape.imgLink = url
-                app.updateShapes(selectedShape)
+                const currentPageId = app.currentPageId
+                const patch = {
+                  document: {
+                    pages: {
+                      [currentPageId]: {
+                        shapes: {
+                          [selectedShape.id]: {
+                            imgLink: url
+                          },
+                        },
+                      },
+                    },
+                  },
+                }
+                app.patchState(patch, 'Quickpose Thumbnail Update')
               }else{
                 console.log("image didnt load")
               }

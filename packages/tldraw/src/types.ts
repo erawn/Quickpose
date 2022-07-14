@@ -310,7 +310,6 @@ export interface TDBaseShape extends TLShape {
   type: TDShapeType
   label?: string
   handles?: Record<string, TDHandle>
-  hideFromSelection?: boolean
 }
 
 export interface DrawShape extends TDBaseShape {
@@ -348,6 +347,7 @@ export interface VersionNodeShape extends TDBaseShape {
   imgLink:string
   isCurrent:boolean
   hasLoaded:boolean
+  isFixed:boolean
 }
 
 export interface TriangleShape extends TDBaseShape {

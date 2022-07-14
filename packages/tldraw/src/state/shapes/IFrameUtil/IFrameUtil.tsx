@@ -1,5 +1,5 @@
 import * as React from 'react'
-import { Utils, HTMLContainer } from '@tldraw/core'
+import { Utils, HTMLContainer, TLShape } from '@tldraw/core'
 import { TDShapeType, TDMeta, ImageShape, TDImageAsset, IFrameShape } from '~types'
 import { GHOSTED_OPACITY } from '~constants'
 import { TDShapeUtil } from '../TDShapeUtil'
@@ -25,6 +25,8 @@ export class IFrameUtil extends TDShapeUtil<T, E> {
 
   showCloneHandles = true
 
+  
+
   getShape = (props: Partial<T>): T => {
     return Utils.deepMerge<T>(
       {
@@ -49,6 +51,7 @@ export class IFrameUtil extends TDShapeUtil<T, E> {
 
       const rImage = React.useRef<HTMLImageElement>(null)
       const rWrapper = React.useRef<HTMLDivElement>(null)
+      
 
       React.useLayoutEffect(() => {
         const wrapper = rWrapper.current

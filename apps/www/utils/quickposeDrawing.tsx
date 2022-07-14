@@ -198,10 +198,11 @@ export const updateBinding = (app:TldrawApp, link, startNode,endNode,drawLink,ne
       const tlDrawNode:VersionNodeShape = tlNodes.find(n => n.id === 'node'+node.id)
       //console.log(tlDrawNode)
       if(!tlDrawNode){
-          const n = {
+          const n = shapeUtils.versionNode.getShape({
               id: 'node'+node.id,
               name: 'node'+node.id,
               type: TDShapeType.VersionNode,
+              isFixed: false,
               style:{
                   size: "small",
                   dash: DashStyle.Dotted,
@@ -211,11 +212,15 @@ export const updateBinding = (app:TldrawApp, link, startNode,endNode,drawLink,ne
               point: d3toTldrawCoords(node.x,node.y),
               radius: [TL_DRAW_RADIUS,TL_DRAW_RADIUS],
               imgLink: getIconImageURLNoTime(node.id.toString())
-          } as inputVersionNodeShape
+          } as inputVersionNodeShape)
+          if(n.id === "node0"){
+            n.isFixed = true;
+          }
           node.r = n.radius[0] / d3TlScale
           console.log("found new shape")
           //nextShapes[n.id] = n
           createShapes.push(n)
+          nextShapes[n.id] = {...n}
 
       }else if(tlDrawNode){ 
           const baseNode = {...tlDrawNode}
