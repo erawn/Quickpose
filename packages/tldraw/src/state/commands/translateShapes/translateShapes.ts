@@ -24,7 +24,7 @@ export function translateShapes(app: TldrawApp, ids: string[], delta: number[]):
       const shape = app.getShape(id)
       return shape.children ? shape.children : shape.id
     })
-    .filter((id) => !app.getShape(id).isLocked)
+    .filter((id) => !app.getShape(id).isLocked && (id !== 'node0'))
 
   const change = TLDR.mutateShapes(
     app.state,

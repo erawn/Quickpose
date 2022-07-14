@@ -79,6 +79,8 @@ export interface TLShape {
   isLocked?: boolean
   isGenerated?: boolean
   isAspectRatioLocked?: boolean
+  hideFromSelection?: boolean
+  isFixed?: boolean
 }
 
 export interface TLComponentProps<T extends TLShape, E = any, M = any> {

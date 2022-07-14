@@ -1,5 +1,5 @@
 import * as React from 'react'
-import { Utils, SVGContainer, TLBounds, HTMLContainer } from '@tldraw/core'
+import { Utils, SVGContainer, TLBounds, HTMLContainer, TLShape } from '@tldraw/core'
 import { Vec } from '@tldraw/vec'
 import { defaultStyle, getShapeStyle, getFontStyle } from '~state/shapes/shared'
 import { VersionNodeShape, DashStyle, TDShapeType, TDShape, TransformInfo, TDMeta } from '~types'
@@ -35,6 +35,8 @@ export class VersionNodeUtil extends TDShapeUtil<T, E> {
 
   hasLoaded = false
 
+  isFixed = false
+
   onImageLoad = () => { 
     this.hasLoaded = true
   }
@@ -60,6 +62,7 @@ export class VersionNodeUtil extends TDShapeUtil<T, E> {
         imgLink: '',
         isCurrent: false,
         hasLoaded:false,
+        isFixed:false,
       },
       props
     )
@@ -88,7 +91,38 @@ export class VersionNodeUtil extends TDShapeUtil<T, E> {
         this.hasLoaded = false;
       }
       
-      const { id, radius, style, label = '', labelPoint = LABEL_POINT, imgLink, isCurrent } = shape
+      const { id, radius, style, label = '', labelPoint = LABEL_POINT, imgLink, isCurrent, point } = shape
+
+      const rPoint = React.useRef<TLShape["point"] | null>(null)
+
+      if(id === 'node0'){
+        this.isFixed = true
+        if(rPoint.current === null){
+          rPoint.current = point
+          shape.point = rPoint.current 
+        }else{
+          shape.point = rPoint.current 
+        }
+      }
+
+      const handlePointerMove = React.useCallback(
+        (e: React.PointerEvent<HTMLTextAreaElement | HTMLDivElement>) => {
+          if (id === 'node0') {
+            e.stopPropagation()
+          }
+        },
+        [onShapeChange]
+      )
+      events.onPointerMove = React.useCallback(
+        (e: React.PointerEvent<HTMLTextAreaElement | HTMLDivElement>) => {
+          if (id === 'node0') {
+            e.stopPropagation()
+          }
+        },
+        [events.onPointerMove]
+      )
+      
+
       const font = getFontStyle(shape.style)
       const styles = getShapeStyle(style, meta.isDarkMode)
       const strokeWidth = styles.strokeWidth
@@ -135,6 +169,8 @@ export class VersionNodeUtil extends TDShapeUtil<T, E> {
               isDarkMode={meta.isDarkMode}
               imgLink={imgLink}
               isCurrent={isCurrent}
+              
+              
             />
           </SVGContainer>
           
@@ -144,6 +180,7 @@ export class VersionNodeUtil extends TDShapeUtil<T, E> {
               src={imgLink}
               draggable={false}
               width={imgWidth*2}
+              height={imgWidth*2}
               onLoad={this.onImageLoad}
             />
         </FullWrapper>
