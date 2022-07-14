@@ -105,14 +105,6 @@ export class VersionNodeUtil extends TDShapeUtil<T, E> {
         }
       }
 
-      const handlePointerMove = React.useCallback(
-        (e: React.PointerEvent<HTMLTextAreaElement | HTMLDivElement>) => {
-          if (id === 'node0') {
-            e.stopPropagation()
-          }
-        },
-        [onShapeChange]
-      )
       events.onPointerMove = React.useCallback(
         (e: React.PointerEvent<HTMLTextAreaElement | HTMLDivElement>) => {
           if (id === 'node0') {

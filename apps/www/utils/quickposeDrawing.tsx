@@ -175,8 +175,8 @@ export const updateBinding = (app:TldrawApp, link, startNode,endNode,drawLink,ne
       if(startNode && endNode){
         if(!tlDrawLink){
           const newArrow = makeArrow(app.currentPageId,link)
-          updateBinding(app, link, startNode,endNode,newArrow,nextBindings)
-          nextShapes[newArrow.id] = newArrow
+          //updateBinding(app, link, startNode,endNode,newArrow,nextBindings)
+          //nextShapes[newArrow.id] = newArrow
           createShapes.push(newArrow)
         }else{
           if(updateBinding(app, link, startNode,endNode,tlDrawLink,nextBindings)){
@@ -220,7 +220,7 @@ export const updateBinding = (app:TldrawApp, link, startNode,endNode,drawLink,ne
           console.log("found new shape")
           //nextShapes[n.id] = n
           createShapes.push(n)
-          nextShapes[n.id] = {...n}
+          //nextShapes[n.id] = {...n}
 
       }else if(tlDrawNode){ 
           const baseNode = {...tlDrawNode}

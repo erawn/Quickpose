@@ -10,7 +10,8 @@ import {
   TDShape,
   PagePartial,
   TDPage,
-  TldrawPatch
+  TldrawPatch,
+  VersionNodeShape
 } from '@tldraw/tldraw'
 
 //import { useUploadAssets } from 'hooks/useUploadAssets'
@@ -219,12 +220,13 @@ const sendSelectThrottled = async (id: string,currentVersion: { current: string;
         //const selection = app.selectedIds
         if (createNodeShapes.length > 0) {
           console.log("new shapes",createNodeShapes)
-          app.createShapes(...createNodeShapes)
-          
+          app.patchCreate(createNodeShapes as VersionNodeShape[])
+          app.selectNone()
         }
         const newIds: string[] = createNodeShapes.map((n) => n.id)
         if (createLinkShapes.length > 0) {
-          app.updateShapes(...createLinkShapes)
+          app.patchCreate(createLinkShapes)
+          app.selectNone()
         }
 
         //app.pageState.selectedIds = selection //breaks everything
