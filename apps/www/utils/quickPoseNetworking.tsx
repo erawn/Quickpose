@@ -4,7 +4,7 @@ import type { FileSystemHandle } from '@tldraw/tldraw'
 
 import axiosRetry from 'axios-retry';
 import deepEqual from "deep-equal";
-import { useCallback } from "react";
+import { MutableRefObject, useCallback } from "react";
 import axios from 'axios'
 export const LOCALHOST_BASE = 'http://127.0.0.1:8080';
 
@@ -24,7 +24,8 @@ export const saveToProcessing = async (
   centerPoint: [number,number], 
   fileHandle: FileSystemHandle | null,
   abortController,
-  projectName) => {
+  projectName,
+  backup:boolean) => {
     const file: TDFile = {
         name: 'quickpose.tldr',
         fileHandle: fileHandle ?? null,
@@ -35,6 +36,7 @@ export const saveToProcessing = async (
                 ...document.assets
                 },
       }
+      
     // Serialize to JSON
     const json = JSON.stringify(file, null, 2)
     // Create blob
@@ -46,19 +48,21 @@ export const saveToProcessing = async (
       filename: 'quickpose.tldr',
       contentType: 'application/vnd.Tldraw+json'
     })
+    
+    const url = backup ? LOCALHOST_BASE+'/tldrfile_backup' : LOCALHOST_BASE+'/tldrfile'
 
-    axios.post(LOCALHOST_BASE+'/tldrfile', formData, {
+    axios.post(url, formData, {
       headers: {
         'Content-Type': 'multipart/form-data',
         "Content-Disposition": "filename=quickpose.tldr.png",
       },
       params: {
-        ProjectName: {projectName}
+        ProjectName: projectName
       }
       //signal: abortController.signal
     })
     .then(function (response) {
-      console.log(response);
+      //console.log(response);
     })
     .catch(function (error) {
       console.log(error);
@@ -66,7 +70,7 @@ export const saveToProcessing = async (
     
     return true
 }
-export const loadFileFromProcessing = async(loadFile,abortFileController) => {
+export const loadFileFromProcessing = async(loadFile: MutableRefObject<TDFile>,abortFileController: AbortController) => {
 
     const getFile = await axios.get(LOCALHOST_BASE+'/tldrfile', {
      // signal: abortFileController.signal
@@ -90,35 +94,27 @@ export const loadFileFromProcessing = async(loadFile,abortFileController) => {
 
 export const updateVersions = async (netData, newData, abortVersionsController:AbortController) => {
     //Update Versions
-    
     axios.get(LOCALHOST_BASE+'/versions.json', {
       timeout: 500,
     })
     .then(response => {
-      
       if(response.data !== undefined){
-        //console.log(response.data)
         newData.current = true;
         netData.current = response.data
-        // .nodes = parsedData["Nodes"]
-        // netData.current.links = parsedData["Edges"]
-        //dataInterval()
-      }else{
-        //console.log("samedata",response.data)
       }
     })
     .catch(error => {
       //console.error("error fetching: ", error);
     })
   }
+
 const checkImage = path => {
   return new Promise(resolve => {
     const img = new Image();
     img.onload = () => resolve({img, status: 'ok'});
     img.onerror = () => resolve({img, status: 'error'});
-
     img.src = path;
-}); 
+  }); 
 }
   
 export const updateThumbnail = async (selectedNode, rTldrawApp) => {
@@ -154,56 +150,22 @@ export const updateThumbnail = async (selectedNode, rTldrawApp) => {
               }else{
                 console.log("image didnt load")
               }
-              
             }).catch(e =>{
               console.log("invalid image",e)
             })
-            // const res = await axios.get(url,{timeout:500})
-            // const status = await res.status
-       
-            // if(status === 200){
-            //   //refresh the thumbnail image
-            //   // const patch = {
-            //   //   document: {
-            //   //     pages: {
-            //   //       [app.currentPageId]: {
-            //   //         nodes: {...selectedShape}
-            //   //       },
-            //   //     },
-            //   //   },
-            //   // }
-            //   // app.patchState(patch,"Quickpose Thumbnail Update")
-              
-            // }else{
-            //   return false
-            // }
-           
-            //console.log("update thumbnail")
           }
       }
     }
   }
 
   export const updateCurrentVersion = async (currentVersion, timeout,abortCurrentVersionController) => {
-    // const client = axios.create()
-    //     axiosRetry(client, { 
-    //       retries: 1,
-    //       shouldResetTimeout: false,
-    //       onRetry(retryCount, error, requestConfig) {
-    //           //console.log("retrying update",retryCount)
-    //       },
-    //      });
-    //console.log("currentVersion is  "+ currentVersion.current)
     axios.get(LOCALHOST_BASE+'/currentVersion', {
         timeout: 500,
       })
       .then(response => {
-        //console.log(response)
         if(response.data !== undefined){
-          //console.log("currentVersion is  "+ currentVersion.current)
           currentVersion.current = response.data.toString()
           return true
-          
         }else{
           return false
         }
@@ -252,9 +214,6 @@ export const updateThumbnail = async (selectedNode, rTldrawApp) => {
       []
     )
     const onAssetDelete = useCallback(
-      // Send the asset to our upload endpoint, which in turn will send it to AWS and
-      // respond with the URL of the uploaded file.
-  
       async (app: TldrawApp, id: string): Promise<boolean>=> {
         const asset = app.assets.find(asset => asset.id === id)
         await axios.delete(asset.src).then(response =>{
@@ -269,33 +228,37 @@ export const updateThumbnail = async (selectedNode, rTldrawApp) => {
       },
       []
     )
-  
     return { onAssetUpload, onAssetDelete }
   }
 
 
   export const getCurrentProject = async (currentProjectRef,rTldrawApp) => {
-    //Update Versions
-    let app:TldrawApp = rTldrawApp!
     const currentProject = currentProjectRef!
+    const app = rTldrawApp!
     //Update Thumbnail Image
-    if(app !== undefined && currentProject !== undefined){
-      app = rTldrawApp.current!
-      const current = currentProject.current
-      if(app !== undefined && current !== undefined){
-    
-        axios.get(LOCALHOST_BASE+'/projectName', {
-          timeout: 500,
-        })
-        .then(response => {
-          currentProject.current = response.data
-          app.appState.currentProject = response.data
-        })
-        .catch(error => {
-          //console.error("error fetching: ", error);
-          app.appState.currentProject = ''
-          currentProject.current = ''
-        })
-      }
+    if(currentProject !== undefined && app !== undefined && app.current !== undefined){
+      axios.get(LOCALHOST_BASE+'/projectName', {
+        timeout: 500,
+      })
+      .then(response => {
+        currentProject.current = response.data
+        app.current.appState.currentProject = response.data
+      })
+      .catch(error => {
+        //console.error("error fetching: ", error);
+        app.current.appState.currentProject = ''
+        // currentProject.current = ''
+      })
     }
+  }
+
+  export const sendToLog = async(message: string) => {
+
+    axios.post(LOCALHOST_BASE+'/log', message, {})
+    .then(function (response) {
+      //console.log(response);
+    })
+    .catch(function (error) {
+      console.log(error);
+    });
   }
