@@ -615,6 +615,7 @@ const sendSelect = async (id: string,currentVersion: { current: string; }) => {
         showSponsorLink={false}
         onSignIn={undefined}
         onSignOut={undefined}
+        showMultiplayerMenu={false}
         onAssetUpload={onAssetUpload}
         onAssetCreate={onAssetUpload}
         onAssetDelete={onAssetDelete}
