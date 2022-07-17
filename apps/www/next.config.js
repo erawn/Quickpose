@@ -2,7 +2,6 @@
 const withPWA = require('next-pwa')
 const withTM = require('next-transpile-modules')
 const SentryWebpackPlugin = require('@sentry/webpack-plugin')
-const path = require('path');
 const {
   GITHUB_ID,
   GITHUB_API_SECRET,
