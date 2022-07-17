@@ -140,14 +140,14 @@ const Editor = ({
           }
         })
         .catch(error => {
-          //console.warn("error fetching current version: ", error);
+          console.warn("error forking current version: ", error);
           return null
         })
       }).then(function(){
         app.appState.isLoading = false
       })
       .catch(error => {
-        //console.warn("error fetching current version: ", error);
+        console.warn("error forking current version: ", error);
         return null
       })
     }
@@ -176,7 +176,7 @@ const sendSelect = async (id: string,currentVersion: { current: string; }) => {
         }
       })
       .catch(error => {
-        //console.warn("error fetching current version: ", error);
+        console.warn("error selecting current version: ", error);
         return null
       })
     }).then(function(){

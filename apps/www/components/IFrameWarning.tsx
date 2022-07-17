@@ -39,7 +39,7 @@ export default function IFrameWarning({ url = 'https://tldraw.com' }: { url?: st
     } finally {
       document.body.removeChild(textarea)
     }
-  }, [])
+  }, [url])
 
   return (
     <StyledContainer>
