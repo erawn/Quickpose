@@ -1,4 +1,7 @@
 # Quickpose : Version Control for Sketching in Code
+<div style="text-align: center; transform: scale(.5);">
+  <img src="./assets/quickpose-banner-grad.png"/>
+</div>
 
 
 This is an ongoing research project by [Eric Rawn](https://www.ericrawn.media/) as a version control system for Processing. It's currently unreleased, but expect it soon! 
