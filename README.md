@@ -3,7 +3,7 @@
 
 This is an ongoing research project by [Eric Rawn](https://www.ericrawn.media/) as a version control system for Processing. It's currently unreleased, but expect it soon! 
 
-If you've been invited to evaluate it and are looking for info, please take a look at the documentation in the wiki.
+If you've been invited to evaluate it and are looking for info, please take a look at the [documentation in the wiki](https://github.com/erawn/Quickpose/wiki/What-happens-when-you-run-Quickpose-on-a-Processing-Project).
 
 Quickpose is currently in two parts: a canvas-editor front-end which is a fork of Tldraw, by steve ruiz, and a backend written as a Tool for Processing 3.5.4
 
