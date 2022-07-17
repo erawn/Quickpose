@@ -9,4 +9,4 @@ Quickpose is currently in two parts: a canvas-editor front-end which is a fork o
 
 If you're interested in this project and want to learn more, shoot me an email at erawn@berkeley.edu. Otherwise, stay tuned for an official release (hopefully this fall!) 
 
-This project relies on the amazing work in Tldraw - please consider becoming a sponsor of Steve's work(https://github.com/sponsors/steveruizok?frequency=recurring&sponsor=steveruizok).
+This project relies on the amazing work in Tldraw - please consider becoming a sponsor of Steve's(https://github.com/sponsors/steveruizok?frequency=recurring&sponsor=steveruizok).
