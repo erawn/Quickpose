@@ -21,3 +21,4 @@ firebase.config.*.turbo
 apps/new-tab-extension/tsconfig.tsbuildinfo
 apps/.cache
 .yarn
+.yarnrc
