@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import { TDDocument, TDFile, TDShapeType, TldrawApp } from "@tldraw/tldraw";
 import FormData from 'form-data'
 import type { FileSystemHandle } from '@tldraw/tldraw'
@@ -7,8 +8,6 @@ import deepEqual from "deep-equal";
 import { MutableRefObject, useCallback } from "react";
 import axios from 'axios'
 export const LOCALHOST_BASE = 'http://127.0.0.1:8080';
-
-
 
 export function getIconImageURLNoTime(id:string){
     return LOCALHOST_BASE + "/image/" + id; //Add Time to avoid Caching so images update properly

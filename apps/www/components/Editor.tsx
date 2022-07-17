@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
 import { 
   Tldraw, 
@@ -7,7 +8,6 @@ import {
   TDShapeType, 
   TDFile,
   Patch,
-  TDShape,
   PagePartial,
   TDPage,
   TldrawPatch,
@@ -19,12 +19,9 @@ import React from 'react'
 import * as gtag from 'utils/gtag'
 import axios from 'axios'
 import { Simulation, SimulationNodeDatum } from 'd3'
-import {throttle} from 'underscore'
 import AsyncLock from 'async-lock'
 import { 
   saveToProcessing, 
-  getIconImageURLNoTime, 
-  getIconImageURL,
   updateVersions, 
   updateThumbnail,
   updateCurrentVersion,
@@ -36,10 +33,6 @@ import {
 
 import { 
   EditorProps,
-  dataNode,
-  dataLink,
-  inputShape,
-  inputVersionNodeShape,
   forceLink
  } from 'utils/quickPoseTypes'
 
@@ -51,14 +44,13 @@ import {
    linkRegex,
   loadTldrFile,
   nodeRegex,
-  tldrawCoordstod3,
   updateGraphData,
   updateLinkShapes,
   updateNodeShapes
  } from 'utils/quickposeDrawing'
-import { dateTimestampInSeconds, timestampInSeconds } from '@sentry/utils'
+//import { dateTimestampInSeconds, timestampInSeconds } from '@sentry/utils'
 import { TLBounds } from '@tldraw/core'
-import { constants } from 'fs'
+//import { constants } from 'fs'
 
 //declare const window: Window & { app: TldrawApp }
 
@@ -68,13 +60,10 @@ export const D3_LINK_DISTANCE = 4
 export const TL_DRAW_RADIUS = 30;
 export const ALPHA_TARGET_REFRESH = .1
 const LOCALHOST_BASE = 'http://127.0.0.1:8080';
-const DOUBLE_CLICK_TIME = 500
 export const d3TlScale = 5
 
 const Editor = ({
   id = 'home',
-  isUser = false,
-  isSponsor = false,
   ...rest
 }: EditorProps & Partial<TldrawProps>) => {
   const rTldrawApp = React.useRef<TldrawApp>()
@@ -415,6 +404,7 @@ const sendSelect = async (id: string,currentVersion: { current: string; }) => {
     app.createShapes(...installHelper(centerPoint.current))
     app.selectNone()
     app.zoomToFit()
+    app.setSetting("keepStyleMenuOpen",true)
 
   }, [])
 
