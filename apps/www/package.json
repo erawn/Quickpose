@@ -61,7 +61,8 @@
     "typedoc": "^0.22.15",
     "typescript": "^4.7.3",
     "underscore": "^1.13.4",
-    "webpack": "^5.68.0"
+    "webpack": "^5.68.0",
+    "next-transpile-modules": "^9.0.0"
   },
   "gitHead": "838fabdbff1a66d4d7ee8aa5c5d117bc55acbff2",
   "devDependencies": {
