@@ -7,9 +7,9 @@ const IFrameWarning = dynamic(() => import('components/IFrameWarning'), {
   ssr: false,
 }) as any
 
-const MultiplayerEditor = dynamic(() => import('components/MultiplayerEditor'), {
-  ssr: false,
-}) as any
+// const MultiplayerEditor = dynamic(() => import('components/MultiplayerEditor'), {
+//   ssr: false,
+// }) as any
 
 interface RoomProps {
   id: string
@@ -20,5 +20,5 @@ export default function Room({ id }: RoomProps) {
     return <IFrameWarning url={`https://tldraw.com/r/${id}`} />
   }
 
-  return <MultiplayerEditor roomId={id} />
+  // return <MultiplayerEditor isUser={isUser} isSponsor={isSponsor} roomId={id} />
 }

@@ -2,7 +2,7 @@
 const withPWA = require('next-pwa')
 const withTM = require('next-transpile-modules')
 const SentryWebpackPlugin = require('@sentry/webpack-plugin')
-
+const path = require('path');
 const {
   GITHUB_ID,
   GITHUB_API_SECRET,
@@ -39,6 +39,13 @@ module.exports = withTM(['@tldraw/tldraw', '@tldraw/core'])(
       if (!options.isServer) {
         config.resolve.alias['@sentry/node'] = '@sentry/browser'
       }
+
+      config.cache= {
+        type: 'filesystem',
+        compression: 'gzip',
+        cacheLocation: path.resolve('../.cache'),
+      };
+     
 
       config.plugins.push(
         new options.webpack.DefinePlugin({

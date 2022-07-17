@@ -8,9 +8,9 @@ const IFrameWarning = dynamic(() => import('components/IFrameWarning'), {
   ssr: false,
 }) as any
 
-const ReadOnlyMultiplayerEditor = dynamic(() => import('components/ReadOnlyMultiplayerEditor'), {
-  ssr: false,
-}) as any
+// const ReadOnlyMultiplayerEditor = dynamic(() => import('components/ReadOnlyMultiplayerEditor'), {
+//   ssr: false,
+// }) as any
 
 interface RoomProps {
   id: string
@@ -21,7 +21,7 @@ export default function Room({ id }: RoomProps) {
     return <IFrameWarning url={`https://tldraw.com/v/${id}`} />
   }
 
-  return <ReadOnlyMultiplayerEditor roomId={id} />
+  // return <ReadOnlyMultiplayerEditor isUser={isUser} isSponsor={isSponsor} roomId={id} />
 }
 
 // export const getServerSideProps: GetServerSideProps = async (context) => {
