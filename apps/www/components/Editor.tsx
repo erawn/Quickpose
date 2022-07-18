@@ -11,7 +11,9 @@ import {
   PagePartial,
   TDPage,
   TldrawPatch,
-  VersionNodeShape
+  VersionNodeShape,
+  TDExport,
+  ColorStyle
 } from '@tldraw/tldraw'
 
 //import { useUploadAssets } from 'hooks/useUploadAssets'
@@ -28,7 +30,8 @@ import {
   loadFileFromProcessing,
   useUploadAssets,
   getCurrentProject,
-  sendToLog
+  sendToLog,
+  exportByColor
 } from 'utils/quickPoseNetworking'
 
 import { 
@@ -157,9 +160,9 @@ const sendSelect = async (id: string,currentVersion: { current: string; }) => {
         if(response.status === 200){
           currentVersion.current = response.data.toString()
 
-          console.log(currentVersion.current.toString())
-          const v = 'node'+currentVersion.current
-          console.log(v)
+          // console.log(currentVersion.current.toString())
+          // const v = 'node'+currentVersion.current
+          // console.log(v)
           app.pageState.selectedIds = ['node'+currentVersion.current]
           drawInterval()
         }
@@ -295,6 +298,7 @@ const sendSelect = async (id: string,currentVersion: { current: string; }) => {
                       },},},},},
             }
             app.patchState(patch, 'Quickpose Loading Update')
+            app.setSetting("keepStyleMenuOpen",false)
             loadingTicks.current++
           }
         }else if(loadFile.current === undefined){ //there is no file, we need to start fresh
@@ -315,6 +319,7 @@ const sendSelect = async (id: string,currentVersion: { current: string; }) => {
           currentVersionInterval()
           dataInterval(newData,netData,graphData,simulation)
           refreshSim(simulation)
+          app.setSetting("keepStyleMenuOpen",true)
           //simulation.current.alpha(ALPHA_TARGET_REFRESH)
           drawInterval()
           app.zoomToContent()
@@ -333,6 +338,7 @@ const sendSelect = async (id: string,currentVersion: { current: string; }) => {
           refreshSim(simulation)
           dataInterval(newData,netData,graphData,simulation)
           drawInterval()
+          app.setSetting("keepStyleMenuOpen",true)
           loadedFile.current = true
         }
       }else if(loadedFile.current === true){ //default update loop
@@ -404,7 +410,6 @@ const sendSelect = async (id: string,currentVersion: { current: string; }) => {
     app.createShapes(...installHelper(centerPoint.current))
     app.selectNone()
     app.zoomToFit()
-    app.setSetting("keepStyleMenuOpen",true)
 
   }, [])
 
@@ -458,7 +463,8 @@ const sendSelect = async (id: string,currentVersion: { current: string; }) => {
   //https://codesandbox.io/s/tldraw-context-menu-wen03q
   const handlePatch = React.useCallback((app: TldrawApp, patch: TldrawPatch, reason?: string) => {
     //console.log(reason)
-    if(loadedFile.current === true){
+    if(loadedFile.current === true && app.document.name === 'null'){
+      console.log("Backing up",new Date().getTime())
       if(new Date().getTime() - timeSinceLastSave.current > 5 * 60 * 1000){
         saveToProcessing(
           app.document, 
@@ -589,6 +595,14 @@ const sendSelect = async (id: string,currentVersion: { current: string; }) => {
   //   })
   // }, [])
 
+  const handleExport = React.useCallback((app: TldrawApp, info: TDExport)=>{
+
+    if(info.type === "exportByColor"){
+      exportByColor(app,info.name as ColorStyle)
+    }
+
+  },[])
+
   const fileSystemEvents = useFileSystem()
   const { onAssetUpload , onAssetDelete} = useUploadAssets()
 
@@ -609,7 +623,7 @@ const sendSelect = async (id: string,currentVersion: { current: string; }) => {
         onAssetUpload={onAssetUpload}
         onAssetCreate={onAssetUpload}
         onAssetDelete={onAssetDelete}
-        
+        onExport={handleExport}
         {...rest}
       />
       <BetaNotification />

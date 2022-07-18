@@ -40,6 +40,7 @@
   "paste": "Paste",
   "copy.as": "Copy As",
   "export.as": "Export As",
+  "export.by.color": "Export Versions By Color",
   "select.all": "Select All",
   "select.none": "Select None",
   "delete": "Delete",

@@ -4,18 +4,24 @@ import { PlusIcon, CheckIcon } from '@radix-ui/react-icons'
 import { PageOptionsDialog } from '../PageOptionsDialog'
 import { styled } from '~styles'
 import { useTldrawApp } from '~hooks'
-import type { TDSnapshot } from '~types'
+import type { ColorStyle, TDSnapshot } from '~types'
 import { DMContent, DMDivider } from '~components/Primitives/DropdownMenu'
 import { SmallIcon } from '~components/Primitives/SmallIcon'
 import { RowButton } from '~components/Primitives/RowButton'
 import { ToolButton } from '~components/Primitives/ToolButton'
 import { FormattedMessage, useIntl } from 'react-intl'
-
+import { strokes, fills, defaultTextStyle } from '~state/shapes/shared/shape-styles'
+import { preventEvent } from '~components/preventEvent'
+import type { TldrawApp } from '~state'
+import {
+  CircleIcon,
+} from '~components/Primitives/icons'
 const sortedSelector = (s: TDSnapshot) =>
   Object.values(s.document.pages).sort((a, b) => (a.childIndex || 0) - (b.childIndex || 0))
 
 const currentProjectSelector = (s: TDSnapshot) => s.appState.currentProject
-
+const currentStyleSelector = (s: TDSnapshot) => s.appState.currentStyle
+const themeSelector = (s: TDSnapshot) => (s.settings.isDarkMode ? 'dark' : 'light')
 
 export function CurrentVersionMenu() {
   const app = useTldrawApp()
@@ -34,7 +40,7 @@ export function CurrentVersionMenu() {
   const handleClose = React.useCallback(() => {
     setIsOpen(false)
   }, [setIsOpen])
-
+  
   const handleOpenChange = React.useCallback(
     (isOpen: boolean) => {
       if (rIsOpen.current !== isOpen) {
@@ -61,9 +67,10 @@ export function CurrentVersionMenu() {
 }
 
 function PageMenuContent({ onClose }: { onClose: () => void }) {
-  const app = useTldrawApp()
+  const app: TldrawApp = useTldrawApp()
   const intl = useIntl()
-
+  const theme = app.useStore(themeSelector)
+  const currentStyle = app.useStore(currentStyleSelector)
 
   const handleCreatePage = React.useCallback(() => {
     //app.createPage(undefined, intl.formatMessage({ id: 'new.page' }))
@@ -76,7 +83,57 @@ function PageMenuContent({ onClose }: { onClose: () => void }) {
     },
     [app]
   )
-  return(<></>)
+  return(<>
+  {/* <DropdownMenu.Trigger asChild id="TD-Styles">
+  <ToolButton variant="text">
+    <FormattedMessage id="styles" />
+    <OverlapIcons
+      style={{
+        color: strokes[theme][currentStyle.color as ColorStyle],
+      }}
+    >
+      {(
+        <CircleIcon
+          size={16}
+          stroke="none"
+          fill={fills[theme][currentStyle.color as ColorStyle]}
+        />
+      )}
+    </OverlapIcons>
+  </ToolButton>
+</DropdownMenu.Trigger> */}
+<DMContent>
+        <StyledRow variant="tall" id="TD-Styles-Color-Container">
+          <span>
+          <FormattedMessage id="export.by.color" />
+          </span>
+          <ColorGrid>
+            {Object.keys(strokes.light).map((style: string) => (
+              <DropdownMenu.Item
+                key={style}
+                onSelect={preventEvent}
+                asChild
+                id={`TD-Styles-Color-Swatch-${style}`}
+              >
+                <ToolButton
+                  variant="icon"
+                  onClick={() => app.exportByColor(app,style as ColorStyle) } // { color: style as ColorStyle })}
+                >
+                  <CircleIcon
+                    size={18}
+                    strokeWidth={2.5}
+                    fill={
+                     fills.light[style as ColorStyle]
+                    }
+                    stroke={strokes.light[style as ColorStyle]}
+                  />
+                </ToolButton>
+              </DropdownMenu.Item>
+            ))}
+          </ColorGrid>
+        </StyledRow>
+        </DMContent>
+</>)
   return (
     <>
       <DropdownMenu.RadioGroup dir="ltr" value={'test'} onValueChange={handleChangePage}>
@@ -115,7 +172,52 @@ function PageMenuContent({ onClose }: { onClose: () => void }) {
     </>
   )
 }
+const OverlapIcons = styled('div', {
+  display: 'grid',
+  '& > *': {
+    gridColumn: 1,
+    gridRow: 1,
+  },
+})
+const ColorGrid = styled('div', {
+  display: 'grid',
+  gridTemplateColumns: 'repeat(4, auto)',
+  gap: 0,
+})
 
+export const StyledRow = styled('div', {
+  position: 'relative',
+  width: '100%',
+  background: 'none',
+  border: 'none',
+  cursor: 'pointer',
+  minHeight: '32px',
+  outline: 'none',
+  color: '$text',
+  fontFamily: '$ui',
+  fontWeight: 400,
+  fontSize: '$1',
+  padding: '$2 0 $2 $3',
+  borderRadius: 4,
+  userSelect: 'none',
+  margin: 0,
+  display: 'flex',
+  gap: '$3',
+  flexDirection: 'row',
+  alignItems: 'center',
+  justifyContent: 'space-between',
+  variants: {
+    variant: {
+      tall: {
+        alignItems: 'flex-start',
+        padding: '0 0 0 $3',
+        '& > span': {
+          paddingTop: '$4',
+        },
+      },
+    },
+  },
+})
 const ButtonWithOptions = styled('div', {
   display: 'grid',
   gridTemplateColumns: '1fr auto',

@@ -2414,6 +2414,18 @@ export class TldrawApp extends StateManager<TDSnapshot> {
       }),
     ])
   }
+  exportByColor = async (
+    app: TldrawApp,
+    color: ColorStyle,
+  ) => {
+    if (this.callbacks.onExport) {
+      this.callbacks.onExport(this, {
+        name: color.toString(),
+        type: "exportByColor",
+        blob: new Blob()
+      })
+  }
+}
 
   exportImage = async (
     format: Exclude<TDExportType, TDExportType.JSON> = TDExportType.PNG,
