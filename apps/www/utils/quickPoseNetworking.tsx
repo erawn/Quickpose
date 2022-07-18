@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import { TDDocument, TDFile, TDShapeType, TldrawApp } from "@tldraw/tldraw";
+import { ColorStyle, TDDocument, TDFile, TDShapeType, TldrawApp } from "@tldraw/tldraw";
 import FormData from 'form-data'
 import type { FileSystemHandle } from '@tldraw/tldraw'
 
@@ -7,6 +7,7 @@ import axiosRetry from 'axios-retry';
 import deepEqual from "deep-equal";
 import { MutableRefObject, useCallback } from "react";
 import axios from 'axios'
+import { nodeRegex } from "./quickposeDrawing";
 export const LOCALHOST_BASE = 'http://127.0.0.1:8080';
 
 export function getIconImageURLNoTime(id:string){
@@ -15,6 +16,31 @@ export function getIconImageURLNoTime(id:string){
 
 export function getIconImageURL(id:string){
     return LOCALHOST_BASE + "/image/" + id + "?" + ((new Date()).getTime()); //Add Time to avoid Caching so images update properly
+}
+
+export const exportByColor = async(
+  app: TldrawApp,
+  color: ColorStyle
+) => {
+  const ids = app.getShapes()
+  .filter((shape) => nodeRegex.test(shape.id))
+  .filter((node)=> node.style.color === color)
+  .map((node)=>{
+    return node.id.replace(/\D/g,"")
+  })
+  console.log(ids.toString())
+  axios.post(LOCALHOST_BASE+'/exportbycolor', {}, {
+    params: {
+      ids: ids.toString(),
+      color: color.toString()
+    }
+  })
+  .then(function (response) {
+    //console.log(response);
+  })
+  .catch(function (error) {
+    console.log(error);
+  });
 }
 
 export const saveToProcessing = async (
