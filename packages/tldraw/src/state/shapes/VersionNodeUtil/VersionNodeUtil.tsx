@@ -256,7 +256,7 @@ export class VersionNodeUtil extends TDShapeUtil<T, E> {
   }
 
   shouldRender = (prev: T, next: T): boolean => {
-    return next.radius !== prev.radius || next.style !== prev.style || next.label !== prev.label || (prev.hasLoaded === false && next.hasLoaded === true) || next.isCurrent !== prev.isCurrent
+    return next.radius !== prev.radius || next.style !== prev.style || next.label !== prev.label || (prev.hasLoaded === false && next.hasLoaded === true) || next.imgLink !== prev.imgLink || next.isCurrent !== prev.isCurrent
   }
 
   getCenter = (shape: T): number[] => {

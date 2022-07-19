@@ -19,6 +19,7 @@ import {
 //import { useUploadAssets } from 'hooks/useUploadAssets'
 import React from 'react'
 import * as gtag from 'utils/gtag'
+import { w3cwebsocket as W3CWebSocket } from "websocket";
 import axios from 'axios'
 import { Simulation, SimulationNodeDatum } from 'd3'
 import AsyncLock from 'async-lock'
@@ -31,7 +32,9 @@ import {
   useUploadAssets,
   getCurrentProject,
   sendToLog,
-  exportByColor
+  exportByColor,
+  WEBSOCKET,
+  connectWebSocket
 } from 'utils/quickPoseNetworking'
 
 import { 
@@ -87,6 +90,7 @@ const Editor = ({
   const loadedData = React.useRef<boolean>(false)
   const currentProject = React.useRef<string>(null)
 
+  const thumbnailSocket = React.useRef<W3CWebSocket>(null);
   //d3 sim
   const simulation = React.useRef<d3.Simulation<SimulationNodeDatum, undefined>>()
 
@@ -355,6 +359,10 @@ const sendSelect = async (id: string,currentVersion: { current: string; }) => {
               app.document.name,
               false)
         }
+        if(thumbnailSocket.current !== null){
+          const client:W3CWebSocket = thumbnailSocket.current
+          //client.send("hello!");
+        }
         // console.log("currentProject",currentProject.current)
         // console.log(app.document.name)
         if(app.document.name === 'null'){
@@ -402,7 +410,7 @@ const sendSelect = async (id: string,currentVersion: { current: string; }) => {
   const handleMount = React.useCallback((app: TldrawApp) => {
     const abortFileController = new AbortController()
     loadFileFromProcessing(loadFile,abortFileController)
-    
+    connectWebSocket(thumbnailSocket,currentVersion, rTldrawApp)
     rTldrawApp.current = app
     centerPoint.current = app.centerPoint as [number,number]
     app.replacePageContent({},{},{})
@@ -420,7 +428,6 @@ const sendSelect = async (id: string,currentVersion: { current: string; }) => {
    const updateThumbnailInterval = () =>{
       //BUG = have to do this more slowly, or else firefox will get angry
       //cant change url before last image has loaded - thats why its in the slower interval
-      updateThumbnail(currentVersion, rTldrawApp)
       if(currentProject.current !== undefined){
         getCurrentProject(currentProject,rTldrawApp)
       }
@@ -595,12 +602,12 @@ const sendSelect = async (id: string,currentVersion: { current: string; }) => {
   //   })
   // }, [])
 
-  const handleExport = React.useCallback((app: TldrawApp, info: TDExport)=>{
+  const handleExport = React.useCallback(async(app: TldrawApp, info: TDExport):Promise<void>=>{
 
     if(info.type === "exportByColor"){
       exportByColor(app,info.name as ColorStyle)
+      
     }
-
   },[])
 
   const fileSystemEvents = useFileSystem()
