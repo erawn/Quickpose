@@ -214,6 +214,7 @@ const sendSelect = async (id: string,currentVersion: { current: string; }) => {
             }
         }
         if (createLinkShapes.length > 0) {
+          console.log(createLinkShapes)
           app.patchCreate(createLinkShapes)
           app.selectNone()
         }
@@ -470,9 +471,10 @@ const sendSelect = async (id: string,currentVersion: { current: string; }) => {
   //https://codesandbox.io/s/tldraw-context-menu-wen03q
   const handlePatch = React.useCallback((app: TldrawApp, patch: TldrawPatch, reason?: string) => {
     //console.log(reason)
-    if(loadedFile.current === true && app.document.name === 'null'){
-      console.log("Backing up",new Date().getTime())
-      if(new Date().getTime() - timeSinceLastSave.current > 5 * 60 * 1000){
+    if(loadedFile.current === true && app.document.name !== 'null'){
+      
+      if(new Date().getTime() - timeSinceLastSave.current > 30 * 1000){
+        console.log("Backing up",new Date().getTime())
         saveToProcessing(
           app.document, 
           JSON.stringify(graphData.current), 
@@ -606,7 +608,7 @@ const sendSelect = async (id: string,currentVersion: { current: string; }) => {
 
     if(info.type === "exportByColor"){
       exportByColor(app,info.name as ColorStyle)
-      
+
     }
   },[])
 

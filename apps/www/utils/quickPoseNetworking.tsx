@@ -68,7 +68,8 @@ export const exportByColor = async(
   .map((node)=>{
     return node.id.replace(/\D/g,"")
   })
-  console.log(ids.toString())
+  //console.log(ids.toString())
+  sendToLog("exportbycolor -- color:"+color+"| ids: "+ids.toString())
   axios.post(LOCALHOST_BASE+'/exportbycolor', {}, {
     params: {
       ids: ids.toString(),
