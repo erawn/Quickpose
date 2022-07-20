@@ -473,7 +473,7 @@ const sendSelect = async (id: string,currentVersion: { current: string; }) => {
     //console.log(reason)
     if(loadedFile.current === true && app.document.name !== 'null'){
       
-      if(new Date().getTime() - timeSinceLastSave.current > 30 * 1000){
+      if(new Date().getTime() - timeSinceLastSave.current > 5 * 60 * 1000){ //every 5 min
         console.log("Backing up",new Date().getTime())
         saveToProcessing(
           app.document, 
