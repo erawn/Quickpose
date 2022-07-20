@@ -35,7 +35,7 @@ Export By Color Menu       |  Your Export in Your Sketch Folder
 
 REPL mode is highly recommended for a smooth experience. 
 
-** If you're interested in this project and want to learn more, shoot me an email at erawn@berkeley.edu **. Otherwise, stay tuned for an official release (hopefully this fall!) 
+**If you're interested in this project and want to learn more, shoot me an email at erawn@berkeley.edu**. Otherwise, stay tuned for an official release (hopefully this fall!) 
 
 If you've been invited to evaluate it and are looking for info, please take a look at the [documentation in the wiki](https://github.com/erawn/Quickpose/wiki/What-happens-when-you-run-Quickpose-on-a-Processing-Project).
 
