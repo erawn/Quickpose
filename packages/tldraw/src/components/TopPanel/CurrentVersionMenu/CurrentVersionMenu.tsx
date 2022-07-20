@@ -27,7 +27,6 @@ export function CurrentVersionMenu() {
   const app = useTldrawApp()
 
   const rIsOpen = React.useRef(false)
-
   const [isOpen, setIsOpen] = React.useState(false)
   const currentProjectName = app.useStore(currentProjectSelector)
 
@@ -117,7 +116,11 @@ function PageMenuContent({ onClose }: { onClose: () => void }) {
               >
                 <ToolButton
                   variant="icon"
-                  onClick={() => app.exportByColor(app,style as ColorStyle) } // { color: style as ColorStyle })}
+                  onClick={() => {
+                    app.exportByColor(app,style as ColorStyle)
+                    onClose();
+
+                  } } // { color: style as ColorStyle })}
                 >
                   <CircleIcon
                     size={18}

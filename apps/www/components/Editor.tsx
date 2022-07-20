@@ -91,6 +91,7 @@ const Editor = ({
   const currentProject = React.useRef<string>(null)
 
   const thumbnailSocket = React.useRef<W3CWebSocket>(null);
+  const connectInterval = React.useRef<any>(null);
   //d3 sim
   const simulation = React.useRef<d3.Simulation<SimulationNodeDatum, undefined>>()
 
@@ -411,7 +412,7 @@ const sendSelect = async (id: string,currentVersion: { current: string; }) => {
   const handleMount = React.useCallback((app: TldrawApp) => {
     const abortFileController = new AbortController()
     loadFileFromProcessing(loadFile,abortFileController)
-    connectWebSocket(thumbnailSocket,currentVersion, rTldrawApp)
+    connectWebSocket(thumbnailSocket,currentVersion, rTldrawApp,connectInterval)
     rTldrawApp.current = app
     centerPoint.current = app.centerPoint as [number,number]
     app.replacePageContent({},{},{})
@@ -429,6 +430,7 @@ const sendSelect = async (id: string,currentVersion: { current: string; }) => {
    const updateThumbnailInterval = () =>{
       //BUG = have to do this more slowly, or else firefox will get angry
       //cant change url before last image has loaded - thats why its in the slower interval
+      
       if(currentProject.current !== undefined){
         getCurrentProject(currentProject,rTldrawApp)
       }
@@ -436,7 +438,7 @@ const sendSelect = async (id: string,currentVersion: { current: string; }) => {
     
     const networkLoop = setInterval(networkInterval, timeout * 2) //get data from processing
     const currentVersionLoop = setInterval(currentVersionInterval, 500)//update current version
-    const thumbnailLoop = setInterval(updateThumbnailInterval,2000);
+    const thumbnailLoop = setInterval(updateThumbnailInterval,4000);
     //const dataLoop = setInterval(dataInterval, 3000)//put it into the graph
     const drawLoop = setInterval(drawInterval, 100)//draw the graph
 

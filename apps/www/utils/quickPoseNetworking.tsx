@@ -9,8 +9,8 @@ import { MutableRefObject, useCallback } from "react";
 import axios from 'axios'
 import { nodeRegex } from "./quickposeDrawing";
 import { deserialize} from 'bson'
-import { connect } from "http2";
-import { m } from "@liveblocks/client/shared";
+import React from "react";
+
 export const LOCALHOST_BASE = 'http://127.0.0.1:8080';
 export const WEBSOCKET = 'ws://127.0.0.1:8080/thumbnail';
 export function getIconImageURLNoTime(id:string){
@@ -21,16 +21,16 @@ export function getIconImageURL(id:string){
     return LOCALHOST_BASE + "/image/" + id + "?" + ((new Date()).getTime()); //Add Time to avoid Caching so images update properly
 }
 
-export function connectWebSocket(thumbnailSocket,selectedNode, rTldrawApp){
-  let connectInterval;
+export function connectWebSocket(thumbnailSocket,selectedNode, rTldrawApp,connectInterval){
+  console.log(thumbnailSocket.current);
   if(thumbnailSocket.current === null || 
     thumbnailSocket.current === undefined ||
-    !thumbnailSocket.current.OPEN){
+    (thumbnailSocket.current.readyState == thumbnailSocket.current.OPEN)){
       thumbnailSocket.current = new W3CWebSocket(WEBSOCKET);
       const client:W3CWebSocket = thumbnailSocket.current
       client.onopen = () => {
         console.log('connected')
-        clearTimeout(connectInterval);
+        clearTimeout(connectInterval.current);
       }
       client.onmessage = (message) => {
         //console.log('socketmessage',message)
@@ -39,18 +39,25 @@ export function connectWebSocket(thumbnailSocket,selectedNode, rTldrawApp){
           reader.onload = async function (){
             const msgarray = new Uint8Array(this.result as ArrayBuffer)
             const msg = deserialize(msgarray)
-            //console.log(msg)
-            //console.log(msg.image.buffer.buffer['ArrayBufferByteLength'])
-            if(msg.image.buffer.buffer.byteLength > 100){
-              updateThumbnail(selectedNode, rTldrawApp, new Blob([msg.image.buffer], { type: 'image/png' } ))
+            // console.log(msg)
+            // console.log(msg.version_id)
+            if(msg.image.buffer.buffer.byteLength > 100 ){
+              if(rTldrawApp !== undefined && selectedNode !== undefined){
+                const app  : TldrawApp = rTldrawApp.current!
+                const select = selectedNode.current!
+                console.log(select)
+                if(app !== undefined && select !== undefined && parseInt(select) === parseInt(msg.version_id)){
+                  updateThumbnailFromSocket(select, app, new Blob([msg.image.buffer], { type: 'image/png' } ))
+                }
+              }
             }
         }
         reader.readAsArrayBuffer(message.data as unknown as Blob)
     
       }
       client.onclose = (e) => {
-        connectInterval = setTimeout(function () {
-          connectWebSocket(thumbnailSocket,selectedNode, rTldrawApp);
+        connectInterval.current = setTimeout(function () {
+          connectWebSocket(thumbnailSocket,selectedNode, rTldrawApp,connectInterval);
           console.log('trying to connect')
         }, 1000);
       }
@@ -185,38 +192,59 @@ const checkImage = path => {
   }); 
 }
   
-export const updateThumbnail = async (selectedNode, rTldrawApp, data) => {
-    const rApp = rTldrawApp!
-    let select = selectedNode!
-    //console.log("thumbnail")
-    //Update Thumbnail Image
-    if(rApp !== undefined && select !== undefined){
-      const app  : TldrawApp = rApp.current!
-      select = select.current!
-      //console.log("thumbnail2")
-      if(app !== undefined && select !== undefined){
-          const selectedShape = app.getShape(('node'+select).toString())
+  export const updateThumbnail = async (app,node_id) => {
+          const selectedShape = app.getShape(('node'+node_id).toString())
           if( !(selectedShape === undefined) && selectedShape.type == TDShapeType.VersionNode){
             const idInteger = selectedShape.id.replace(/\D/g,"")
-            const url = URL.createObjectURL(data)
-            const currentPageId = app.currentPageId
-            URL.revokeObjectURL(selectedShape.imgLink) 
-            const patch = {
-              document: {
-                pages: {
-                  [currentPageId]: {
-                    shapes: {
-                      [selectedShape.id]: {
-                        imgLink: url
+            const url = getIconImageURL(idInteger)
+            await checkImage(url).then((res)=>{
+              if(res["status"] === 'ok'){
+                selectedShape.imgLink = url
+                const currentPageId = app.currentPageId
+                const patch = {
+                  document: {
+                    pages: {
+                      [currentPageId]: {
+                        shapes: {
+                          [selectedShape.id]: {
+                            imgLink: url
+                          },
+                        },
                       },
                     },
                   },
+                }
+                app.patchState(patch, 'Quickpose Thumbnail Update')
+              }else{
+                console.log("image didnt load")
+              }
+            }).catch(e =>{
+              console.log("invalid image",e)
+            })
+          }
+      }
+
+export const updateThumbnailFromSocket = async (selectedNode, app, data) => {
+    const selectedShape = app.getShape(('node'+selectedNode).toString())
+    if( !(selectedShape === undefined) && selectedShape.type == TDShapeType.VersionNode){
+      const idInteger = selectedShape.id.replace(/\D/g,"")
+      const url = URL.createObjectURL(data)
+      const currentPageId = app.currentPageId
+      URL.revokeObjectURL(selectedShape.imgLink) 
+      const patch = {
+        document: {
+          pages: {
+            [currentPageId]: {
+              shapes: {
+                [selectedShape.id]: {
+                  imgLink: url
                 },
               },
-            }
-            app.patchState(patch, 'Quickpose Thumbnail Update')
-        }
+            },
+          },
+        },
       }
+      app.patchState(patch, 'Quickpose Thumbnail Update')
     }
   }
 
