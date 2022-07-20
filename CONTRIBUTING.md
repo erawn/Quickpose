@@ -1,4 +1,3 @@
-# Welcome to the tldraw contributing guide <!-- omit in toc -->
 
 Thank you for investing your time in contributing to our project! Any contribution you make will be reflected in the @tldraw/tldraw package and at [tldraw.com](https://tldraw.com).
 
