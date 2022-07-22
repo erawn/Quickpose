@@ -74,7 +74,7 @@ const Editor = ({
   const rIsDragging = React.useRef(false)
   const selectedNode = React.useRef<string>(null)
   const lastSelection = React.useRef<string>(null)
-  const currentVersion = React.useRef<string>(null)
+  const currentVersion = React.useRef<number>(null)
   const timeSinceLastSelection = React.useRef<number>(0)
   const timeSinceLastFork = React.useRef<number>(0);
   const centerPoint = React.useRef<[number,number]>([600,600])
@@ -124,7 +124,7 @@ const Editor = ({
         })
         .then(response => {
           if(response.status === 200){
-            updateThumbnail(app,'node'+currentVersion.current)
+            updateThumbnail(app,'node'+currentVersion.current,currentVersion)
             newData.current = true;
             netData.current = response.data
             dataInterval(newData,netData,graphData,simulation)
@@ -159,7 +159,7 @@ const sendSelect = async (id: string) => {
       })
       .then(function(response) {
         if(response.status === 200){
-          updateThumbnail(app,'node'+currentVersion.current)
+          updateThumbnail(app,'node'+currentVersion.current,currentVersion)
           currentVersion.current = response.data.toString()
           app.setIsLoading(false)
           // console.log(currentVersion.current.toString())
@@ -332,11 +332,11 @@ const sendSelect = async (id: string) => {
             //reset data
             netData.current = null
             app.setCurrentProject("")
-            currentVersion.current = ""
+            currentVersion.current = null
             app.document.name = 'null'
             graphData.current = graphBaseData
   
-            loadTldrFile(app,netData,graphData,simulation,centerPoint,loadFile)
+            loadTldrFile(app,netData,graphData,simulation,centerPoint,loadFile, currentVersion)
             refreshSim(simulation)
             dataInterval(newData,netData,graphData,simulation)
             drawInterval()
@@ -357,20 +357,13 @@ const sendSelect = async (id: string) => {
                 app.document.name,
                 false)
           }
-          if(thumbnailSocket.current !== null){
-            const client:W3CWebSocket = thumbnailSocket.current
-            //client.send("hello!");
-          }
-          // console.log("currentProject",currentProject.current)
-          // console.log(app.document.name)
           if(app.document.name === 'null'){
             app.document.name = app.appState.currentProject
           }
-          const tlNodes = app.getShapes().filter((shape) => nodeRegex.test(shape.id))
-          tlNodes.map(node => updateThumbnail(app,node.id))
+        
           updateVersions(netData, newData, abortVersionsController)
           dataInterval(newData,netData,graphData,simulation)
-          updateCurrentVersion(currentVersion, timeout, abortCurrentVersionController)
+          updateCurrentVersion(currentVersion)
         }else{ //This shouldnt be reached
           console.log(loadFile.current)
         }
@@ -379,7 +372,12 @@ const sendSelect = async (id: string) => {
   }
   //Update Current Version — (we want to do this very fast)
   const currentVersionInterval = () => {
-    //updateCurrentVersion(currentVersion, timeout, abortCurrentVersionController)
+    const app = rTldrawApp.current!
+    
+    if (!(app === undefined)) {
+      const tlNodes = app.getShapes().filter((shape:VersionNodeShape) => nodeRegex.test(shape.id) && shape.hasLoaded === false)
+      tlNodes.map(node => updateThumbnail(app,node.id,currentVersion))    
+    }
   }
   const handleSave = React.useCallback((app: TldrawApp, e?:KeyboardEvent)=>{
     if(e !== undefined){
@@ -399,7 +397,7 @@ const sendSelect = async (id: string) => {
   const handleMount = React.useCallback((app: TldrawApp) => {
     const abortFileController = new AbortController()
     app.setCurrentProject("")
-    currentVersion.current = ""
+    currentVersion.current = null
     netData.current = null
     graphData.current = graphBaseData
     currentVersion.current = null
@@ -424,7 +422,7 @@ const sendSelect = async (id: string) => {
    
     
     const networkLoop = setInterval(networkInterval, timeout * 2) //get data from processing
-    const currentVersionLoop = setInterval(currentVersionInterval, 500)//update current version
+    const currentVersionLoop = setInterval(currentVersionInterval, 10000)//update current version
     //const thumbnailLoop = setInterval(updateThumbnailInterval,4000);
     //const dataLoop = setInterval(dataInterval, 3000)//put it into the graph
     const drawLoop = setInterval(drawInterval, 100)//draw the graph

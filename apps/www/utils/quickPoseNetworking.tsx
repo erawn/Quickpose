@@ -13,17 +13,17 @@ import React from "react";
 
 export const LOCALHOST_BASE = 'http://127.0.0.1:8080';
 export const WEBSOCKET = 'ws://127.0.0.1:8080/thumbnail';
-export function getIconImageURLNoTime(id:string){
+export function getIconImageURLNoTime(id:number){
     return LOCALHOST_BASE + "/image/" + id; //Add Time to avoid Caching so images update properly
 }
 
-export function getIconImageURL(id:string){
+export function getIconImageURL(id:number){
     return LOCALHOST_BASE + "/image/" + id + "?" + ((new Date()).getTime()); //Add Time to avoid Caching so images update properly
 }
 
 export function connectWebSocket(
   thumbnailSocket: MutableRefObject<W3CWebSocket>,
-  currentVersion: MutableRefObject<string>, 
+  currentVersion: MutableRefObject<number>, 
   rTldrawApp: MutableRefObject<TldrawApp>,
   connectInterval: MutableRefObject<any>
   ){
@@ -40,7 +40,7 @@ export function connectWebSocket(
           const app  : TldrawApp = rTldrawApp.current!
           if(app !== undefined){
             const tlNodes = app.getShapes().filter((shape) => nodeRegex.test(shape.id))
-            tlNodes.map(node => updateThumbnail(app,node.id))
+            tlNodes.map(node => updateThumbnail(app,node.id,currentVersion))
           }
         }
         
@@ -66,15 +66,14 @@ export function connectWebSocket(
                         break;
                       }
                       case "version_id": {
-                        if(currentVersion.current === ""){
+                        if(currentVersion.current === null){
                           
-                          currentVersion.current = msg[key].toString();
-                          console.log(currentVersion.current)
+                          currentVersion.current = msg[key];
                         }
                         break;
                       }
                       case "image": {
-                        if(msg.image.buffer.buffer.byteLength > 100  && parseInt(select) === parseInt(msg.version_id)){
+                        if(msg.image.buffer.buffer.byteLength > 100  && select === parseInt(msg.version_id)){
                           updateThumbnailFromSocket(select, app, new Blob([msg.image.buffer], { type: 'image/png' } ))
                         }
                         break;
@@ -232,10 +231,14 @@ const checkImage = path => {
   }); 
 }
   
-  export const updateThumbnail = async (app,shape_id) => {
+  export const updateThumbnail = async (
+    app: TldrawApp,
+    shape_id: string,
+    currentVersion: MutableRefObject<number>
+    ) => {
           const selectedShape = app.getShape(shape_id)
           if( !(selectedShape === undefined) && selectedShape.type == TDShapeType.VersionNode){
-            const idInteger = selectedShape.id.replace(/\D/g,"")
+            const idInteger = parseInt(selectedShape.id.replace(/\D/g,""))
             const url = getIconImageURL(idInteger)
             await checkImage(url).then((res)=>{
               if(res["status"] === 'ok'){
@@ -255,9 +258,9 @@ const checkImage = path => {
                   },
                 }
                 app.patchState(patch, 'Quickpose Image Update')
-              }else{
-                console.log("image didnt load")
-                setTimeout(()=>{updateThumbnail(app,shape_id)},1000)
+              }else if(res["status"] === 'error' && idInteger !== currentVersion.current){
+                console.log("image didnt load", shape_id, url)
+                //setTimeout(()=>{updateThumbnail(app,shape_id,currentVersion)},5000)
               }
             }).catch(e =>{
               console.log("invalid image",e)
@@ -289,13 +292,13 @@ export const updateThumbnailFromSocket = async (selectedNode, app, data) => {
     }
   }
 
-  export const updateCurrentVersion = async (currentVersion, timeout,abortCurrentVersionController) => {
+  export const updateCurrentVersion = async (currentVersion: MutableRefObject<number>) => {
     axios.get(LOCALHOST_BASE+'/currentVersion', {
         timeout: 500,
       })
       .then(response => {
         if(response.data !== undefined){
-          currentVersion.current = response.data.toString()
+          currentVersion.current = response.data
           return true
         }else{
           return false
