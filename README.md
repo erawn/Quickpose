@@ -8,7 +8,7 @@
 
 This is an ongoing research project by [Eric Rawn](https://www.ericrawn.media/) as a version control system for Processing. It's currently unreleased, but expect it soon! 
 
-If you'd be interested in participating in a study of this tool, please take a look at the interest form here.
+**[Interested in participating in a (paid) study of this tool?](https://github.com/erawn/Quickpose/wiki)**
 
 
 ***
