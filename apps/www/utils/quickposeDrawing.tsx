@@ -196,7 +196,7 @@ export const updateBinding = (app:TldrawApp, link, startNode,endNode,drawLink,ne
   export const updateNodeShapes = (
     graphData: { nodes: dataNode[]; },
     tlNodes: TDShape[],
-    currentVersion: MutableRefObject<string>,
+    currentVersion: MutableRefObject<number>,
     centerPoint: MutableRefObject<[number, number]>,
     selectedIds: string | string[]
     ):[Patch<Record<string, TDShape>>,inputVersionNodeShape[]] => {
@@ -219,7 +219,7 @@ export const updateBinding = (app:TldrawApp, link, startNode,endNode,drawLink,ne
               },
               point: d3toTldrawCoords(node.x,node.y),
               radius: [TL_DRAW_RADIUS,TL_DRAW_RADIUS],
-              imgLink: getIconImageURLNoTime(node.id.toString())
+              imgLink: getIconImageURLNoTime(parseInt(node.id))
           } as inputVersionNodeShape)
           // if(n.id === "node0"){
           //   n.isFixed = true;
@@ -328,7 +328,8 @@ export const updateBinding = (app:TldrawApp, link, startNode,endNode,drawLink,ne
     graphData: MutableRefObject<any>,
     simulation: MutableRefObject<Simulation<SimulationNodeDatum, undefined>>,
     centerPoint: MutableRefObject<[number, number]>,
-    loadFile:MutableRefObject<TDFile>
+    loadFile:MutableRefObject<TDFile>,
+    currentVersion: MutableRefObject<number>
     ){
 
     app.replacePageContent({},{},{})
@@ -385,7 +386,7 @@ export const updateBinding = (app:TldrawApp, link, startNode,endNode,drawLink,ne
 
     const tlNodes = app.getShapes().filter((shape) => nodeRegex.test(shape.id))
 
-    tlNodes.map(node => updateThumbnail(app,node.id))
+    tlNodes.map(node => updateThumbnail(app,node.id,currentVersion))
     //console.log('loaded data',loadedData)
 
     //app.appState.isLoading = false

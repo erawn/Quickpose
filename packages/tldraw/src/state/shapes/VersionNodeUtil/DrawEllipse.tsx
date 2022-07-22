@@ -52,9 +52,9 @@ export const DrawEllipse = React.memo(function DrawEllipse({
   return (
     <>
     <defs>
-      <linearGradient id="Gradient2" x1="0" x2="0" y1="0" y2="1" preserveAspectRatio="xMidYMid slice">
-          <stop offset="0%" stopColor="rgb(161,244,252)"/>
-          <stop offset="100%" stopColor="rgb(114,166,248)"/>
+      <linearGradient id="Gradient2" x1="0" x2="0" y1="0" y2="1" gradientTransform="rotate(-45)" preserveAspectRatio="xMidYMid slice">
+          <stop offset="0%" stopColor="rgb(161,244,252)"stopOpacity="1"/>
+          <stop offset="100%" stopColor="rgb(114,166,248)" stopOpacity="1"/>
           
         </linearGradient>
       </defs> 
@@ -82,7 +82,7 @@ export const DrawEllipse = React.memo(function DrawEllipse({
         />
       )} */}
       {isCurrent &&
-       <g transform={'translate('+(radius[0])+','+(radius[1])+') scale(1.3) translate('+(-radius[0])+','+(-radius[1])+')'}>
+       <g transform={'translate('+(radius[0])+','+(radius[1])+') scale(1.38) translate('+(-radius[0])+','+(-radius[1])+')'}>
           <ellipse
             stroke="none"
             pointerEvents="none"
