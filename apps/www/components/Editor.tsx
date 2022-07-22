@@ -160,7 +160,7 @@ const sendSelect = async (id: string) => {
       .then(function(response) {
         if(response.status === 200){
           updateThumbnail(app,'node'+currentVersion.current,currentVersion)
-          currentVersion.current = response.data.toString()
+          currentVersion.current = parseInt(response.data)
           app.setIsLoading(false)
           // console.log(currentVersion.current.toString())
           // const v = 'node'+currentVersion.current
@@ -265,7 +265,7 @@ const sendSelect = async (id: string) => {
     //https://medium.com/ninjaconcept/interactive-dynamic-force-directed-graphs-with-d3-da720c6d7811
     if (netData.current && graphData.current && simulation.current) {
       if (updateGraphData(netData.current,graphData.current)) {
-        currentVersion.current = netData.current["CurrentNode"].toString()
+        currentVersion.current = parseInt(netData.current["CurrentNode"].toString())
         simulation.current.nodes(graphData.current.nodes)
         const forceLink = simulation.current.force('link') as forceLink
         forceLink.links(graphData.current.links)
@@ -379,6 +379,7 @@ const sendSelect = async (id: string) => {
       tlNodes.map(node => updateThumbnail(app,node.id,currentVersion))    
     }
   }
+  
   const handleSave = React.useCallback((app: TldrawApp, e?:KeyboardEvent)=>{
     if(e !== undefined){
       e.preventDefault();
