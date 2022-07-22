@@ -1051,6 +1051,13 @@ export class TldrawApp extends StateManager<TDSnapshot> {
     return this
   }
 
+  setCurrentProject = (currentProject: string): this => {
+    const patch = { appState: { currentProject } }
+    this.patchState(patch, 'ui:toggled_current_project')
+    this.persist(patch)
+    return this
+  }
+
   setDisableAssets = (disableAssets: boolean): this => {
     this.patchState({ appState: { disableAssets } }, 'ui:toggled_disable_images')
     return this

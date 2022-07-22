@@ -1,26 +1,26 @@
-import { AlignStyle, ArrowBinding, ArrowShape, ColorStyle, DashStyle, shapeUtils, SizeStyle, TDBinding, TDShape, TDShapeType, TldrawApp, VersionNodeShape, TDFile} from "@tldraw/tldraw"
+import { ArrowBinding, ArrowShape, ColorStyle, DashStyle, shapeUtils, SizeStyle, TDBinding, TDShape, TDShapeType, TldrawApp, VersionNodeShape, TDFile} from "@tldraw/tldraw"
 import { dataLink, dataNode, inputShape, inputVersionNodeShape } from "./quickPoseTypes"
 import deepEqual from "deep-equal";
 import { ALPHA_TARGET_REFRESH, d3TlScale, D3_LINK_DISTANCE, TL_DRAW_RADIUS } from "components/Editor";
-import { getIconImageURLNoTime } from "./quickPoseNetworking"
-import { forceSimulation, forceManyBody, forceLink, forceCollide} from "d3";
+import { getIconImageURLNoTime, updateThumbnail } from "./quickPoseNetworking"
+import { forceSimulation, forceManyBody, forceLink, forceCollide, Simulation, SimulationNodeDatum} from "d3";
 import forceBoundary from 'd3-force-boundary'
-import type  {Patch, TLBounds} from "@tldraw/core";
-import next from "next";
+import type  {Patch} from "@tldraw/core";
 import { MutableRefObject } from "react";
 
 export const nodeRegex = new RegExp(/node\d/);
 export const linkRegex = new RegExp(/link\d/);
 
-export const d3Sim = (centerPoint,bounds:TLBounds) => {
-    const coords = tldrawCoordstod3(...centerPoint as [number,number])
-    const boundary = tldrawCoordstod3(bounds.maxX,bounds.maxY)
+export const d3Sim = () => {
+    // const coords = tldrawCoordstod3(...centerPoint as [number,number])
+    // const boundary = tldrawCoordstod3(bounds.maxX,bounds.maxY)
     //console.log(bounds,boundary)
     return forceSimulation()
     .force("boundary", forceBoundary(0,0,500,500))
     //.force("center", d3.forceCenter(coords[0],coords[1]).strength(.1))
     .force('charge', forceManyBody().strength(-2))
     .force("link", forceLink()
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       .id(function(d:dataNode,i) {
         return d.id
       })
@@ -192,11 +192,17 @@ export const updateBinding = (app:TldrawApp, link, startNode,endNode,drawLink,ne
     return [nextShapes,nextBindings,createShapes]
   }
 
-  export const updateNodeShapes = (graphData, tlNodes,currentVersion,centerPoint,selectedIds):[Patch<Record<string, TDShape>>,inputVersionNodeShape[]] => {
+  export const updateNodeShapes = (
+    graphData: { nodes: dataNode[]; },
+    tlNodes: TDShape[],
+    currentVersion: MutableRefObject<string>,
+    centerPoint: MutableRefObject<[number, number]>,
+    selectedIds: string | string[]
+    ):[Patch<Record<string, TDShape>>,inputVersionNodeShape[]] => {
     const nextShapes: Patch<Record<string, TDShape>> = {}
     const createShapes: inputVersionNodeShape[] = []
     graphData.nodes.map(function(node: dataNode){
-      const tlDrawNode:VersionNodeShape = tlNodes.find(n => n.id === 'node'+node.id)
+      const tlDrawNode:VersionNodeShape = tlNodes.find(n => n.id === 'node'+node.id) as VersionNodeShape
       //console.log(tlDrawNode)
       if(!tlDrawNode){
           const n = shapeUtils.versionNode.getShape({
@@ -214,12 +220,18 @@ export const updateBinding = (app:TldrawApp, link, startNode,endNode,drawLink,ne
               radius: [TL_DRAW_RADIUS,TL_DRAW_RADIUS],
               imgLink: getIconImageURLNoTime(node.id.toString())
           } as inputVersionNodeShape)
-          if(n.id === "node0"){
-            n.isFixed = true;
-          }
+          // if(n.id === "node0"){
+          //   n.isFixed = true;
+          // }
           node.r = n.radius[0] / d3TlScale
           //console.log("found new shape")
           //nextShapes[n.id] = n
+          if(node.id === '0'){
+            node.fx = tldrawCoordstod3(...centerPoint.current as [number,number])[0]
+            node.fy = tldrawCoordstod3(...centerPoint.current as [number,number])[1]
+            node.x = tldrawCoordstod3(...centerPoint.current as [number,number])[0]
+            node.y = tldrawCoordstod3(...centerPoint.current as [number,number])[1]
+          }
           createShapes.push(n)
           //nextShapes[n.id] = {...n}
 
@@ -231,10 +243,11 @@ export const updateBinding = (app:TldrawApp, link, startNode,endNode,drawLink,ne
               node.fx = d3Coords[0]
               node.fy = d3Coords[1]
               node.r = (tlDrawNode.radius[0] / d3TlScale)
-          }else{
+          }else if(node.id !== '0'){
             node.fx = null
             node.fy = null
           }
+          
           if(currentVersion.current && tlDrawNode.id === 'node'+currentVersion.current){ //If our node is the current version
               if(tlDrawNode.isCurrent === false){
                 nextShapes[tlDrawNode.id] = {...nextShapes[tlDrawNode.id], isCurrent: true}
@@ -245,20 +258,14 @@ export const updateBinding = (app:TldrawApp, link, startNode,endNode,drawLink,ne
             }
           }
           
-          let newCoords = {...tlDrawNode.point}
-          if(node.id === '0'){
-              node.fx = tldrawCoordstod3(...centerPoint as [number,number])[0]
-              node.fy = tldrawCoordstod3(...centerPoint as [number,number])[1]
-              node.x = tldrawCoordstod3(...centerPoint as [number,number])[0]
-              node.y = tldrawCoordstod3(...centerPoint as [number,number])[1]
-              newCoords = centerPoint as [number,number]
-              const newPoint = d3toTldrawCoords(node.x ,node.y)
-              if(newPoint !== tlDrawNode.point){
-                nextShapes[tlDrawNode.id] = {...nextShapes[tlDrawNode.id], point: newPoint}
-              }
-          }else{
-              newCoords = d3toTldrawCoords(node.x ,node.y)
+          if(node.id === '0' ){
+            centerPoint.current = tlDrawNode.point as [number,number]
+            node.fx = tldrawCoordstod3(...centerPoint.current as [number,number])[0]
+            node.fy = tldrawCoordstod3(...centerPoint.current as [number,number])[1]
+            node.x = tldrawCoordstod3(...centerPoint.current as [number,number])[0]
+            node.y = tldrawCoordstod3(...centerPoint.current as [number,number])[1]
           }
+          const newCoords = d3toTldrawCoords(node.x ,node.y)
           if (Math.abs(newCoords[0] - tlDrawNode.point[0]) > .1 || Math.abs(newCoords[1] - tlDrawNode.point[1]) > .1){
             nextShapes[tlDrawNode.id] = {...nextShapes[tlDrawNode.id], point: newCoords}
           }
@@ -269,7 +276,10 @@ export const updateBinding = (app:TldrawApp, link, startNode,endNode,drawLink,ne
     return [nextShapes,createShapes]
   }
 
-  export function updateGraphData(netData: JSON, graphData: { nodes: any[]; links: any[]; }){
+  export function updateGraphData(
+    netData: JSON, 
+    graphData: { nodes: any[]; links: any[]; }
+    ){
 
     //https://medium.com/ninjaconcept/interactive-dynamic-force-directed-graphs-with-d3-da720c6d7811
       //if we have new data come in
@@ -311,7 +321,15 @@ export const updateBinding = (app:TldrawApp, link, startNode,endNode,drawLink,ne
       return changed
   }
 
-  export function loadTldrFile(app:TldrawApp,netData,graphData,simulation,centerPoint,currentProject,loadFile:MutableRefObject<TDFile>){
+  export function loadTldrFile(
+    app:TldrawApp,
+    netData: MutableRefObject<any>,
+    graphData: MutableRefObject<any>,
+    simulation: MutableRefObject<Simulation<SimulationNodeDatum, undefined>>,
+    centerPoint: MutableRefObject<[number, number]>,
+    loadFile:MutableRefObject<TDFile>
+    ){
+
     app.replacePageContent({},{},{})
 
     
@@ -324,7 +342,7 @@ export const updateBinding = (app:TldrawApp, link, startNode,endNode,drawLink,ne
     if(loadFile.current.assets["simData"] !== "" && loadFile.current.assets["simData"] !== undefined ){
       loadedData = JSON.parse(loadFile.current.assets["simData"].toString())
       if(netData.current !== undefined && netData.current !== null && netData.current["ProjectName"]){
-        currentProject.current = netData.current["ProjectName"]
+        app.setCurrentProject(netData.current["ProjectName"])
       }
       const importNodes = loadedData.nodes as dataNode[]
       //console.log(importNodes)
@@ -334,7 +352,7 @@ export const updateBinding = (app:TldrawApp, link, startNode,endNode,drawLink,ne
       })
       graphData.current.nodes = importNodes
       graphData.current.links = loadedData.links
-      simulation.current = d3Sim(centerPoint.current,app.rendererBounds).alpha(3)
+      simulation.current = d3Sim().alpha(3)
       simulation.current.restart()
       
       simulation.current.nodes(graphData.current.nodes)
@@ -353,7 +371,6 @@ export const updateBinding = (app:TldrawApp, link, startNode,endNode,drawLink,ne
     // })
       simulation.current.alpha(ALPHA_TARGET_REFRESH)
     }
-    //currentProject.current = loadFile.current.document.name
 
     if(loadFile.current.assets["centerPoint"] !== undefined){
       centerPoint.current = JSON.parse(loadFile.current.assets["centerPoint"].toString()) as [number,number]
@@ -364,6 +381,10 @@ export const updateBinding = (app:TldrawApp, link, startNode,endNode,drawLink,ne
     if (app.getShape('loading')) {//remove loading sticky
       app.delete(['loading','installHelper1','installHelper2','installHelper3']) 
     }
+
+    const tlNodes = app.getShapes().filter((shape) => nodeRegex.test(shape.id))
+
+    tlNodes.map(node => updateThumbnail(app,node.id))
     //console.log('loaded data',loadedData)
 
     //app.appState.isLoading = false
@@ -372,7 +393,7 @@ export const updateBinding = (app:TldrawApp, link, startNode,endNode,drawLink,ne
     
   }
 
-  export const installHelper = (centerPoint) => {
+  export const installHelper = (centerPoint: number[]) => {
     return [{
       "id": "installHelper1",
       "type": "text",

@@ -3,6 +3,7 @@ import { getShapeStyle , fills, strokes} from '~state/shapes/shared'
 import { ColorStyle, DashStyle, ShapeStyles, SizeStyle, Theme } from '~types'
 import { getEllipseIndicatorPath, getEllipsePath } from './ellipseHelpers'
 import { Utils } from '@tldraw/core'
+
 interface VersionNodeSvgProps {
   id: string
   radius: number[]
@@ -50,16 +51,13 @@ export const DrawEllipse = React.memo(function DrawEllipse({
 
   return (
     <>
-    {isCurrent && (
-        <g transform={'translate('+(radius[0])+','+(radius[1])+')scale(1.2) translate('+(-radius[0])+','+(-radius[1])+')'}>
-          <path
-            d={getEllipseIndicatorPath(id, radius, selectStyle)}
-            stroke="none"
-            fill={selectFill}
-            pointerEvents="none"
-          />
-        </g>
-      )}
+    <defs>
+      <linearGradient id="Gradient2" x1="0" x2="0" y1="0" y2="1" preserveAspectRatio="xMidYMid slice">
+          <stop offset="0%" stopColor="rgb(161,244,252)"/>
+          <stop offset="100%" stopColor="rgb(114,166,248)"/>
+          
+        </linearGradient>
+      </defs> 
       {/* <ellipse
         className={style.isFilled || isSelected ? 'tl-fill-hitarea' : 'tl-stroke-hitarea'}
         cx={radius[0]}
@@ -67,12 +65,12 @@ export const DrawEllipse = React.memo(function DrawEllipse({
         rx={radius[0]}
         ry={radius[1]}
       /> */}
-      <defs>
+      {/* <defs>
         <pattern id={imgId} patternUnits="objectBoundingBox" width="1" height="1">
           <image href={imgLink} x="0" y="0" width={(radius[0]*2)-sw} height={(radius[1]*2)-sw}
                   preserveAspectRatio="xMidYMid slice" />
         </pattern>
-      </defs>
+      </defs> */}
       {/* {style.isFilled && (
         
       
@@ -84,11 +82,11 @@ export const DrawEllipse = React.memo(function DrawEllipse({
         />
       )} */}
       {isCurrent &&
-       <g transform={'translate('+(radius[0])+','+(radius[1])+')scale(1.2) translate('+(-radius[0])+','+(-radius[1])+')'}>
+       <g transform={'translate('+(radius[0])+','+(radius[1])+') scale(1.3) translate('+(-radius[0])+','+(-radius[1])+')'}>
           <ellipse
             stroke="none"
             pointerEvents="none"
-            fill={selectFill}
+            fill={"url(#Gradient2)"}
             cx={radius[0]}
             cy={radius[1]}
             rx={radius[0]}
@@ -96,6 +94,7 @@ export const DrawEllipse = React.memo(function DrawEllipse({
           />
         </g>
       } 
+   
 
       <ellipse
         className={style.isFilled || isSelected ? 'tl-fill-hitarea' : 'tl-stroke-hitarea'}
