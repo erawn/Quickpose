@@ -241,6 +241,7 @@ const checkImage = path => {
             const idInteger = parseInt(selectedShape.id.replace(/\D/g,""))
             const url = getIconImageURL(idInteger)
             await checkImage(url).then((res)=>{
+              console.log(idInteger,currentVersion.current)
               if(res["status"] === 'ok'){
                 selectedShape.imgLink = url
                 const currentPageId = app.currentPageId
@@ -258,6 +259,7 @@ const checkImage = path => {
                   },
                 }
                 app.patchState(patch, 'Quickpose Image Update')
+                
               }else if(res["status"] === 'error' && idInteger !== currentVersion.current){
                 console.log("image didnt load", shape_id, url)
                 //setTimeout(()=>{updateThumbnail(app,shape_id,currentVersion)},5000)
@@ -281,7 +283,8 @@ export const updateThumbnailFromSocket = async (selectedNode, app, data) => {
             [currentPageId]: {
               shapes: {
                 [selectedShape.id]: {
-                  imgLink: url
+                  imgLink: url,
+                  hasLoaded: true
                 },
               },
             },

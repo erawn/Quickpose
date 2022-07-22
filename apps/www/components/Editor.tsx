@@ -101,7 +101,7 @@ const Editor = ({
   const abortCurrentVersionController = new AbortController()
   const abortFileController = new AbortController()
   const abortVersionsController = new AbortController()
-  const timeout = 500
+  const timeout = 2000
   const lock = new AsyncLock;
 
   function refreshSim(simulation){
