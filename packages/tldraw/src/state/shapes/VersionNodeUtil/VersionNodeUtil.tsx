@@ -41,10 +41,6 @@ export class VersionNodeUtil extends TDShapeUtil<T, E> {
     this.hasLoaded = true
   }
 
-
-
-
-
   getShape = (props: Partial<T>): T => {
     return Utils.deepMerge<T>(
       {
@@ -95,21 +91,21 @@ export class VersionNodeUtil extends TDShapeUtil<T, E> {
 
       const rPoint = React.useRef<TLShape["point"] | null>(null)
 
-      if(id === 'node0'){
-        this.isFixed = true
-        if(rPoint.current === null){
-          rPoint.current = point
-          shape.point = rPoint.current 
-        }else{
-          shape.point = rPoint.current 
-        }
-      }
+      // if(id === 'node0'){
+      //   this.isFixed = false
+      //   if(rPoint.current === null){
+      //     rPoint.current = point
+      //     shape.point = rPoint.current 
+      //   }else{
+      //     shape.point = rPoint.current 
+      //   }
+      // }
 
       events.onPointerMove = React.useCallback(
         (e: React.PointerEvent<HTMLTextAreaElement | HTMLDivElement>) => {
-          if (id === 'node0') {
-            e.stopPropagation()
-          }
+          // if (id === 'node0') {
+          //   e.stopPropagation()
+          // }
         },
         [events.onPointerMove]
       )
@@ -165,6 +161,28 @@ export class VersionNodeUtil extends TDShapeUtil<T, E> {
               
             />
           </SVGContainer>
+          {/* {(isCurrent === false) &&
+       <g transform={'translate('+(radius[0])+','+(radius[1])+')scale(1.2) translate('+(-radius[0])+','+(-radius[1])+')'}>
+          <ellipse
+            stroke="none"
+            pointerEvents="none"
+            fill={selectFill}
+            cx={radius[0]}
+            cy={radius[1]}
+            rx={radius[0]}
+            ry={radius[1]}
+          />
+        </g>
+      }  */}
+        {/* <ImageElement
+              id={shape.id + '_image'}
+              ref={rImage}
+              src={imgLink}
+              draggable={false}
+              width={imgWidth*2}
+              height={imgWidth*2}
+              onLoad={this.onImageLoad}
+            /> */}
           
           <ImageElement
               id={shape.id + '_image'}

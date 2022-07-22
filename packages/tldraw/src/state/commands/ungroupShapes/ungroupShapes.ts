@@ -22,7 +22,7 @@ export function ungroupShapes(
 
   // The group shape
   groupShapes
-    .filter((shape) => !shape.isLocked && (shape.id !== 'node0'))
+    .filter((shape) => !shape.isLocked && !shape.isFixed)
     .forEach((groupShape) => {
       const shapesToReparent: TDShape[] = []
       const deletedGroupIds: string[] = []

@@ -8,7 +8,7 @@ import deepEqual from "deep-equal";
 import { MutableRefObject, useCallback } from "react";
 import axios from 'axios'
 import { nodeRegex } from "./quickposeDrawing";
-import { deserialize} from 'bson'
+import * as BSON from 'bson'
 import React from "react";
 
 export const LOCALHOST_BASE = 'http://127.0.0.1:8080';
@@ -25,12 +25,20 @@ export function connectWebSocket(thumbnailSocket,selectedNode, rTldrawApp,connec
   console.log(thumbnailSocket.current);
   if(thumbnailSocket.current === null || 
     thumbnailSocket.current === undefined ||
-    (thumbnailSocket.current.readyState == thumbnailSocket.current.OPEN)){
+    (thumbnailSocket.current.readyState !== thumbnailSocket.current.OPEN)){
       thumbnailSocket.current = new W3CWebSocket(WEBSOCKET);
       const client:W3CWebSocket = thumbnailSocket.current
       client.onopen = () => {
         console.log('connected')
         clearTimeout(connectInterval.current);
+        if(rTldrawApp !== undefined){
+          const app  : TldrawApp = rTldrawApp.current!
+          if(app !== undefined){
+            const tlNodes = app.getShapes().filter((shape) => nodeRegex.test(shape.id))
+            tlNodes.map(node => updateThumbnail(app,node.id))
+          }
+        }
+        
       }
       client.onmessage = (message) => {
         //console.log('socketmessage',message)
@@ -38,28 +46,51 @@ export function connectWebSocket(thumbnailSocket,selectedNode, rTldrawApp,connec
           const reader = new FileReader()
           reader.onload = async function (){
             const msgarray = new Uint8Array(this.result as ArrayBuffer)
-            const msg = deserialize(msgarray)
+            const msg = BSON.deserialize(msgarray)
             // console.log(msg)
             // console.log(msg.version_id)
-            if(msg.image.buffer.buffer.byteLength > 100 ){
+            
               if(rTldrawApp !== undefined && selectedNode !== undefined){
                 const app  : TldrawApp = rTldrawApp.current!
                 const select = selectedNode.current!
-                console.log(select)
-                if(app !== undefined && select !== undefined && parseInt(select) === parseInt(msg.version_id)){
-                  updateThumbnailFromSocket(select, app, new Blob([msg.image.buffer], { type: 'image/png' } ))
+                if(app !== undefined && select !== undefined){
+                  for(const key in msg){
+                    switch(key){
+                      case "project_name": {
+                        app.setCurrentProject(msg[key]);
+                        break;
+                      }
+                      case "version_id": {
+                        //selectedNode.current = msg[key].toString();
+                        break;
+                      }
+                      case "image": {
+                        if(msg.image.buffer.buffer.byteLength > 100  && parseInt(select) === parseInt(msg.version_id)){
+                          updateThumbnailFromSocket(select, app, new Blob([msg.image.buffer], { type: 'image/png' } ))
+                        }
+                        break;
+                      }
+                        
+                    }
+
+                  }
                 }
               }
             }
-        }
         reader.readAsArrayBuffer(message.data as unknown as Blob)
     
       }
       client.onclose = (e) => {
-        connectInterval.current = setTimeout(function () {
+        if(rTldrawApp !== undefined){
+          const app  : TldrawApp = rTldrawApp.current!
+          if(app!== undefined){
+            app.setCurrentProject("")
+          }
+        } 
+        connectInterval.current = setTimeout(()=>{
           connectWebSocket(thumbnailSocket,selectedNode, rTldrawApp,connectInterval);
           console.log('trying to connect')
-        }, 1000);
+        },1000);
       }
     }
 }
@@ -192,8 +223,8 @@ const checkImage = path => {
   }); 
 }
   
-  export const updateThumbnail = async (app,node_id) => {
-          const selectedShape = app.getShape(('node'+node_id).toString())
+  export const updateThumbnail = async (app,shape_id) => {
+          const selectedShape = app.getShape(shape_id)
           if( !(selectedShape === undefined) && selectedShape.type == TDShapeType.VersionNode){
             const idInteger = selectedShape.id.replace(/\D/g,"")
             const url = getIconImageURL(idInteger)
@@ -214,7 +245,7 @@ const checkImage = path => {
                     },
                   },
                 }
-                app.patchState(patch, 'Quickpose Thumbnail Update')
+                app.patchState(patch, 'Quickpose Image Update')
               }else{
                 console.log("image didnt load")
               }
@@ -322,25 +353,25 @@ export const updateThumbnailFromSocket = async (selectedNode, app, data) => {
   }
 
 
-  export const getCurrentProject = async (currentProjectRef,rTldrawApp) => {
-    const currentProject = currentProjectRef!
-    const app = rTldrawApp!
-    //Update Thumbnail Image
-    if(currentProject !== undefined && app !== undefined && app.current !== undefined){
-      axios.get(LOCALHOST_BASE+'/projectName', {
-        timeout: 500,
-      })
-      .then(response => {
-        currentProject.current = response.data
-        app.current.appState.currentProject = response.data
-      })
-      .catch(error => {
-        //console.error("error fetching: ", error);
-        app.current.appState.currentProject = ''
-        // currentProject.current = ''
-      })
-    }
-  }
+  // export const getCurrentProject = async (currentProjectRef,rTldrawApp) => {
+  //   const currentProject = currentProjectRef!
+  //   const app = rTldrawApp!
+  //   //Update Thumbnail Image
+  //   if(currentProject !== undefined && app !== undefined && app.current !== undefined){
+  //     axios.get(LOCALHOST_BASE+'/projectName', {
+  //       timeout: 500,
+  //     })
+  //     .then(response => {
+  //       currentProject.current = response.data
+  //       app.current.appState.currentProject = response.data
+  //     })
+  //     .catch(error => {
+  //       //console.error("error fetching: ", error);
+  //       app.current.appState.currentProject = ''
+  //       // currentProject.current = ''
+  //     })
+  //   }
+  // }
 
   export const sendToLog = async(message: string) => {
 
