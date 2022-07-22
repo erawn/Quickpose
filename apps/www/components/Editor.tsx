@@ -217,7 +217,7 @@ const sendSelect = async (id: string) => {
           app.selectNone()
         }
 
-        const nextShapes = {...nextNodeShapes,...nextLinkShapes} as Patch<TDPage['shapes']>
+        const nextShapes = {...nextLinkShapes,...nextNodeShapes} as Patch<TDPage['shapes']>
         const nextBindings = {...nextLinkBindings} as Patch<TDPage['bindings']>
         const nextPage: PagePartial = {
           shapes: nextShapes,

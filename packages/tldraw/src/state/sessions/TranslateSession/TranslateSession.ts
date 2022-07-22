@@ -80,7 +80,7 @@ export class TranslateSession extends BaseSession {
       link ? TLDR.getLinkedShapeIds(this.app.state, currentPageId, link, false) : selectedIds
     )
       .map((id) => this.app.getShape(id))
-      .filter((shape) => !shape.isLocked && !shape.isFixed)
+      .filter((shape) => !shape.isLocked)
 
 
     const selectedShapeIds = new Set(selectedShapes.map((shape) => shape.id))

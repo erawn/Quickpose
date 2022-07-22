@@ -23,6 +23,7 @@ export function duplicateShapes(app: TldrawApp, ids: string[], point?: number[])
   const shapesToDuplicate = ids
     .map((id) => app.getShape(id))
     .filter((shape) => !ids.includes(shape.parentId))
+    .filter((shape) => !shape.isFixed)
 
   // Create duplicates
   shapesToDuplicate.forEach((shape) => {

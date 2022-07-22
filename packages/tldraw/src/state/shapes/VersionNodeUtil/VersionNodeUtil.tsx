@@ -35,7 +35,7 @@ export class VersionNodeUtil extends TDShapeUtil<T, E> {
 
   hasLoaded = false
 
-  isFixed = false
+  isFixed = true
 
   onImageLoad = () => { 
     this.hasLoaded = true
@@ -58,7 +58,7 @@ export class VersionNodeUtil extends TDShapeUtil<T, E> {
         imgLink: '',
         isCurrent: false,
         hasLoaded:false,
-        isFixed:false,
+        isFixed:true,
       },
       props
     )

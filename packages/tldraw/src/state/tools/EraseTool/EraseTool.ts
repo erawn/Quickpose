@@ -46,7 +46,7 @@ export class EraseTool extends BaseTool {
     switch (this.status) {
       case Status.Pointing: {
         const shapeIdsAtPoint = this.app.shapes
-          .filter((shape) => !shape.isLocked)
+          .filter((shape) => !shape.isLocked && !shape.isFixed)
           .filter((shape) =>
             this.app.getShapeUtil(shape).hitTestPoint(shape, this.app.currentPoint)
           )
