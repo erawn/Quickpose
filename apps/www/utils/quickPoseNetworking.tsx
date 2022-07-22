@@ -68,7 +68,7 @@ export function connectWebSocket(
                       case "version_id": {
                         if(currentVersion.current === null){
                           
-                          currentVersion.current = msg[key];
+                          currentVersion.current = parseInt(msg[key]);
                           console.log("set curV to",currentVersion.current)
                         }
                         break;
@@ -304,7 +304,7 @@ export const updateThumbnailFromSocket = async (selectedNode, app, data) => {
       })
       .then(response => {
         if(response.data !== undefined){
-          currentVersion.current = response.data
+          currentVersion.current = parseInt(response.data)
           return true
         }else{
           return false

@@ -248,8 +248,7 @@ export const updateBinding = (app:TldrawApp, link, startNode,endNode,drawLink,ne
             node.fx = null
             node.fy = null
           }
-          
-          if(currentVersion.current && tlDrawNode.id === 'node'+currentVersion.current){ //If our node is the current version
+          if(currentVersion.current !== null && tlDrawNode.id === 'node'+currentVersion.current){ //If our node is the current version
               if(tlDrawNode.isCurrent === false){
                 nextShapes[tlDrawNode.id] = {...nextShapes[tlDrawNode.id], isCurrent: true}
               }
