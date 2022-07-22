@@ -27,7 +27,7 @@ export function connectWebSocket(
   rTldrawApp: MutableRefObject<TldrawApp>,
   connectInterval: MutableRefObject<any>
   ){
-  console.log(thumbnailSocket.current);
+  //console.log(thumbnailSocket.current);
   if(thumbnailSocket.current === null || 
     thumbnailSocket.current === undefined ||
     (thumbnailSocket.current.readyState !== thumbnailSocket.current.OPEN)){
@@ -69,6 +69,7 @@ export function connectWebSocket(
                         if(currentVersion.current === null){
                           
                           currentVersion.current = msg[key];
+                          console.log("set curV to",currentVersion.current)
                         }
                         break;
                       }
@@ -238,10 +239,12 @@ const checkImage = path => {
     ) => {
           const selectedShape = app.getShape(shape_id)
           if( !(selectedShape === undefined) && selectedShape.type == TDShapeType.VersionNode){
+            if(selectedShape.imgLink.startsWith("blob")){
+              URL.revokeObjectURL(selectedShape.imgLink) 
+            }
             const idInteger = parseInt(selectedShape.id.replace(/\D/g,""))
             const url = getIconImageURL(idInteger)
             await checkImage(url).then((res)=>{
-              console.log(idInteger,currentVersion.current)
               if(res["status"] === 'ok'){
                 selectedShape.imgLink = url
                 const currentPageId = app.currentPageId
