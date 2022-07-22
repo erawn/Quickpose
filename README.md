@@ -3,8 +3,14 @@
   <img src="./assets/quickpose-banner-grad.png"/>
 </div>
 
+### Quickpose is a version control system for Processing designed for creative exploration. With 1-click forking and navigating, canvas annotations and notes, and automatic saves and backups, Quickpose isn't just version control system,  *it helps you manage your entire creative process*. 
+
 
 This is an ongoing research project by [Eric Rawn](https://www.ericrawn.media/) as a version control system for Processing. It's currently unreleased, but expect it soon! 
+
+
+***
+# What is Quickpose?
 
 ## Quickpose is a version control system inside of a canvas editor — it directly links your canvas to your code state:
 <div style="text-align: center; transform: scale(.5);">
