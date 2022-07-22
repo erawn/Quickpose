@@ -86,6 +86,7 @@ export const makeArrow = (parentId, link): ArrowShape => {
       type: TDShapeType.Arrow,
       parentId: parentId,
       isLocked: false,
+      isFixed: true,
       isGenerated: true,
       point: [100,100],
       style:{
@@ -209,10 +210,10 @@ export const updateBinding = (app:TldrawApp, link, startNode,endNode,drawLink,ne
               id: 'node'+node.id,
               name: 'node'+node.id,
               type: TDShapeType.VersionNode,
-              isFixed: false,
+              isFixed: true,
               style:{
                   size: "small",
-                  dash: DashStyle.Dashed,
+                  dash: DashStyle.Solid,
                   isFilled:true,
                   color: "black"
               },

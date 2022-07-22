@@ -52,6 +52,8 @@ export class ArrowUtil extends TDShapeUtil<T, E> {
 
   pathCache = new WeakMap<T, string>()
 
+  isFixed = false
+
   getShape = (props: Partial<T>): T => {
     return {
       id: 'id',

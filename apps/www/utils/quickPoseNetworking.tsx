@@ -21,7 +21,12 @@ export function getIconImageURL(id:string){
     return LOCALHOST_BASE + "/image/" + id + "?" + ((new Date()).getTime()); //Add Time to avoid Caching so images update properly
 }
 
-export function connectWebSocket(thumbnailSocket,selectedNode, rTldrawApp,connectInterval){
+export function connectWebSocket(
+  thumbnailSocket: MutableRefObject<W3CWebSocket>,
+  currentVersion: MutableRefObject<string>, 
+  rTldrawApp: MutableRefObject<TldrawApp>,
+  connectInterval: MutableRefObject<any>
+  ){
   console.log(thumbnailSocket.current);
   if(thumbnailSocket.current === null || 
     thumbnailSocket.current === undefined ||
@@ -50,9 +55,9 @@ export function connectWebSocket(thumbnailSocket,selectedNode, rTldrawApp,connec
             // console.log(msg)
             // console.log(msg.version_id)
             
-              if(rTldrawApp !== undefined && selectedNode !== undefined){
+              if(rTldrawApp !== undefined && currentVersion !== undefined){
                 const app  : TldrawApp = rTldrawApp.current!
-                const select = selectedNode.current!
+                const select = currentVersion.current!
                 if(app !== undefined && select !== undefined){
                   for(const key in msg){
                     switch(key){
@@ -61,7 +66,11 @@ export function connectWebSocket(thumbnailSocket,selectedNode, rTldrawApp,connec
                         break;
                       }
                       case "version_id": {
-                        //selectedNode.current = msg[key].toString();
+                        if(currentVersion.current === ""){
+                          
+                          currentVersion.current = msg[key].toString();
+                          console.log(currentVersion.current)
+                        }
                         break;
                       }
                       case "image": {
@@ -88,7 +97,7 @@ export function connectWebSocket(thumbnailSocket,selectedNode, rTldrawApp,connec
           }
         } 
         connectInterval.current = setTimeout(()=>{
-          connectWebSocket(thumbnailSocket,selectedNode, rTldrawApp,connectInterval);
+          connectWebSocket(thumbnailSocket,currentVersion, rTldrawApp,connectInterval);
           console.log('trying to connect')
         },1000);
       }
@@ -248,6 +257,7 @@ const checkImage = path => {
                 app.patchState(patch, 'Quickpose Image Update')
               }else{
                 console.log("image didnt load")
+                setTimeout(()=>{updateThumbnail(app,shape_id)},1000)
               }
             }).catch(e =>{
               console.log("invalid image",e)

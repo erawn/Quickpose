@@ -19,7 +19,7 @@ export function removeShapesFromPage(data: TDSnapshot, ids: string[], pageId: st
   // These are the shapes we're definitely going to delete
 
   ids
-    .filter((id) => !TLDR.getShape(data, id, pageId).isLocked)
+    .filter((id) => !TLDR.getShape(data, id, pageId).isLocked && !TLDR.getShape(data, id, pageId).isFixed)
     .forEach((id) => {
       deletedIds.add(id)
       const shape = TLDR.getShape(data, id, pageId)
