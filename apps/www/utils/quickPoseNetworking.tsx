@@ -10,6 +10,7 @@ import axios from 'axios'
 import { nodeRegex } from "./quickposeDrawing";
 import * as BSON from 'bson'
 import React from "react";
+import { quickPoseFile } from "./quickPoseTypes";
 
 export const LOCALHOST_BASE = 'http://127.0.0.1:8080';
 export const WEBSOCKET = 'ws://127.0.0.1:8080/thumbnail';
@@ -141,14 +142,16 @@ export const saveToProcessing = async (
   abortController,
   projectName,
   backup:boolean) => {
-    const file: TDFile = {
+    const file: quickPoseFile = {
         name: 'quickpose.tldr',
         fileHandle: fileHandle ?? null,
         document,
-        assets: {"simData":simData,
+        assets:{
+          ...document.assets
+        },
+        graphData: {"simData":simData,
                 "alpha":alpha.toString(),
                 "centerPoint": JSON.stringify(centerPoint),
-                ...document.assets
                 },
       }
       

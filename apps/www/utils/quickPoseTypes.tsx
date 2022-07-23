@@ -1,4 +1,4 @@
-import type { TDShapeType, TDShape, VersionNodeShape } from "@tldraw/tldraw";
+import type { TDShapeType, TDShape, VersionNodeShape, TDFile } from "@tldraw/tldraw";
 import type { SimulationNodeDatum, SimulationLinkDatum } from "d3";
 
 export interface EditorProps {
@@ -22,3 +22,10 @@ export interface dataLink extends SimulationLinkDatum<SimulationNodeDatum> {
 export type inputShape = { id: string; name?: string; type: TDShapeType;} & Partial<TDShape>
 export type inputVersionNodeShape = { id: string; name?: string; type: TDShapeType;} & Partial<VersionNodeShape>
 
+export interface quickPoseFile extends TDFile {
+  graphData:{
+    simData: any,
+    alpha: string,
+    centerPoint: string,
+  }
+}
