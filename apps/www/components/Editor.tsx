@@ -13,7 +13,8 @@ import {
   TldrawPatch,
   VersionNodeShape,
   TDExport,
-  ColorStyle
+  ColorStyle,
+  TDShape
 } from '@tldraw/tldraw'
 
 //import { useUploadAssets } from 'hooks/useUploadAssets'
@@ -34,10 +35,12 @@ import {
   connectWebSocket,
   updateThumbnail
 } from 'utils/quickPoseNetworking'
+import * as lodash from 'lodash'
 
 import { 
   EditorProps,
-  forceLink
+  forceLink,
+  quickPoseFile
  } from 'utils/quickPoseTypes'
 
  import {
@@ -81,7 +84,7 @@ const Editor = ({
 
   const timeSinceLastSave = React.useRef<number>(0);
   //file loading
-  const loadFile = React.useRef<TDFile>(null)
+  const loadFile = React.useRef<quickPoseFile>(null)
   const loadedFile = React.useRef<boolean>(false)
   const loadedData = React.useRef<boolean>(false)
 
@@ -115,7 +118,7 @@ const Editor = ({
   const sendFork = async (id: string) => {
     //const start = timestampInSeconds()
     const app = rTldrawApp.current!
-    if(app !== undefined){
+    if(app !== undefined && app.isLoading === false){
       app.setIsLoading(true)
       console.log("send fork",id)
       lock.acquire("select", async function() {
@@ -149,7 +152,7 @@ const Editor = ({
 
 const sendSelect = async (id: string) => {
   const app = rTldrawApp.current!
-  if(app !== undefined){
+  if(app !== undefined && app.isLoading === false){
     app.setIsLoading(true)
     console.log("send select",id)
     lock.acquire("select", async function() {
@@ -212,8 +215,15 @@ const sendSelect = async (id: string) => {
             }
         }
         if (createLinkShapes.length > 0) {
-          console.log(createLinkShapes)
-          app.patchCreate(createLinkShapes)
+          console.log("createtllink",createLinkShapes)
+          console.log("tllink",tlLinks)
+          const counts = lodash.countBy(createLinkShapes, 'id')
+          lodash.filter(createLinkShapes, shape => counts[shape.id] > 1)
+          const uniqueLinks : TDShape[] = lodash.filter(createLinkShapes, shape => counts[shape.id] == 1)
+          for(id in lodash.filter(createLinkShapes, shape => counts[shape.id] > 1)){
+            uniqueLinks.push(createLinkShapes.find(node => node.id === id))
+          }
+          app.patchCreate()
           app.selectNone()
         }
 
@@ -404,12 +414,11 @@ const sendSelect = async (id: string) => {
     currentVersion.current = null
     loadFile.current = null
     loadedFile.current = false
-    loadFileFromProcessing(loadFile,abortFileController)
-    connectWebSocket(thumbnailSocket,currentVersion, rTldrawApp,connectInterval)
     rTldrawApp.current = app
     centerPoint.current = app.centerPoint as [number,number]
     app.replacePageContent({},{},{})
-    
+    connectWebSocket(thumbnailSocket,currentVersion, rTldrawApp,connectInterval)
+    loadFileFromProcessing(loadFile,abortFileController)
     app.createShapes(defaultSticky(centerPoint.current))
     app.createShapes(...installHelper(centerPoint.current))
     app.selectNone()

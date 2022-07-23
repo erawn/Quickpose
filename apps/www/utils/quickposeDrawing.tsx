@@ -1,5 +1,5 @@
 import { ArrowBinding, ArrowShape, ColorStyle, DashStyle, shapeUtils, SizeStyle, TDBinding, TDShape, TDShapeType, TldrawApp, VersionNodeShape, TDFile} from "@tldraw/tldraw"
-import { dataLink, dataNode, inputShape, inputVersionNodeShape } from "./quickPoseTypes"
+import { dataLink, dataNode, inputShape, inputVersionNodeShape, quickPoseFile } from "./quickPoseTypes"
 import deepEqual from "deep-equal";
 import { ALPHA_TARGET_REFRESH, d3TlScale, D3_LINK_DISTANCE, TL_DRAW_RADIUS } from "components/Editor";
 import { getIconImageURLNoTime, updateThumbnail } from "./quickPoseNetworking"
@@ -33,7 +33,7 @@ export const d3Sim = () => {
         }else{
           return 20
         }
-      }).strength(1)
+      }).strength(.3)
     )
     .force('collision', forceCollide().radius(function(d: dataNode) {return d.r + 10} ))
     .alphaDecay(.03)
@@ -43,6 +43,7 @@ export const defaultSticky = (centerPoint) => {
     return {
     id: 'loading',
     type: TDShapeType.Sticky,
+    parentId: "page",
     name: 'loading',
     childIndex: 1,
     point: centerPoint,
@@ -66,8 +67,8 @@ export const defaultSticky = (centerPoint) => {
 
 
 export const graphBaseData = {
-    nodes: [],
-    links: []
+    nodes: [null],
+    links: [null]
   };
 
 export function d3toTldrawCoords(x,y): number[]{
@@ -168,14 +169,19 @@ export const updateBinding = (app:TldrawApp, link, startNode,endNode,drawLink,ne
     const nextBindings: Patch<Record<string, TDBinding>> = {}
     const createShapes: TDShape[] = []
     graphData.current.links.map(function(link: dataLink){
-      const tlDrawLink = tlLinks.find(l => l.id === 'link'+link.index)
+      
       const sourceNode = link.source as dataNode
       const targetNode = link.target as dataNode
+      let tlDrawLink = tlLinks.find(l => l.id === 'link'+link.index)
+      if(!tlDrawLink){
+        tlDrawLink = createShapes.find((l => l.id === 'link'+link.index))
+      }
       const startNode: TDShape = tlNodes.find(n => n.id === 'node'+sourceNode.id)
       const endNode: TDShape = tlNodes.find(n => n.id === 'node'+targetNode.id)
 
       if(startNode && endNode){
         if(!tlDrawLink){
+          console.log(link)
           const newArrow = makeArrow(app.currentPageId,link)
           //updateBinding(app, link, startNode,endNode,newArrow,nextBindings)
           //nextShapes[newArrow.id] = newArrow
@@ -209,6 +215,7 @@ export const updateBinding = (app:TldrawApp, link, startNode,endNode,drawLink,ne
           const n = shapeUtils.versionNode.getShape({
               id: 'node'+node.id,
               name: 'node'+node.id,
+              parentId: "page",
               type: TDShapeType.VersionNode,
               isFixed: true,
               style:{
@@ -310,9 +317,10 @@ export const updateBinding = (app:TldrawApp, link, startNode,endNode,drawLink,ne
         if (
           !graphData.links.some(
             (graphLink) =>
-              graphLink.source.id === netLink.source && graphLink.target.id === netLink.target
+              graphLink.source.id === netLink.source && graphLink.target.id === netLink.target || graphLink.id
           )
         ) {
+          console.log(netLink)
           graphData.links.push(netLink)
           //graphData.links = [...graphData.links, { ...netLink }]
           changed = true
@@ -327,7 +335,7 @@ export const updateBinding = (app:TldrawApp, link, startNode,endNode,drawLink,ne
     graphData: MutableRefObject<any>,
     simulation: MutableRefObject<Simulation<SimulationNodeDatum, undefined>>,
     centerPoint: MutableRefObject<[number, number]>,
-    loadFile:MutableRefObject<TDFile>,
+    loadFile:MutableRefObject<quickPoseFile>,
     currentVersion: MutableRefObject<number>
     ){
 
@@ -340,11 +348,13 @@ export const updateBinding = (app:TldrawApp, link, startNode,endNode,drawLink,ne
       nodes: [],
       links: []
       }
-    if(loadFile.current.assets["simData"] !== "" && loadFile.current.assets["simData"] !== undefined ){
-      loadedData = JSON.parse(loadFile.current.assets["simData"].toString())
+
+    if(loadFile.current.graphData !== undefined){
+      loadedData = JSON.parse(loadFile.current.graphData.simData.toString())
       if(netData.current !== undefined && netData.current !== null && netData.current["ProjectName"]){
         app.setCurrentProject(netData.current["ProjectName"])
       }
+      centerPoint.current = JSON.parse(loadFile.current.graphData.centerPoint.toString()) as [number,number]
       const importNodes = loadedData.nodes as dataNode[]
       //console.log(importNodes)
       importNodes.forEach(node =>{
@@ -363,7 +373,7 @@ export const updateBinding = (app:TldrawApp, link, startNode,endNode,drawLink,ne
         d3.SimulationLinkDatum<d3.SimulationNodeDatum>
       >
       forceLink.links(graphData.current.links)
-      simulation.current.alpha(parseInt(loadFile.current.assets["alpha"].toString()))
+      simulation.current.alpha(parseInt(loadFile.current.graphData.alpha.toString()))
       simulation.current.tick(20)
                 
     // graphData.current.nodes.forEach(node =>{
@@ -373,9 +383,6 @@ export const updateBinding = (app:TldrawApp, link, startNode,endNode,drawLink,ne
       simulation.current.alpha(ALPHA_TARGET_REFRESH)
     }
 
-    if(loadFile.current.assets["centerPoint"] !== undefined){
-      centerPoint.current = JSON.parse(loadFile.current.assets["centerPoint"].toString()) as [number,number]
-    }
     //console.log("centerPoint", centerPoint.current)
     app.loadDocument(loadFile.current.document)
     
