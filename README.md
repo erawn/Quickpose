@@ -49,4 +49,4 @@ If you've been invited to evaluate it and are looking for info, please take a lo
 
 Quickpose is currently in two parts: a canvas-editor front-end which is a fork of Tldraw, by steve ruiz, and a backend written as a Tool for Processing 3.5.4
 
-This project relies on the amazing work in Tldraw - please consider becoming a sponsor of Steve's(https://github.com/sponsors/steveruizok?frequency=recurring&sponsor=steveruizok).
+This project relies on the amazing work in Tldraw and Processing - please consider becoming [a sponsor of Steve's](https://github.com/sponsors/steveruizok?frequency=recurring&sponsor=steveruizok) and [donating to the Processing Foundation](https://processing.org/donate)
