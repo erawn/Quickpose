@@ -25,14 +25,20 @@ export const DrawEllipse = React.memo(function DrawEllipse({
   id,
 }: VersionNodeSvgProps) {
   const { stroke, strokeWidth, fill } = getShapeStyle(style, isDarkMode)
-  const sw = 1 + strokeWidth * 1.618
+  const sw = 1 + strokeWidth * 1.618 + (radius[0] * .2)
   const rx = Math.max(0, radius[0] - sw / 2)
   const ry = Math.max(0, radius[1] - sw / 2)
   const perimeter = Utils.perimeterOfEllipse(rx, ry)
   const { strokeDasharray, strokeDashoffset } = Utils.getPerfectDashProps(
     perimeter < 64 ? perimeter * 2 : perimeter,
     strokeWidth * 1.618,
-    style.dash,
+    DashStyle.Dotted,
+    4
+  )
+  const strokeDefault = Utils.getPerfectDashProps(
+    perimeter < 64 ? perimeter * 2 : perimeter,
+    strokeWidth * 1.618,
+    DashStyle.Dotted,
     4
   )
 
@@ -47,7 +53,6 @@ export const DrawEllipse = React.memo(function DrawEllipse({
   style.isFilled = true 
 
   const imgId = "img"+id.toString()
-
 
   return (
     <>
@@ -94,6 +99,24 @@ export const DrawEllipse = React.memo(function DrawEllipse({
           />
         </g>
       } 
+      {!isCurrent &&
+       <g transform={'translate('+(radius[0])+','+(radius[1])+') scale(1.38) translate('+(-radius[0])+','+(-radius[1])+')'}>
+        <ellipse
+          cx={radius[0]}
+          cy={radius[1]}
+          rx={rx}
+          ry={ry}
+          fill={"none"}
+          stroke={stroke}
+          strokeWidth={(1 + strokeWidth * 1.618) +2}
+          strokeDasharray={strokeDasharray}
+          strokeDashoffset={strokeDashoffset}
+          pointerEvents="none"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          />
+        </g>
+      } 
    
 
       <ellipse
@@ -118,8 +141,8 @@ export const DrawEllipse = React.memo(function DrawEllipse({
         fill={"none"}
         stroke={stroke}
         strokeWidth={sw+2}
-        strokeDasharray={strokeDasharray}
-        strokeDashoffset={strokeDashoffset}
+        strokeDasharray={strokeDefault.strokeDasharray}
+        strokeDashoffset={strokeDefault.strokeDashoffset}
         pointerEvents="none"
         strokeLinecap="round"
         strokeLinejoin="round"

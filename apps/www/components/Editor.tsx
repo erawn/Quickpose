@@ -27,7 +27,7 @@ import AsyncLock from 'async-lock'
 import { 
   saveToProcessing, 
   updateVersions, 
-  updateCurrentVersion,
+  //updateCurrentVersion,
   loadFileFromProcessing,
   useUploadAssets,
   sendToLog,
@@ -53,6 +53,7 @@ import {
   nodeRegex,
   updateGraphData,
   updateLinkShapes,
+  updateLoadingTicks,
   updateNodeShapes
  } from 'utils/quickposeDrawing'
 //import { dateTimestampInSeconds, timestampInSeconds } from '@sentry/utils'
@@ -62,7 +63,7 @@ import {
 
 
 export const D3_LINK_DISTANCE = 4
-export const TL_DRAW_RADIUS = 30;
+export const TL_DRAW_RADIUS = 45;
 export const ALPHA_TARGET_REFRESH = .1
 const LOCALHOST_BASE = 'http://127.0.0.1:8080';
 export const d3TlScale = 5
@@ -86,7 +87,6 @@ const Editor = ({
   //file loading
   const loadFile = React.useRef<quickPoseFile>(null)
   const loadedFile = React.useRef<boolean>(false)
-  const loadedData = React.useRef<boolean>(false)
 
   const thumbnailSocket = React.useRef<W3CWebSocket>(null);
   const connectInterval = React.useRef<any>(null);
@@ -96,14 +96,10 @@ const Editor = ({
   
   //data structs
   const netData = React.useRef<any>()
-  const newData = React.useRef<boolean>(false)
-  const graphData = React.useRef<any>(graphBaseData)
-  graphData.current = graphBaseData
+  const graphData = React.useRef< { nodes: any[]; links: any[]; }>(graphBaseData)
   const loadingTicks = React.useRef<number>(0); //Counter for sticky loading dots
   
-  const abortCurrentVersionController = new AbortController()
-  const abortFileController = new AbortController()
-  const abortVersionsController = new AbortController()
+  let abortFileController = new AbortController()
   const timeout = 2000
   const lock = new AsyncLock;
 
@@ -128,10 +124,10 @@ const Editor = ({
         .then(response => {
           if(response.status === 200){
             updateThumbnail(app,'node'+currentVersion.current,currentVersion)
-            newData.current = true;
             netData.current = response.data
-            dataInterval(newData,netData,graphData,simulation)
+            dataInterval(netData,graphData,simulation)
             drawInterval()
+            app.selectNone();
             app.setIsLoading(false)
           }
         })
@@ -152,22 +148,18 @@ const Editor = ({
 
 const sendSelect = async (id: string) => {
   const app = rTldrawApp.current!
-  if(app !== undefined && app.isLoading === false){
+  if(app !== undefined && app.isLoading === false && parseInt(id) !== currentVersion.current){
     app.setIsLoading(true)
     console.log("send select",id)
     lock.acquire("select", async function() {
       await axios.get(LOCALHOST_BASE + '/select/' + id, {
         timeout: 600,
-        //signal: abortCurrentVersionController.signal
       })
       .then(function(response) {
         if(response.status === 200){
           updateThumbnail(app,'node'+currentVersion.current,currentVersion)
           currentVersion.current = parseInt(response.data)
           app.setIsLoading(false)
-          // console.log(currentVersion.current.toString())
-          // const v = 'node'+currentVersion.current
-          // console.log(v)
           app.pageState.selectedIds = ['node'+currentVersion.current]
           drawInterval()
         }
@@ -215,15 +207,15 @@ const sendSelect = async (id: string) => {
             }
         }
         if (createLinkShapes.length > 0) {
-          console.log("createtllink",createLinkShapes)
-          console.log("tllink",tlLinks)
+          //console.log("createtllink",createLinkShapes)
+          //console.log("tllink",tlLinks)
           const counts = lodash.countBy(createLinkShapes, 'id')
           lodash.filter(createLinkShapes, shape => counts[shape.id] > 1)
           const uniqueLinks : TDShape[] = lodash.filter(createLinkShapes, shape => counts[shape.id] == 1)
           for(id in lodash.filter(createLinkShapes, shape => counts[shape.id] > 1)){
             uniqueLinks.push(createLinkShapes.find(node => node.id === id))
           }
-          app.patchCreate()
+          app.patchCreate(createLinkShapes)
           app.selectNone()
         }
 
@@ -251,22 +243,12 @@ const sendSelect = async (id: string) => {
           },
         }
         app.patchState(patch,"Quickpose Draw Update")
-        //console.timeStamp("patch");
-        // if(newIds.includes('node0')){
-        //     app.selectNone()
-        //     sim.tick(2);
-        //     setTimeout(()=>{ 
-        //       app.zoomToFit()
-        //       app.zoomOut()
-        //     },500)
-        // }
       })
       console.timeStamp("end animframe");
     }
   }
   //check for new data, if so, update graph data
   function dataInterval(
-    newData: React.MutableRefObject<boolean>,
     netData: React.MutableRefObject<JSON>,
     graphData: React.MutableRefObject< { nodes: any[]; links: any[]; }>,
     simulation: React.MutableRefObject<Simulation<SimulationNodeDatum, undefined>>)
@@ -292,31 +274,15 @@ const sendSelect = async (id: string) => {
     if (!(app === undefined)) {
       if(thumbnailSocket.current.readyState === thumbnailSocket.current.OPEN){
         if (loadedFile.current === false) { //still need to handle opening
-          updateVersions(netData, newData, abortVersionsController)
+          //updateVersions(netData, newData)
           if(loadFile.current === null){ //haven't found a file yet, so keep looking
-            //app.appState.isLoading = true
             console.log('requesting file...')
             loadFileFromProcessing(loadFile,abortFileController)
-            if (app.getShape('loading')) {
-              const loadingDot = '.'
-              const currentPageId = app.currentPageId
-              const patch = {
-                document: {
-                  pages: {
-                    [currentPageId]: {
-                      shapes: {
-                        ['loading']: {
-                          text: ' Quickpose is looking for a Processing Session' + loadingDot.repeat(loadingTicks.current % 6),
-                        },},},},},
-              }
-              app.patchState(patch, 'Quickpose Loading Update')
-              app.setSetting("keepStyleMenuOpen",false)
-              loadingTicks.current++
-            }
+            updateLoadingTicks(app, loadingTicks)
+            app.setSetting("keepStyleMenuOpen",false)
           }else if(loadFile.current === undefined){ //there is no file, we need to start fresh
             loadedFile.current = true
             app.resetDocument()
-            
             console.log('no file found!')
             abortFileController.abort()
             if (app.getShape('loading')) {//remove loading sticky
@@ -324,12 +290,12 @@ const sendSelect = async (id: string) => {
             } 
             centerPoint.current = app.centerPoint as [number,number];
             simulation.current = d3Sim().alpha(3)
-            if(netData.current !== undefined && netData.current !== null && netData.current["ProjectName"]){
-              app.setCurrentProject(netData.current["ProjectName"])
-            }
+            // if(netData.current !== undefined && netData.current !== null && netData.current["ProjectName"]){
+            //   app.setCurrentProject(netData.current["ProjectName"])
+            // }
             //console.log(netData.current)
-            currentVersionInterval()
-            dataInterval(newData,netData,graphData,simulation)
+
+            dataInterval(netData,graphData,simulation)
             refreshSim(simulation)
             app.setSetting("keepStyleMenuOpen",true)
             //simulation.current.alpha(ALPHA_TARGET_REFRESH)
@@ -339,16 +305,9 @@ const sendSelect = async (id: string) => {
             //make new file, do intro experience?
           }else if(loadFile.current !== null){ //we found an existing file
             abortFileController.abort()
-            //reset data
-            netData.current = null
-            app.setCurrentProject("")
-            currentVersion.current = null
-            app.document.name = 'null'
-            graphData.current = graphBaseData
-  
             loadTldrFile(app,netData,graphData,simulation,centerPoint,loadFile, currentVersion)
             refreshSim(simulation)
-            dataInterval(newData,netData,graphData,simulation)
+            dataInterval(netData,graphData,simulation)
             drawInterval()
             app.setSetting("keepStyleMenuOpen",true)
             loadedFile.current = true
@@ -360,30 +319,28 @@ const sendSelect = async (id: string) => {
             saveToProcessing(
               app.document, 
               JSON.stringify(graphData.current),
-               simulation.current.alpha(),
-               centerPoint.current,
-                null,
-                abortCurrentVersionController,
-                app.document.name,
-                false)
+              simulation.current.alpha(),
+              centerPoint.current,
+              app.document.name,
+              false)
           }
           if(app.document.name === 'null'){
             app.document.name = app.appState.currentProject
           }
         
-          updateVersions(netData, newData, abortVersionsController)
-          dataInterval(newData,netData,graphData,simulation)
-          updateCurrentVersion(currentVersion)
-        }else{ //This shouldnt be reached
-          console.log(loadFile.current)
+          updateVersions(netData)
+          dataInterval(netData,graphData,simulation)
+          //updateCurrentVersion(currentVersion)
         }
+        // else{ //This shouldnt be reached
+        //   console.log(loadFile.current)
+        // }
       }
     }
   }
   //Update Current Version — (we want to do this very fast)
-  const currentVersionInterval = () => {
+  const thumbnailInterval = () => {
     const app = rTldrawApp.current!
-    
     if (!(app === undefined)) {
       const tlNodes = app.getShapes().filter((shape:VersionNodeShape) => nodeRegex.test(shape.id) && shape.hasLoaded === false)
       tlNodes.map(node => updateThumbnail(app,node.id,currentVersion))    
@@ -399,23 +356,31 @@ const sendSelect = async (id: string) => {
       JSON.stringify(graphData.current), 
       simulation.current.alpha(),
       centerPoint.current,
-       null,
-       abortCurrentVersionController,
-       app.document.name,
-       false)
+      app.document.name,
+      false)
   },[])
 
-  const handleMount = React.useCallback((app: TldrawApp) => {
-    const abortFileController = new AbortController()
-    app.setCurrentProject("")
+  const resetState = (app: TldrawApp) => {
+    abortFileController = new AbortController()
     currentVersion.current = null
     netData.current = null
     graphData.current = graphBaseData
     currentVersion.current = null
     loadFile.current = null
     loadedFile.current = false
+    simulation.current = d3Sim();
+    if(app !== undefined){
+      app.setCurrentProject("")
+      app.deleteAll();
+    }
+  }
+
+  const handleMount = React.useCallback((app: TldrawApp) => {
+    
+    
     rTldrawApp.current = app
     centerPoint.current = app.centerPoint as [number,number]
+    resetState(app)
     app.replacePageContent({},{},{})
     connectWebSocket(thumbnailSocket,currentVersion, rTldrawApp,connectInterval)
     loadFileFromProcessing(loadFile,abortFileController)
@@ -426,32 +391,24 @@ const sendSelect = async (id: string) => {
 
   }, [])
 
+  // React.useEffect(() => {
+  //   drawInterval()
+  // },[simulation])
+
   React.useEffect(() => {
     //https://sparkjava.com/documentation#examples-and-faq
     //https://stackoverflow.com/questions/18206231/saving-and-reloading-a-force-layout-using-d3-js
    
-    
     const networkLoop = setInterval(networkInterval, timeout * 2) //get data from processing
-    const currentVersionLoop = setInterval(currentVersionInterval, 10000)//update current version
-    //const thumbnailLoop = setInterval(updateThumbnailInterval,4000);
-    //const dataLoop = setInterval(dataInterval, 3000)//put it into the graph
+    const thumbnailLoop = setInterval(thumbnailInterval, 10000)//update current version
     const drawLoop = setInterval(drawInterval, 100)//draw the graph
 
     return () => {
       clearInterval(networkLoop)
-      clearInterval(currentVersionLoop)
-      //clearInterval(thumbnailLoop)
-      //clearInterval(dataLoop)
+      clearInterval(thumbnailLoop)
       clearInterval(drawLoop)
-      abortVersionsController.abort()
-      abortCurrentVersionController.abort()
       abortFileController.abort()
-      simulation.current = d3Sim();
-      netData.current = null
-      graphData.current = graphBaseData
-      currentVersion.current = null
-      loadFile.current = null
-      loadedFile.current = false
+      resetState(rTldrawApp.current!)
     }
   },[])
 
@@ -459,7 +416,6 @@ const sendSelect = async (id: string) => {
   const handlePatch = React.useCallback((app: TldrawApp, patch: TldrawPatch, reason?: string) => {
     //console.log(reason)
     if(loadedFile.current === true && app.document.name !== 'null'){
-      
       if(new Date().getTime() - timeSinceLastSave.current > 5 * 60 * 1000){ //every 5 min
         console.log("Backing up",new Date().getTime())
         saveToProcessing(
@@ -467,16 +423,26 @@ const sendSelect = async (id: string) => {
           JSON.stringify(graphData.current), 
           simulation.current.alpha(),
           centerPoint.current,
-          null,
-          abortCurrentVersionController,
           app.document.name,
           true)
         timeSinceLastSave.current = new Date().getTime()
       }
-      
     }
     
     switch (reason) {
+      case 'ui:set_current_project': {
+        if(patch.appState.currentProject !== app.appState.currentProject){
+          if(patch.appState.currentProject === ""){
+            app.readOnly = true
+          }else{
+            app.readOnly = false
+            app.reset()
+            resetState(app)
+          }
+
+        }
+        break
+      }
       case 'set_status:translating': {
         // started translating...
         rIsDragging.current = true
@@ -592,10 +558,8 @@ const sendSelect = async (id: string) => {
   // }, [])
 
   const handleExport = React.useCallback(async(app: TldrawApp, info: TDExport):Promise<void>=>{
-
     if(info.type === "exportByColor"){
       exportByColor(app,info.name as ColorStyle)
-
     }
   },[])
 

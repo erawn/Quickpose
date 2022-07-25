@@ -1053,7 +1053,7 @@ export class TldrawApp extends StateManager<TDSnapshot> {
 
   setCurrentProject = (currentProject: string): this => {
     const patch = { appState: { currentProject } }
-    this.patchState(patch, 'ui:toggled_current_project')
+    this.patchState(patch, 'ui:set_current_project')
     this.persist(patch)
     return this
   }

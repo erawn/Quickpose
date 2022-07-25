@@ -2,7 +2,7 @@ import { ArrowBinding, ArrowShape, ColorStyle, DashStyle, shapeUtils, SizeStyle,
 import { dataLink, dataNode, inputShape, inputVersionNodeShape, quickPoseFile } from "./quickPoseTypes"
 import deepEqual from "deep-equal";
 import { ALPHA_TARGET_REFRESH, d3TlScale, D3_LINK_DISTANCE, TL_DRAW_RADIUS } from "components/Editor";
-import { getIconImageURLNoTime, updateThumbnail } from "./quickPoseNetworking"
+import { getIconImageURL, getIconImageURLNoTime, updateThumbnail } from "./quickPoseNetworking"
 import { forceSimulation, forceManyBody, forceLink, forceCollide, Simulation, SimulationNodeDatum} from "d3";
 import forceBoundary from 'd3-force-boundary'
 import type  {Patch} from "@tldraw/core";
@@ -181,7 +181,7 @@ export const updateBinding = (app:TldrawApp, link, startNode,endNode,drawLink,ne
 
       if(startNode && endNode){
         if(!tlDrawLink){
-          console.log(link)
+          //console.log(link)
           const newArrow = makeArrow(app.currentPageId,link)
           //updateBinding(app, link, startNode,endNode,newArrow,nextBindings)
           //nextShapes[newArrow.id] = newArrow
@@ -200,7 +200,7 @@ export const updateBinding = (app:TldrawApp, link, startNode,endNode,drawLink,ne
   }
 
   export const updateNodeShapes = (
-    graphData: { nodes: dataNode[]; },
+    graphData: { nodes: dataNode[]; links: dataLink[]; },
     tlNodes: TDShape[],
     currentVersion: MutableRefObject<number>,
     centerPoint: MutableRefObject<[number, number]>,
@@ -212,6 +212,7 @@ export const updateBinding = (app:TldrawApp, link, startNode,endNode,drawLink,ne
       const tlDrawNode:VersionNodeShape = tlNodes.find(n => n.id === 'node'+node.id) as VersionNodeShape
       //console.log(tlDrawNode)
       if(!tlDrawNode){
+        
           const n = shapeUtils.versionNode.getShape({
               id: 'node'+node.id,
               name: 'node'+node.id,
@@ -228,9 +229,16 @@ export const updateBinding = (app:TldrawApp, link, startNode,endNode,drawLink,ne
               radius: [TL_DRAW_RADIUS,TL_DRAW_RADIUS],
               imgLink: getIconImageURLNoTime(parseInt(node.id))
           } as inputVersionNodeShape)
-          // if(n.id === "node0"){
-          //   n.isFixed = true;
-          // }
+          const parentLink = graphData.links.find((link) => link.target === node.id)
+          if (!(parentLink === undefined)) {
+            const parent = tlNodes.find(
+              (node) => node.id === 'node'+(parentLink.source as dataNode).id
+            ) as VersionNodeShape
+            if (!(parent === undefined)) { //spawn new nodes near their parents
+              console.log(parent)
+              n.radius = parent.radius
+            }
+          }
           node.r = n.radius[0] / d3TlScale
           //console.log("found new shape")
           //nextShapes[n.id] = n
@@ -306,6 +314,7 @@ export const updateBinding = (app:TldrawApp, link, startNode,endNode,drawLink,ne
             if (!(parent === undefined)) { //spawn new nodes near their parents
               netNode.x = parent.x + 10
               netNode.y = parent.y + 10
+              netNode.r = parent.r
             }
           }
           graphData.nodes.push(netNode)
@@ -317,10 +326,11 @@ export const updateBinding = (app:TldrawApp, link, startNode,endNode,drawLink,ne
         if (
           !graphData.links.some(
             (graphLink) =>
-              graphLink.source.id === netLink.source && graphLink.target.id === netLink.target || graphLink.id
+              (graphLink.source.id === netLink.source.id && graphLink.target.id === netLink.target.id) ||
+              (graphLink.source.id === netLink.source && graphLink.target.id === netLink.target)
           )
         ) {
-          console.log(netLink)
+          //console.log(netLink,graphData.links)
           graphData.links.push(netLink)
           //graphData.links = [...graphData.links, { ...netLink }]
           changed = true
@@ -351,9 +361,9 @@ export const updateBinding = (app:TldrawApp, link, startNode,endNode,drawLink,ne
 
     if(loadFile.current.graphData !== undefined){
       loadedData = JSON.parse(loadFile.current.graphData.simData.toString())
-      if(netData.current !== undefined && netData.current !== null && netData.current["ProjectName"]){
-        app.setCurrentProject(netData.current["ProjectName"])
-      }
+      // if(netData.current !== undefined && netData.current !== null && netData.current["ProjectName"]){
+      //   app.setCurrentProject(netData.current["ProjectName"])
+      // }
       centerPoint.current = JSON.parse(loadFile.current.graphData.centerPoint.toString()) as [number,number]
       const importNodes = loadedData.nodes as dataNode[]
       //console.log(importNodes)
@@ -382,8 +392,16 @@ export const updateBinding = (app:TldrawApp, link, startNode,endNode,drawLink,ne
     // })
       simulation.current.alpha(ALPHA_TARGET_REFRESH)
     }
-
-    //console.log("centerPoint", centerPoint.current)
+    const page = loadFile.current.document.pages[Object.keys(loadFile.current.document.pages)[0]]
+    Object.values(page.shapes).forEach((shape) => {
+      const {type, id} = shape
+      if(type === TDShapeType.VersionNode){
+        if(shape.imgLink.startsWith("blob")){
+          const idInteger = parseInt(id.replace(/\D/g,""))
+          shape.imgLink = getIconImageURL(idInteger)
+        }
+      }
+    })
     app.loadDocument(loadFile.current.document)
     
     if (app.getShape('loading')) {//remove loading sticky
@@ -391,15 +409,26 @@ export const updateBinding = (app:TldrawApp, link, startNode,endNode,drawLink,ne
     }
 
     const tlNodes = app.getShapes().filter((shape) => nodeRegex.test(shape.id))
-
     tlNodes.map(node => updateThumbnail(app,node.id,currentVersion))
-    //console.log('loaded data',loadedData)
-
-    //app.appState.isLoading = false
-    
-    //app.zoomToFit()
-    
   }
+
+  export const updateLoadingTicks = (app:TldrawApp, loadingTicks) => {
+    if (app.getShape('loading')) {
+      const loadingDot = '.'
+      const currentPageId = app.currentPageId
+      const patch = {
+        document: {
+          pages: {
+            [currentPageId]: {
+              shapes: {
+                ['loading']: {
+                  text: ' Quickpose is looking for a Processing Session' + loadingDot.repeat(loadingTicks.current % 6),
+                },},},},},
+      }
+      app.patchState(patch, 'Quickpose Loading Update')
+      loadingTicks.current++
+  }
+}
 
   export const installHelper = (centerPoint: number[]) => {
     return [{
