@@ -26,7 +26,9 @@ export function connectWebSocket(
   thumbnailSocket: MutableRefObject<W3CWebSocket>,
   currentVersion: MutableRefObject<number>, 
   rTldrawApp: MutableRefObject<TldrawApp>,
-  connectInterval: MutableRefObject<any>
+  connectInterval: MutableRefObject<any>,
+  loadFile,
+  abortFileController
   ){
   //console.log(thumbnailSocket.current);
   if(thumbnailSocket.current === null || 
@@ -40,6 +42,7 @@ export function connectWebSocket(
         if(rTldrawApp !== undefined){
           const app  : TldrawApp = rTldrawApp.current!
           if(app !== undefined){
+            loadFileFromProcessing(loadFile,abortFileController)
             const tlNodes = app.getShapes().filter((shape) => nodeRegex.test(shape.id))
             tlNodes.map(node => updateThumbnail(app,node.id,currentVersion))
             app.readOnly = false
@@ -100,7 +103,7 @@ export function connectWebSocket(
           }
         } 
         connectInterval.current = setTimeout(()=>{
-          connectWebSocket(thumbnailSocket,currentVersion, rTldrawApp,connectInterval);
+          connectWebSocket(thumbnailSocket,currentVersion, rTldrawApp,connectInterval,loadFile,abortFileController);
           console.log('trying to connect')
         },1000);
       }

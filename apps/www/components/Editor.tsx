@@ -382,8 +382,6 @@ const sendSelect = async (id: string) => {
     centerPoint.current = app.centerPoint as [number,number]
     resetState(app)
     app.replacePageContent({},{},{})
-    connectWebSocket(thumbnailSocket,currentVersion, rTldrawApp,connectInterval)
-    loadFileFromProcessing(loadFile,abortFileController)
     app.createShapes(defaultSticky(centerPoint.current))
     app.createShapes(...installHelper(centerPoint.current))
     app.selectNone()
@@ -399,6 +397,7 @@ const sendSelect = async (id: string) => {
     //https://sparkjava.com/documentation#examples-and-faq
     //https://stackoverflow.com/questions/18206231/saving-and-reloading-a-force-layout-using-d3-js
    
+    connectWebSocket(thumbnailSocket,currentVersion, rTldrawApp,connectInterval, loadFile,abortFileController)
     const networkLoop = setInterval(networkInterval, timeout * 2) //get data from processing
     const thumbnailLoop = setInterval(thumbnailInterval, 10000)//update current version
     const drawLoop = setInterval(drawInterval, 100)//draw the graph
