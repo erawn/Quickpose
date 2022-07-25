@@ -115,7 +115,7 @@ export class VersionNodeUtil extends TDShapeUtil<T, E> {
       const styles = getShapeStyle(style, meta.isDarkMode)
       const strokeWidth = styles.strokeWidth
       const sw = 1 + strokeWidth * 1.618
-      const imgWidth = Math.max(0, radius[0] - sw);
+      const imgWidth = Math.max(0, radius[0] - (sw + (radius[0] * .05)));
       const rx = Math.max(0, radius[0] - sw / 2)
       const ry = Math.max(0, radius[1] - sw / 2)
       const Component = DrawEllipse

@@ -42,6 +42,7 @@ export function connectWebSocket(
           if(app !== undefined){
             const tlNodes = app.getShapes().filter((shape) => nodeRegex.test(shape.id))
             tlNodes.map(node => updateThumbnail(app,node.id,currentVersion))
+            app.readOnly = false
           }
         }
         
@@ -94,6 +95,7 @@ export function connectWebSocket(
         if(rTldrawApp !== undefined){
           const app  : TldrawApp = rTldrawApp.current!
           if(app!== undefined){
+            app.readOnly = true
             app.setCurrentProject("")
           }
         } 
@@ -136,15 +138,14 @@ export const exportByColor = async(
 
 export const saveToProcessing = async (
   document: TDDocument, 
-  simData: string, alpha, 
+  simData: string, 
+  alpha, 
   centerPoint: [number,number], 
-  fileHandle: FileSystemHandle | null,
-  abortController,
   projectName,
   backup:boolean) => {
     const file: quickPoseFile = {
         name: 'quickpose.tldr',
-        fileHandle: fileHandle ?? null,
+        fileHandle: null,
         document,
         assets:{
           ...document.assets
@@ -210,14 +211,13 @@ export const loadFileFromProcessing = async(loadFile: MutableRefObject<TDFile>,a
     });
   }
 
-export const updateVersions = async (netData, newData, abortVersionsController:AbortController) => {
+export const updateVersions = async (netData) => {
     //Update Versions
     axios.get(LOCALHOST_BASE+'/versions.json', {
       timeout: 500,
     })
     .then(response => {
       if(response.data !== undefined){
-        newData.current = true;
         netData.current = response.data
       }
     })
@@ -301,23 +301,23 @@ export const updateThumbnailFromSocket = async (selectedNode, app, data) => {
     }
   }
 
-  export const updateCurrentVersion = async (currentVersion: MutableRefObject<number>) => {
-    axios.get(LOCALHOST_BASE+'/currentVersion', {
-        timeout: 500,
-      })
-      .then(response => {
-        if(response.data !== undefined){
-          currentVersion.current = parseInt(response.data)
-          return true
-        }else{
-          return false
-        }
-      })
-      .catch(error => {
-        //console.warn("error fetching current version: ", error);
-        return null
-      })
-  }
+  // export const updateCurrentVersion = async (currentVersion: MutableRefObject<number>) => {
+  //   axios.get(LOCALHOST_BASE+'/currentVersion', {
+  //       timeout: 500,
+  //     })
+  //     .then(response => {
+  //       if(response.data !== undefined){
+  //         currentVersion.current = parseInt(response.data)
+  //         return true
+  //       }else{
+  //         return false
+  //       }
+  //     })
+  //     .catch(error => {
+  //       //console.warn("error fetching current version: ", error);
+  //       return null
+  //     })
+  // }
 
   export function useUploadAssets() {
     const onAssetUpload = useCallback(
