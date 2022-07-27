@@ -37,6 +37,7 @@ export class VersionNodeUtil extends TDShapeUtil<T, E> {
 
   isFixed = true
 
+
   onImageLoad = () => { 
     this.hasLoaded = true
   }
@@ -59,6 +60,7 @@ export class VersionNodeUtil extends TDShapeUtil<T, E> {
         isCurrent: false,
         hasLoaded:false,
         isFixed:true,
+        checkpoints: 0
       },
       props
     )
@@ -86,11 +88,13 @@ export class VersionNodeUtil extends TDShapeUtil<T, E> {
         rImage.current.addEventListener('load', this.onImageLoad);
         this.hasLoaded = false;
       }
+
+      const checkpointRef = React.useRef<number>(0);
       
-      const { id, radius, style, label = '', labelPoint = LABEL_POINT, imgLink, isCurrent, point } = shape
+      const { id, radius, style, label = '', labelPoint = LABEL_POINT, imgLink, isCurrent, point, checkpoints } = shape
 
-      const rPoint = React.useRef<TLShape["point"] | null>(null)
-
+      checkpointRef.current = checkpoints
+      //console.log(id,checkpoints)
       // if(id === 'node0'){
       //   this.isFixed = false
       //   if(rPoint.current === null){
@@ -136,6 +140,21 @@ export class VersionNodeUtil extends TDShapeUtil<T, E> {
             offsetX={(labelPoint[0] - 0.5) * bounds.width}
             offsetY={(labelPoint[1] - 0.5) * bounds.height}
           />
+          {(checkpoints > 0)&&
+          <>
+          <CheckpointWrapper>
+              <TextLabel
+                isEditing={false}
+                onChange={handleLabelChange}
+                onBlur={onShapeBlur}
+                font={"mono"}
+                text={checkpoints.toString()}
+                color={styles.stroke}
+                offsetX={radius[0] + 5}
+                offsetY={radius[0] + 5} />
+            </CheckpointWrapper>
+            </>
+          }
            
           <SVGContainer id={shape.id + '_svg'} opacity={isGhost ? GHOSTED_OPACITY : 1}>
             {isBinding && (
@@ -403,6 +422,11 @@ const FullWrapper = styled('div', {
    height: '100%', 
    position:'relative'
   })
+
+const CheckpointWrapper = styled('div', {
+    backgroundColor:'blue',
+    borderRadius: '50%',
+   })
 
 const ImageElement = styled('img', {
   position: 'absolute',

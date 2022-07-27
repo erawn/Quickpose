@@ -93,9 +93,8 @@ const Editor = ({
   //d3 sim
   const simulation = React.useRef<d3.Simulation<SimulationNodeDatum, undefined>>()
 
-  
   //data structs
-  const netData = React.useRef<any>()
+  const netData = React.useRef<any>(undefined)
   const graphData = React.useRef< { nodes: any[]; links: any[]; }>(graphBaseData)
   const loadingTicks = React.useRef<number>(0); //Counter for sticky loading dots
   
@@ -253,9 +252,9 @@ const sendSelect = async (id: string) => {
     graphData: React.MutableRefObject< { nodes: any[]; links: any[]; }>,
     simulation: React.MutableRefObject<Simulation<SimulationNodeDatum, undefined>>)
     {
-      //console.log(netData.current,graphData.current,simulation.current)
+    //console.log(netData.current,graphData.current,simulation.current)
     //https://medium.com/ninjaconcept/interactive-dynamic-force-directed-graphs-with-d3-da720c6d7811
-    if (netData.current && graphData.current && simulation.current) {
+    if (netData.current !== undefined && graphData.current !== undefined && simulation.current !== undefined) {
       if (updateGraphData(netData.current,graphData.current)) {
         currentVersion.current = parseInt(netData.current["CurrentNode"].toString())
         simulation.current.nodes(graphData.current.nodes)
@@ -277,6 +276,7 @@ const sendSelect = async (id: string) => {
           //updateVersions(netData, newData)
           if(loadFile.current === null){ //haven't found a file yet, so keep looking
             console.log('requesting file...')
+            thumbnailSocket.current.send("/tldrfile");
             loadFileFromProcessing(loadFile,abortFileController)
             updateLoadingTicks(app, loadingTicks)
             app.setSetting("keepStyleMenuOpen",false)
@@ -305,7 +305,7 @@ const sendSelect = async (id: string) => {
             //make new file, do intro experience?
           }else if(loadFile.current !== null){ //we found an existing file
             abortFileController.abort()
-            loadTldrFile(app,netData,graphData,simulation,centerPoint,loadFile, currentVersion)
+            loadTldrFile(app,graphData,simulation,centerPoint,loadFile, currentVersion)
             refreshSim(simulation)
             dataInterval(netData,graphData,simulation)
             drawInterval()
@@ -330,7 +330,6 @@ const sendSelect = async (id: string) => {
         
           updateVersions(netData)
           dataInterval(netData,graphData,simulation)
-          //updateCurrentVersion(currentVersion)
         }
         // else{ //This shouldnt be reached
         //   console.log(loadFile.current)
@@ -363,7 +362,7 @@ const sendSelect = async (id: string) => {
   const resetState = (app: TldrawApp) => {
     abortFileController = new AbortController()
     currentVersion.current = null
-    netData.current = null
+    netData.current = undefined
     graphData.current = graphBaseData
     currentVersion.current = null
     loadFile.current = null
@@ -388,16 +387,53 @@ const sendSelect = async (id: string) => {
     app.zoomToFit()
 
   }, [])
+  React.useEffect(() => {
+    //console.log("data interval")
+    dataInterval(netData,graphData,simulation)
+  },[netData.current])
 
-  // React.useEffect(() => {
-  //   drawInterval()
-  // },[simulation])
+  React.useEffect(() => {
+    if(thumbnailSocket.current !== null){
+      switch(thumbnailSocket.current.readyState){
+        case W3CWebSocket.CLOSED:{
+          if(rTldrawApp !== undefined){
+            const app  : TldrawApp = rTldrawApp.current!
+            if(app !== undefined){
+              app.readOnly = true
+              app.setCurrentProject("")
+              resetState(app)
+  
+            }
+          } 
+          break
+        }
+        case W3CWebSocket.OPEN:{
+          thumbnailSocket.current.send("/tldrfile")
+          if(rTldrawApp !== undefined){
+            const app  : TldrawApp = rTldrawApp.current!
+            if(app !== undefined){
+              app.readOnly = false
+              loadFileFromProcessing(loadFile,abortFileController)
+              const tlNodes = app.getShapes().filter((shape) => nodeRegex.test(shape.id))
+              tlNodes.map(node => updateThumbnail(app,node.id,currentVersion))
+  
+            }
+          }
+          break
+        }
+        case W3CWebSocket.CONNECTING:{
+          break
+        }
+      }
+    }
+
+  },[thumbnailSocket.current])
 
   React.useEffect(() => {
     //https://sparkjava.com/documentation#examples-and-faq
     //https://stackoverflow.com/questions/18206231/saving-and-reloading-a-force-layout-using-d3-js
    
-    connectWebSocket(thumbnailSocket,currentVersion, rTldrawApp,connectInterval, loadFile,abortFileController)
+    connectWebSocket(thumbnailSocket,currentVersion, rTldrawApp,connectInterval,loadFile,netData,abortFileController)
     const networkLoop = setInterval(networkInterval, timeout * 2) //get data from processing
     const thumbnailLoop = setInterval(thumbnailInterval, 10000)//update current version
     const drawLoop = setInterval(drawInterval, 100)//draw the graph

@@ -7,6 +7,7 @@ import { forceSimulation, forceManyBody, forceLink, forceCollide, Simulation, Si
 import forceBoundary from 'd3-force-boundary'
 import type  {Patch} from "@tldraw/core";
 import { MutableRefObject } from "react";
+import { n } from "@liveblocks/client/shared";
 
 export const nodeRegex = new RegExp(/node\d/);
 export const linkRegex = new RegExp(/link\d/);
@@ -18,7 +19,7 @@ export const d3Sim = () => {
     return forceSimulation()
     .force("boundary", forceBoundary(0,0,500,500))
     //.force("center", d3.forceCenter(coords[0],coords[1]).strength(.1))
-    .force('charge', forceManyBody().strength(-2))
+    .force('charge', forceManyBody().strength(0))
     .force("link", forceLink()
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
       .id(function(d:dataNode,i) {
@@ -33,7 +34,7 @@ export const d3Sim = () => {
         }else{
           return 20
         }
-      }).strength(.3)
+      }).strength(0)
     )
     .force('collision', forceCollide().radius(function(d: dataNode) {return d.r + 10} ))
     .alphaDecay(.03)
@@ -225,6 +226,7 @@ export const updateBinding = (app:TldrawApp, link, startNode,endNode,drawLink,ne
                   isFilled:true,
                   color: "black"
               },
+              checkpoints: node.checkpoints,
               point: d3toTldrawCoords(node.x,node.y),
               radius: [TL_DRAW_RADIUS,TL_DRAW_RADIUS],
               imgLink: getIconImageURLNoTime(parseInt(node.id))
@@ -235,7 +237,7 @@ export const updateBinding = (app:TldrawApp, link, startNode,endNode,drawLink,ne
               (node) => node.id === 'node'+(parentLink.source as dataNode).id
             ) as VersionNodeShape
             if (!(parent === undefined)) { //spawn new nodes near their parents
-              console.log(parent)
+              //(parent)
               n.radius = parent.radius
             }
           }
@@ -272,6 +274,11 @@ export const updateBinding = (app:TldrawApp, link, startNode,endNode,drawLink,ne
               nextShapes[tlDrawNode.id] = {...nextShapes[tlDrawNode.id], isCurrent: false}
             }
           }
+          //console.log(node.id,node.checkpoints)
+          if(node.checkpoints.toString() !== tlDrawNode.checkpoints.toString()){
+            //console.log(node.checkpoints,tlDrawNode.checkpoints)
+            nextShapes[tlDrawNode.id] = {...nextShapes[tlDrawNode.id], checkpoints: node.checkpoints}
+          }
           
           if(node.id === '0' ){
             centerPoint.current = tlDrawNode.point as [number,number]
@@ -281,7 +288,7 @@ export const updateBinding = (app:TldrawApp, link, startNode,endNode,drawLink,ne
             node.y = tldrawCoordstod3(...centerPoint.current as [number,number])[1]
           }
           const newCoords = d3toTldrawCoords(node.x ,node.y)
-          if (Math.abs(newCoords[0] - tlDrawNode.point[0]) > .1 || Math.abs(newCoords[1] - tlDrawNode.point[1]) > .1){
+          if ((Math.abs(newCoords[0] - tlDrawNode.point[0]) > .1 || Math.abs(newCoords[1] - tlDrawNode.point[1]) > .1)){
             nextShapes[tlDrawNode.id] = {...nextShapes[tlDrawNode.id], point: newCoords}
           }
       }
@@ -317,9 +324,23 @@ export const updateBinding = (app:TldrawApp, link, startNode,endNode,drawLink,ne
               netNode.r = parent.r
             }
           }
+
           graphData.nodes.push(netNode)
-          //graphData.nodes = [...graphData.nodes, { ...netNode }]
           changed = true
+        }else{
+          const graphNode = graphData.nodes.find((graphNode) => graphNode.id === netNode.id)
+          if(graphNode !== undefined){
+            for(const key in netNode){
+
+              if(netNode[key] !== graphNode[key] && changed === false){
+                changed = true
+                //console.log(key,netNode[key],graphNode[key])
+                graphNode[key] = netNode[key];
+                //console.log(netNode)
+                //console.log()
+              }
+            }
+          }
         }
       })
       netData["Edges"].forEach(function (netLink) {
@@ -341,7 +362,6 @@ export const updateBinding = (app:TldrawApp, link, startNode,endNode,drawLink,ne
 
   export function loadTldrFile(
     app:TldrawApp,
-    netData: MutableRefObject<any>,
     graphData: MutableRefObject<any>,
     simulation: MutableRefObject<Simulation<SimulationNodeDatum, undefined>>,
     centerPoint: MutableRefObject<[number, number]>,
@@ -351,7 +371,6 @@ export const updateBinding = (app:TldrawApp, link, startNode,endNode,drawLink,ne
 
     app.replacePageContent({},{},{})
 
-    
     //https://stackoverflow.com/questions/18206231/saving-and-reloading-a-force-layout-using-d3-js
     //Load the data
     let loadedData = {

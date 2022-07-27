@@ -346,6 +346,7 @@ export interface VersionNodeShape extends TDBaseShape {
   isCurrent:boolean
   hasLoaded:boolean
   isFixed:boolean
+  checkpoints: number
 }
 
 export interface TriangleShape extends TDBaseShape {
