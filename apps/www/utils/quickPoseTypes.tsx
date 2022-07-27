@@ -12,6 +12,7 @@ export interface dataNode extends SimulationNodeDatum {
     x: number;
     y: number;
     r: number;
+    checkpoints: number;
   }
 export type forceLink = d3.ForceLink<d3.SimulationNodeDatum,d3.SimulationLinkDatum<d3.SimulationNodeDatum>>
   
@@ -19,8 +20,19 @@ export interface dataLink extends SimulationLinkDatum<SimulationNodeDatum> {
     d: number;
     strength: number;
   }
-export type inputShape = { id: string; name?: string; type: TDShapeType;} & Partial<TDShape>
-export type inputVersionNodeShape = { id: string; name?: string; type: TDShapeType;} & Partial<VersionNodeShape>
+export type inputShape = { 
+  id: string; 
+  name?: string; 
+  type: TDShapeType;
+} & Partial<TDShape>
+
+export type inputVersionNodeShape = { 
+  id: string; 
+  name?: 
+  string; 
+  type: TDShapeType; 
+  checkpoints: number;
+} & Partial<VersionNodeShape>
 
 export interface quickPoseFile extends TDFile {
   graphData:{

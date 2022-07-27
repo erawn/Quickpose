@@ -104,8 +104,8 @@ export const DrawEllipse = React.memo(function DrawEllipse({
         <ellipse
           cx={radius[0]}
           cy={radius[1]}
-          rx={rx}
-          ry={ry}
+          rx={radius[1]}
+          ry={radius[1]}
           fill={"none"}
           stroke={stroke}
           strokeWidth={(1 + strokeWidth * 1.618) +2}

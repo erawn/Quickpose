@@ -27,7 +27,8 @@ export function connectWebSocket(
   currentVersion: MutableRefObject<number>, 
   rTldrawApp: MutableRefObject<TldrawApp>,
   connectInterval: MutableRefObject<any>,
-  loadFile,
+  loadFile: MutableRefObject<quickPoseFile>,
+  netData: MutableRefObject<any>,
   abortFileController
   ){
   //console.log(thumbnailSocket.current);
@@ -39,16 +40,6 @@ export function connectWebSocket(
       client.onopen = () => {
         console.log('connected')
         clearTimeout(connectInterval.current);
-        if(rTldrawApp !== undefined){
-          const app  : TldrawApp = rTldrawApp.current!
-          if(app !== undefined){
-            loadFileFromProcessing(loadFile,abortFileController)
-            const tlNodes = app.getShapes().filter((shape) => nodeRegex.test(shape.id))
-            tlNodes.map(node => updateThumbnail(app,node.id,currentVersion))
-            app.readOnly = false
-          }
-        }
-        
       }
       client.onmessage = (message) => {
         //console.log('socketmessage',message)
@@ -72,9 +63,7 @@ export function connectWebSocket(
                       }
                       case "version_id": {
                         if(currentVersion.current === null){
-                          
                           currentVersion.current = parseInt(msg[key]);
-                          console.log("set curV to",currentVersion.current)
                         }
                         break;
                       }
@@ -82,6 +71,19 @@ export function connectWebSocket(
                         if(msg.image.buffer.buffer.byteLength > 100  && select === parseInt(msg.version_id)){
                           updateThumbnailFromSocket(select, app, new Blob([msg.image.buffer], { type: 'image/png' } ))
                         }
+                        break;
+                      }
+                      case "tldrfile": {
+                        //console.log(JSON.parse(msg[key]))
+                        loadFile.current = JSON.parse(msg[key])
+                        break;
+                      }
+                      case "versions": {
+                        netData.current = JSON.parse(msg[key])
+                        break;
+                      }
+                      default:{
+                        console.log("Unknown key")
                         break;
                       }
                         
@@ -95,15 +97,8 @@ export function connectWebSocket(
     
       }
       client.onclose = (e) => {
-        if(rTldrawApp !== undefined){
-          const app  : TldrawApp = rTldrawApp.current!
-          if(app!== undefined){
-            app.readOnly = true
-            app.setCurrentProject("")
-          }
-        } 
         connectInterval.current = setTimeout(()=>{
-          connectWebSocket(thumbnailSocket,currentVersion, rTldrawApp,connectInterval,loadFile,abortFileController);
+          connectWebSocket(thumbnailSocket,currentVersion,rTldrawApp,connectInterval,loadFile,netData,abortFileController);
           console.log('trying to connect')
         },1000);
       }
@@ -222,6 +217,7 @@ export const updateVersions = async (netData) => {
     .then(response => {
       if(response.data !== undefined){
         netData.current = response.data
+        //console.log(netData.current)
       }
     })
     .catch(error => {
