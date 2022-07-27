@@ -75,11 +75,11 @@ export function connectWebSocket(
                       }
                       case "tldrfile": {
                         //console.log(JSON.parse(msg[key]))
-                        loadFile.current = JSON.parse(msg[key])
+                        //loadFile.current = JSON.parse(msg[key])
                         break;
                       }
                       case "versions": {
-                        netData.current = JSON.parse(msg[key])
+                        //netData.current = JSON.parse(msg[key])
                         break;
                       }
                       default:{

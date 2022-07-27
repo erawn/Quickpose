@@ -473,7 +473,7 @@ export const updateBinding = (app:TldrawApp, link, startNode,endNode,drawLink,ne
       "name": "Text",
       "point": [centerPoint[0]+200,centerPoint[1]+250],//[670.88, 652.49],
       "rotation": 0,
-      "text": "2. Extract Quickpose to /Processing/tools, \nrestart Processing,\nopen a new sketch (save first), \nand click Tools-> Quickpose. ",
+      "text": "2. Extract /Quickpose to /Processing/tools, \nrestart Processing,\nopen your sketch (or a new one), \nand click Tools-> Quickpose. ",
       "style": {
         "color": "white",
         "size": "small",
