@@ -313,6 +313,7 @@ const sendSelect = async (id: string) => {
             loadedFile.current = true
           }
         }else if(loadedFile.current === true){ //default update loop
+          app.appState.isLoading = false
           //console.log('saving/updating?')
           if (!(app.document === undefined)) {
             console.log('saving/updating...')
@@ -385,6 +386,7 @@ const sendSelect = async (id: string) => {
     app.createShapes(...installHelper(centerPoint.current))
     app.selectNone()
     app.zoomToFit()
+    app.appState.isLoading = true
 
   }, [])
   React.useEffect(() => {

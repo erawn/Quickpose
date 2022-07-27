@@ -435,7 +435,7 @@ const InnerTldraw = React.memo(function InnerTldraw({
 
   return (
     <IntlProvider locale={translation.locale} messages={translation.messages}>
-      <StyledLayout ref={rWrapper} tabIndex={-0}>
+      <StyledLayout ref={rWrapper} tabIndex={-0} style={ app.isLoading ? { cursor: 'wait' } : { cursor: 'auto'}}>
         <Loading />
         <OneOff focusableRef={rWrapper} autofocus={autofocus} />
         <ContextMenu>
