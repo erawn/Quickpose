@@ -456,7 +456,7 @@ export const updateBinding = (app:TldrawApp, link, startNode,endNode,drawLink,ne
       "name": "Text",
       "point": [centerPoint[0]-220,centerPoint[1]+250],//[247.14, 653.4],
       "rotation": 0,
-      "text": "1. Download Processing 3.5.4 from\n https://processing.org/download\n(you'll have to open it once to make your\n /Processing Folder appear in your Documents)",
+      "text": "1. Download Processing 4 from\n https://processing.org/download\n(you'll have to open it once to make your\n /Processing Folder appear in your Documents)",
       "style": {
         "color": "white",
         "size": "small",
