@@ -289,6 +289,7 @@ const sendSelect = async (id: string) => {
             loadFileFromProcessing(loadFile,abortFileController)
             updateLoadingTicks(app, loadingTicks)
             app.setSetting("keepStyleMenuOpen",false)
+            setTimeout(networkInterval,100)
           }else if(loadFile.current === undefined){ //there is no file, we need to start fresh
             loadedFile.current = true
             app.resetDocument()
@@ -320,6 +321,7 @@ const sendSelect = async (id: string) => {
             drawInterval()
             app.setSetting("keepStyleMenuOpen",true)
             loadedFile.current = true
+            setTimeout(networkInterval,100)
           }
         }else if(loadedFile.current === true){ //default update loop
           app.setIsLoading(false)
