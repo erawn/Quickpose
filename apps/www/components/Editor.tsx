@@ -313,7 +313,7 @@ const sendSelect = async (id: string) => {
             loadedFile.current = true
           }
         }else if(loadedFile.current === true){ //default update loop
-          app.appState.isLoading = false
+          app.setIsLoading(false)
           //console.log('saving/updating?')
           if (!(app.document === undefined)) {
             console.log('saving/updating...')
@@ -371,7 +371,9 @@ const sendSelect = async (id: string) => {
     simulation.current = d3Sim();
     if(app !== undefined){
       app.setCurrentProject("")
-      app.deleteAll();
+      app.replacePageContent({},{},{})
+      app.createShapes(defaultSticky(centerPoint.current))
+      app.createShapes(...installHelper(centerPoint.current))
     }
   }
 
@@ -386,7 +388,7 @@ const sendSelect = async (id: string) => {
     app.createShapes(...installHelper(centerPoint.current))
     app.selectNone()
     app.zoomToFit()
-    app.appState.isLoading = true
+    app.setIsLoading(true)
 
   }, [])
   React.useEffect(() => {
@@ -473,10 +475,10 @@ const sendSelect = async (id: string) => {
             app.readOnly = true
           }else{
             app.readOnly = false
-            app.reset()
             resetState(app)
+            app.patchState(patch)
+            app.appState.currentProject = patch.appState.currentProject
           }
-
         }
         break
       }
