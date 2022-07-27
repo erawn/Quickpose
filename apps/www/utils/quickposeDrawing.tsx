@@ -205,7 +205,7 @@ export const updateBinding = (app:TldrawApp, link, startNode,endNode,drawLink,ne
     tlNodes: TDShape[],
     currentVersion: MutableRefObject<number>,
     centerPoint: MutableRefObject<[number, number]>,
-    selectedIds: string | string[]
+    selectedIds: string[]
     ):[Patch<Record<string, TDShape>>,inputVersionNodeShape[]] => {
     const nextShapes: Patch<Record<string, TDShape>> = {}
     const createShapes: inputVersionNodeShape[] = []

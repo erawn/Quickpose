@@ -14,7 +14,9 @@ import {
   VersionNodeShape,
   TDExport,
   ColorStyle,
-  TDShape
+  TDShape,
+  GroupShape,
+  TLDR
 } from '@tldraw/tldraw'
 
 //import { useUploadAssets } from 'hooks/useUploadAssets'
@@ -22,7 +24,7 @@ import React from 'react'
 import * as gtag from 'utils/gtag'
 import { w3cwebsocket as W3CWebSocket } from "websocket";
 import axios from 'axios'
-import { Simulation, SimulationNodeDatum } from 'd3'
+import { select, Simulation, SimulationNodeDatum } from 'd3'
 import AsyncLock from 'async-lock'
 import { 
   saveToProcessing, 
@@ -185,6 +187,13 @@ const sendSelect = async (id: string) => {
       console.timeStamp("preanimframe")
       requestAnimationFrame(() => {
         const currentStyle = app.getAppState().currentStyle
+        const content = app.getContent(app.selectedIds)
+        let selectedIdsWithGroups = [];
+        
+        if(content !== undefined && content.shapes !== undefined ){
+          selectedIdsWithGroups= content.shapes.map(shape => shape.id)
+        }
+        
         gData.nodes = [...sim.nodes()] //get simulation data out
         const tlNodes = app.getShapes().filter((shape) => nodeRegex.test(shape.id))
         const [nextNodeShapes,createNodeShapes] =  updateNodeShapes(
@@ -192,7 +201,7 @@ const sendSelect = async (id: string) => {
           tlNodes,
           currentVersion,
           centerPoint,
-          app.selectedIds
+          selectedIdsWithGroups
         )
         const tlLinks = app.getShapes().filter((shape) => linkRegex.test(shape.id))
         const [nextLinkShapes, nextLinkBindings, createLinkShapes] = updateLinkShapes(app, tlLinks, graphData, tlNodes)
