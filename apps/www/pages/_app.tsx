@@ -5,9 +5,9 @@ import '~styles/globals.css'
 import useGtag from '~utils/useGtag'
 
 const APP_NAME = 'Quickpose'
-const APP_DESCRIPTION = 'version control for Processing'
-const APP_URL = 'ericrawn.graphics'
-const IMAGE = 'https://tldraw.com/social-image.png'
+const APP_DESCRIPTION = 'Version Control for Processing'
+const APP_URL = 'quickpose.ericrawn.media'
+const IMAGE = 'https://github.com/erawn/Quickpose/blob/ab4f533c0e6f3f2c45337b2157b81a9e43fff7bc/assets/quickpose-social.png?raw=true'
 
 function MyApp({ Component, pageProps }: any) {
   useGtag()
@@ -24,13 +24,13 @@ function MyApp({ Component, pageProps }: any) {
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="theme-color" content="#fafafa" />
 
-        <meta name="twitter:url" content={APP_URL} />
+        {/* <meta name="twitter:url" content={APP_URL} />
         <meta name="twitter:title" content={APP_NAME} />
         <meta name="twitter:description" content={APP_DESCRIPTION} />
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:creator" content="@tldraw" />
         <meta name="twitter:site" content="@tldraw" />
-        <meta name="twitter:image" content={IMAGE} />
+        <meta name="twitter:image" content={IMAGE} /> */}
 
         <meta property="og:type" content="website" />
         <meta property="og:title" content={APP_NAME} />
