@@ -44,7 +44,7 @@ Export By Color Menu       |  Your Export in Your Sketch Folder
 
 **If you're interested in this project and want to learn more, shoot me an email at erawn@berkeley.edu**. Otherwise, stay tuned for an official release (hopefully this fall!) 
 
-If you've been invited to evaluate it and are looking for info, please take a look at the [documentation in the wiki](https://github.com/erawn/Quickpose/wiki/What-happens-when-you-run-Quickpose-on-a-Processing-Project).
+If you've been invited to evaluate it and are looking for info, please take a look at the [documentation in the wiki](https://github.com/erawn/Quickpose/wiki/Information-for-Study-Participants).
 
 Quickpose is currently in two parts: a canvas-editor front-end which is a fork of Tldraw, by steve ruiz, and a backend written as a Tool for Processing 4
 
