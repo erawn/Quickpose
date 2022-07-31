@@ -29,7 +29,8 @@ export function connectWebSocket(
   connectInterval: MutableRefObject<any>,
   loadFile: MutableRefObject<quickPoseFile>,
   netData: MutableRefObject<any>,
-  abortFileController
+  abortFileController: AbortController,
+  resetState: { (app: TldrawApp): void; },
   ){
   //console.log(thumbnailSocket.current);
   if(thumbnailSocket.current === null || 
@@ -40,6 +41,19 @@ export function connectWebSocket(
       client.onopen = () => {
         console.log('connected')
         clearTimeout(connectInterval.current);
+          if(rTldrawApp !== undefined){
+            const app  : TldrawApp = rTldrawApp.current!
+            if(app !== undefined){
+              app.readOnly = false
+              // loadFileFromProcessing(loadFile,abortFileController)
+              // const tlNodes = app.getShapes().filter((shape) => nodeRegex.test(shape.id))
+              // tlNodes.map(node => updateThumbnail(app,node.id,currentVersion))
+  
+            }
+          }
+          // if(client.readyState !== W3CWebSocket.CONNECTING){
+          //   client.send("/tldrfile")
+          // }
       }
       client.onmessage = (message) => {
         //console.log('socketmessage',message)
@@ -58,6 +72,10 @@ export function connectWebSocket(
                   for(const key in msg){
                     switch(key){
                       case "project_name": {
+                        if(app.appState.currentProject !== "" && msg[key] !== app.appState.currentProject){
+                          resetState(app)
+                    
+                        }
                         app.setCurrentProject(msg[key]);
                         break;
                       }
@@ -97,8 +115,17 @@ export function connectWebSocket(
     
       }
       client.onclose = (e) => {
+        if(rTldrawApp !== undefined){
+          const app  : TldrawApp = rTldrawApp.current!
+          if(app !== undefined){
+            console.log("close")
+            app.readOnly = true
+            app.setCurrentProject("")
+            //resetState(app)
+          }
+        }
         connectInterval.current = setTimeout(()=>{
-          connectWebSocket(thumbnailSocket,currentVersion,rTldrawApp,connectInterval,loadFile,netData,abortFileController);
+          connectWebSocket(thumbnailSocket,currentVersion,rTldrawApp,connectInterval,loadFile,netData,abortFileController,resetState);
           console.log('trying to connect')
         },1000);
       }

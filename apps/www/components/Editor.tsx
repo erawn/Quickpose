@@ -91,6 +91,8 @@ const Editor = ({
   const loadedFile = React.useRef<boolean>(false)
 
   const thumbnailSocket = React.useRef<W3CWebSocket>(null);
+  // eslint-disable-next-line prefer-const
+  let socketState = {status: W3CWebSocket.CLOSED};
   const connectInterval = React.useRef<any>(null);
   //d3 sim
   const simulation = React.useRef<d3.Simulation<SimulationNodeDatum, undefined>>()
@@ -324,8 +326,7 @@ const sendSelect = async (id: string) => {
             app.zoomToContent()
             //app.appState.isLoading = false
             //make new file, do intro experience?
-            clearInterval(networkIntervalRef.current)
-            networkIntervalRef.current = setInterval(networkInterval, timeout*2) 
+    
           }else if(loadFile.current !== null){ //we found an existing file
             abortFileController.abort()
             loadTldrFile(app,graphData,simulation,centerPoint,loadFile, currentVersion)
@@ -334,11 +335,15 @@ const sendSelect = async (id: string) => {
             drawInterval()
             app.setSetting("keepStyleMenuOpen",true)
             loadedFile.current = true
-            clearInterval(networkIntervalRef.current)
-            networkIntervalRef.current = setInterval(networkInterval, timeout*2) 
           }
         }else if(loadedFile.current === true){ //default update loop
-          app.setIsLoading(false)
+          if(app.isLoading && app.document.name !== 'null'){
+            clearInterval(networkIntervalRef.current)
+            networkIntervalRef.current = null
+            networkIntervalRef.current = setInterval(networkInterval, timeout*2) 
+            app.setIsLoading(false)
+          }
+  
           //console.log('saving/updating?')
           if (!(app.document === undefined)) {
             console.log('saving/updating...')
@@ -385,7 +390,7 @@ const sendSelect = async (id: string) => {
       false)
   },[])
 
-  const resetState = (app: TldrawApp) => {
+  const resetState = React.useCallback((app: TldrawApp) => {
     abortFileController = new AbortController()
     currentVersion.current = null
     netData.current = undefined
@@ -396,11 +401,12 @@ const sendSelect = async (id: string) => {
     simulation.current = d3Sim();
     if(app !== undefined){
       app.setCurrentProject("")
+      app.document.name = 'null'
       app.replacePageContent({},{},{})
       app.createShapes(defaultSticky(centerPoint.current))
       app.createShapes(...installHelper(centerPoint.current))
     }
-  }
+  },[])
 
   const handleMount = React.useCallback((app: TldrawApp) => {
     
@@ -422,46 +428,49 @@ const sendSelect = async (id: string) => {
   },[netData.current])
 
   React.useEffect(() => {
-    if(thumbnailSocket.current !== null){
-      switch(thumbnailSocket.current.readyState){
-        case W3CWebSocket.CLOSED:{
-          if(rTldrawApp !== undefined){
-            const app  : TldrawApp = rTldrawApp.current!
-            if(app !== undefined){
-              app.readOnly = true
-              app.setCurrentProject("")
-              resetState(app)
-            }
-          } 
-          break
-        }
-        case W3CWebSocket.OPEN:{
-          thumbnailSocket.current.send("/tldrfile")
-          if(rTldrawApp !== undefined){
-            const app  : TldrawApp = rTldrawApp.current!
-            if(app !== undefined){
-              app.readOnly = false
-              loadFileFromProcessing(loadFile,abortFileController)
-              const tlNodes = app.getShapes().filter((shape) => nodeRegex.test(shape.id))
-              tlNodes.map(node => updateThumbnail(app,node.id,currentVersion))
+    // if(thumbnailSocket.current !== null){
+    //   console.log(socketState.status)
+    //   switch(thumbnailSocket.current.readyState){
+    //     case W3CWebSocket.CLOSED:{
+    //       if(rTldrawApp !== undefined){
+    //         const app  : TldrawApp = rTldrawApp.current!
+    //         if(app !== undefined){
+    //           app.readOnly = true
+    //           console.log(thumbnailSocket.current.readyState)
+    //           app.setCurrentProject("")
+    //           resetState(app)
+    //         }
+    //       } 
+    //       break
+    //     }
+    //     case W3CWebSocket.OPEN:{
+    //       thumbnailSocket.current.send("/tldrfile")
+    //       if(rTldrawApp !== undefined){
+    //         const app  : TldrawApp = rTldrawApp.current!
+    //         if(app !== undefined){
+    //           app.readOnly = false
+    //           console.log(thumbnailSocket.current.readyState)
+    //           loadFileFromProcessing(loadFile,abortFileController)
+    //           const tlNodes = app.getShapes().filter((shape) => nodeRegex.test(shape.id))
+    //           tlNodes.map(node => updateThumbnail(app,node.id,currentVersion))
   
-            }
-          }
-          break
-        }
-        case W3CWebSocket.CONNECTING:{
-          break
-        }
-      }
-    }
+    //         }
+    //       }
+    //       break
+    //     }
+    //     case W3CWebSocket.CONNECTING:{
+    //       break
+    //     }
+    //   }
+    // }
 
-  },[thumbnailSocket.current])
+  },[socketState.status])
 
   React.useEffect(() => {
     //https://sparkjava.com/documentation#examples-and-faq
     //https://stackoverflow.com/questions/18206231/saving-and-reloading-a-force-layout-using-d3-js
    
-    connectWebSocket(thumbnailSocket,currentVersion, rTldrawApp,connectInterval,loadFile,netData,abortFileController)
+    connectWebSocket(thumbnailSocket,currentVersion, rTldrawApp,connectInterval,loadFile,netData,abortFileController,resetState)
     networkIntervalRef.current = setInterval(networkInterval, 300) //get data from processing
     const thumbnailLoop = setInterval(thumbnailInterval, 10000)//update current version
     const drawLoop = setInterval(drawInterval, 100)//draw the graph
@@ -478,6 +487,12 @@ const sendSelect = async (id: string) => {
   //https://codesandbox.io/s/tldraw-context-menu-wen03q
   const handlePatch = React.useCallback((app: TldrawApp, patch: TldrawPatch, reason?: string) => {
     //console.log(reason)
+    if(networkIntervalRef.current === null){
+      clearInterval(networkIntervalRef.current)
+      networkIntervalRef.current = null
+      networkIntervalRef.current = setInterval(networkInterval, timeout*2) 
+    }
+    
     if(loadedFile.current === true && app.document.name !== 'null'){
       if(new Date().getTime() - timeSinceLastSave.current > 5 * 60 * 1000){ //every 5 min
         console.log("Backing up",new Date().getTime())
