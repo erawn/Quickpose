@@ -33,6 +33,7 @@
   "preferences.rotate.handles": "Rotate Handles",
   "preferences.binding.handles": "Binding Handles",
   "preferences.clone.handles": "Clone Handles",
+  "preferences.sketchAutorun": "Autorun Sketch on Select",
   "undo": "Undo",
   "redo": "Redo",
   "cut": "Cut",

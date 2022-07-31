@@ -4153,7 +4153,8 @@ export class TldrawApp extends StateManager<TDSnapshot> {
       showGrid: false,
       language: 'en',
       dockPosition: 'bottom',
-      exportBackground: TDExportBackground.Transparent,
+ 	  exportBackground: TDExportBackground.Transparent,
+      sketchAutorun: false,
     },
     appState: {
       status: TDStatus.Idle,

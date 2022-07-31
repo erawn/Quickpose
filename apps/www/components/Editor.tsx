@@ -99,6 +99,8 @@ const Editor = ({
   const netData = React.useRef<any>(undefined)
   const graphData = React.useRef< { nodes: any[]; links: any[]; }>(graphBaseData)
   const loadingTicks = React.useRef<number>(0); //Counter for sticky loading dots
+
+  const networkIntervalRef = React.useRef<any>(null);
   
   let abortFileController = new AbortController()
   const timeout = 2000
@@ -120,11 +122,15 @@ const Editor = ({
       id === currentVersion.current.toString()
       ){
       app.setIsLoading(true)
+
       console.log("send fork",id)
       lock.acquire("select", async function() {
         await axios.get(LOCALHOST_BASE + '/fork/' + id, {
           timeout: 600,
-        })
+          params: {
+            Autorun: app.settings.sketchAutorun
+          }
+        },    )
         .then(response => {
           if(response.status === 200){
             updateThumbnail(app,'node'+currentVersion.current,currentVersion)
@@ -155,9 +161,12 @@ const sendSelect = async (id: string) => {
   if(app !== undefined && app.isLoading === false && parseInt(id) !== currentVersion.current){
     app.setIsLoading(true)
     console.log("send select",id)
-    lock.acquire("select", async function() {
+    lock.acquire("select", async function() { 
       await axios.get(LOCALHOST_BASE + '/select/' + id, {
         timeout: 600,
+        params: {
+          Autorun: app.settings.sketchAutorun
+        }
       })
       .then(function(response) {
         if(response.status === 200){
@@ -315,6 +324,8 @@ const sendSelect = async (id: string) => {
             app.zoomToContent()
             //app.appState.isLoading = false
             //make new file, do intro experience?
+            clearInterval(networkIntervalRef.current)
+            networkIntervalRef.current = setInterval(networkInterval, timeout*2) 
           }else if(loadFile.current !== null){ //we found an existing file
             abortFileController.abort()
             loadTldrFile(app,graphData,simulation,centerPoint,loadFile, currentVersion)
@@ -323,6 +334,8 @@ const sendSelect = async (id: string) => {
             drawInterval()
             app.setSetting("keepStyleMenuOpen",true)
             loadedFile.current = true
+            clearInterval(networkIntervalRef.current)
+            networkIntervalRef.current = setInterval(networkInterval, timeout*2) 
           }
         }else if(loadedFile.current === true){ //default update loop
           app.setIsLoading(false)
@@ -449,12 +462,12 @@ const sendSelect = async (id: string) => {
     //https://stackoverflow.com/questions/18206231/saving-and-reloading-a-force-layout-using-d3-js
    
     connectWebSocket(thumbnailSocket,currentVersion, rTldrawApp,connectInterval,loadFile,netData,abortFileController)
-    const networkLoop = setInterval(networkInterval, timeout * 2) //get data from processing
+    networkIntervalRef.current = setInterval(networkInterval, 300) //get data from processing
     const thumbnailLoop = setInterval(thumbnailInterval, 10000)//update current version
     const drawLoop = setInterval(drawInterval, 100)//draw the graph
 
     return () => {
-      clearInterval(networkLoop)
+      clearInterval(networkIntervalRef?.current)
       clearInterval(thumbnailLoop)
       clearInterval(drawLoop)
       abortFileController.abort()
@@ -538,7 +551,7 @@ const sendSelect = async (id: string) => {
         if (app.selectedIds.length == 1 &&
           app.getShape(app.selectedIds[0]).type === TDShapeType.VersionNode
         ) {
-        console.log(patch)
+        //console.log(patch)
         //   selectedNode.current = app.selectedIds[0]
         //   const selectedShape = app.getShape(selectedNode.current)
         //   const idInteger = selectedShape.id.replace(/\D/g, '')
