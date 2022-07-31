@@ -8,8 +8,19 @@ import { Divider } from '~components/Primitives/Divider'
 import { DMContent, DMItem, DMSubMenu, DMTriggerIcon } from '~components/Primitives/DropdownMenu'
 import { preventEvent } from '~components/preventEvent'
 import { useTldrawApp } from '~hooks'
+import { PreferencesMenu } from '../PreferencesMenu'
+import {
+  DMItem,
+  DMContent,
+  DMDivider,
+  DMSubMenu,
+  DMTriggerIcon,
+} from '~components/Primitives/DropdownMenu'
 import { useFileSystemHandlers } from '~hooks'
+import { preventEvent } from '~components/preventEvent'
 import { TDExportType, TDSnapshot } from '~types'
+import { Divider } from '~components/Primitives/Divider'
+import { FormattedMessage, useIntl } from 'react-intl'
 import { PreferencesMenu } from '../PreferencesMenu'
 
 interface MenuProps {
@@ -391,8 +402,6 @@ export const Menu = React.memo(function Menu({ readOnly }: MenuProps) {
         <Divider />
         <PreferencesMenu />
         <DMDivider dir="ltr" />
-        <LanguageMenu />
-        <DMDivider dir="ltr" />
         <a href="https://github.com/erawn/quickpose" target="_blank" rel="nofollow">
           <DMItem id="TD-MenuItem-Github">
             GitHub
@@ -401,7 +410,7 @@ export const Menu = React.memo(function Menu({ readOnly }: MenuProps) {
             </SmallIcon>
           </DMItem>
         </a>
-          <DMItem id="TD-MenuItem-Twitter">
+          <DMItem id="TD-MenuItem-Version">
             Quickpose 0.1.6-StudyRC
             <SmallIcon>
               <InfoCircledIcon />

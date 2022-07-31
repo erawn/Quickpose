@@ -660,9 +660,6 @@ const sendSelect = async (id: string) => {
         onMount={handleMount}
         onPatch={handlePatch}
         onSaveProject={handleSave}
-        showSponsorLink={false}
-        onSignIn={undefined}
-        onSignOut={undefined}
         showMultiplayerMenu={false}
         onAssetUpload={onAssetUpload}
         onAssetCreate={onAssetUpload}
