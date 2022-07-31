@@ -32,6 +32,9 @@ export function PreferencesMenu() {
     app.setSetting('showGrid', (v) => !v)
   }, [app])
 
+  const toggleSketchAutorun = React.useCallback(() => {
+    app.setSetting('sketchAutorun', (v) => !v)
+  }, [app])
   const toggleKeepStyleMenuOpen = React.useCallback(() => {
     app.setSetting('keepStyleMenuOpen', (v) => !v)
   }, [app])
@@ -56,6 +59,14 @@ export function PreferencesMenu() {
 
   return (
     <DMSubMenu label={intl.formatMessage({ id: 'menu.preferences' })} id="TD-MenuItem-Preferences">
+       <DMCheckboxItem
+        checked={settings.sketchAutorun}
+        onCheckedChange={toggleSketchAutorun}
+        kbd=""
+        id="TD-MenuItem-Preferences-SketchAutorun"
+      >
+        <FormattedMessage id="preferences.sketchAutorun" />
+      </DMCheckboxItem>
       <DMCheckboxItem
         checked={settings.isDarkMode}
         onCheckedChange={toggleDarkMode}

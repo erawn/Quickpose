@@ -98,6 +98,7 @@ export interface TDSnapshot {
     language: TDLanguage
     dockPosition: TDDockPosition
     exportBackground: TDExportBackground
+    sketchAutorun: boolean
   }
   appState: {
     currentStyle: ShapeStyles
