@@ -1,5 +1,5 @@
 import * as React from 'react'
-import { HamburgerMenuIcon } from '@radix-ui/react-icons'
+import { GitHubLogoIcon, HamburgerMenuIcon, InfoCircledIcon } from '@radix-ui/react-icons'
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu'
 import { useTldrawApp } from '~hooks'
 import { PreferencesMenu } from '../PreferencesMenu'
@@ -15,6 +15,7 @@ import { preventEvent } from '~components/preventEvent'
 import { TDExportType, TDSnapshot } from '~types'
 import { Divider } from '~components/Primitives/Divider'
 import { FormattedMessage, useIntl } from 'react-intl'
+import { SmallIcon } from '~components/Primitives/SmallIcon'
 
 interface MenuProps {
   readOnly: boolean
@@ -306,8 +307,6 @@ export const Menu = React.memo(function Menu({ readOnly }: MenuProps) {
         <Divider />
         <PreferencesMenu />
         <DMDivider dir="ltr" />
-        <LanguageMenu />
-        <DMDivider dir="ltr" />
         <a href="https://github.com/erawn/quickpose" target="_blank" rel="nofollow">
           <DMItem id="TD-MenuItem-Github">
             GitHub
@@ -316,7 +315,7 @@ export const Menu = React.memo(function Menu({ readOnly }: MenuProps) {
             </SmallIcon>
           </DMItem>
         </a>
-          <DMItem id="TD-MenuItem-Twitter">
+          <DMItem id="TD-MenuItem-Version">
             Quickpose 0.1.6-StudyRC
             <SmallIcon>
               <InfoCircledIcon />
