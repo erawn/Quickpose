@@ -401,6 +401,12 @@ export const Menu = React.memo(function Menu({ readOnly }: MenuProps) {
             </SmallIcon>
           </DMItem>
         </a>
+          <DMItem id="TD-MenuItem-Twitter">
+            Quickpose 0.1.6-StudyRC
+            <SmallIcon>
+              <InfoCircledIcon />
+            </SmallIcon>
+          </DMItem>
         {/* <a href="https://twitter.com/Tldraw" target="_blank" rel="nofollow">
           <DMItem id="TD-MenuItem-Twitter">
             Twitter

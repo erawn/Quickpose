@@ -16,7 +16,8 @@ import {
   ColorStyle,
   TDShape,
   GroupShape,
-  TLDR
+  TLDR,
+  TDExportType
 } from '@tldraw/tldraw'
 
 //import { useUploadAssets } from 'hooks/useUploadAssets'
@@ -639,16 +640,20 @@ const sendSelect = async (id: string) => {
   const handleExport = React.useCallback(async(app: TldrawApp, info: TDExport):Promise<void>=>{
     if(info.type === "exportByColor"){
       exportByColor(app,info.name as ColorStyle)
+    }else if(info.type == TDExportType.PNG){
+      const url = URL.createObjectURL(info.blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = `${name}.${info.type}`
+      link.click()
     }
   },[])
 
-  const fileSystemEvents = useFileSystem()
   const { onAssetUpload , onAssetDelete} = useUploadAssets()
 
   return (
     <div className="tldraw">
       <Tldraw
-        {...fileSystemEvents}
         id={id}
         autofocus
         showPages={false}
