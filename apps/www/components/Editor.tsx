@@ -21,10 +21,10 @@ import {
 
 //import { useUploadAssets } from 'hooks/useUploadAssets'
 import React from 'react'
-import * as gtag from 'utils/gtag'
+// import * as gtag from 'utils/gtag'
 import { w3cwebsocket as W3CWebSocket } from "websocket";
 import axios from 'axios'
-import { select, Simulation, SimulationNodeDatum } from 'd3'
+import {Simulation, SimulationNodeDatum } from 'd3'
 import AsyncLock from 'async-lock'
 import { 
   saveToProcessing, 
@@ -115,7 +115,10 @@ const Editor = ({
   const sendFork = async (id: string) => {
     //const start = timestampInSeconds()
     const app = rTldrawApp.current!
-    if(app !== undefined && app.isLoading === false){
+    if(app !== undefined && 
+      app.isLoading === false && 
+      id === currentVersion.current.toString()
+      ){
       app.setIsLoading(true)
       console.log("send fork",id)
       lock.acquire("select", async function() {
@@ -289,7 +292,6 @@ const sendSelect = async (id: string) => {
             loadFileFromProcessing(loadFile,abortFileController)
             updateLoadingTicks(app, loadingTicks)
             app.setSetting("keepStyleMenuOpen",false)
-            setTimeout(networkInterval,100)
           }else if(loadFile.current === undefined){ //there is no file, we need to start fresh
             loadedFile.current = true
             app.resetDocument()
@@ -321,7 +323,6 @@ const sendSelect = async (id: string) => {
             drawInterval()
             app.setSetting("keepStyleMenuOpen",true)
             loadedFile.current = true
-            setTimeout(networkInterval,100)
           }
         }else if(loadedFile.current === true){ //default update loop
           app.setIsLoading(false)
@@ -417,7 +418,6 @@ const sendSelect = async (id: string) => {
               app.readOnly = true
               app.setCurrentProject("")
               resetState(app)
-  
             }
           } 
           break
@@ -532,39 +532,41 @@ const sendSelect = async (id: string) => {
         lastSelection.current = null
         break
       }
-      //double click on shape
+
       case 'set_status:pointingBounds': { //pointing bounds can never trigger selects
         lastSelection.current = selectedNode.current
         if (app.selectedIds.length == 1 &&
           app.getShape(app.selectedIds[0]).type === TDShapeType.VersionNode
         ) {
-
-          selectedNode.current = app.selectedIds[0]
-          const selectedShape = app.getShape(selectedNode.current)
-          const idInteger = selectedShape.id.replace(/\D/g, '')
+        console.log(patch)
+        //   selectedNode.current = app.selectedIds[0]
+        //   const selectedShape = app.getShape(selectedNode.current)
+        //   const idInteger = selectedShape.id.replace(/\D/g, '')
           
-          if(app.shiftKey && new Date().getTime() - timeSinceLastFork.current > 2000){
-            sendFork(idInteger)
-            timeSinceLastFork.current = new Date().getTime()
-            timeSinceLastSelection.current = new Date().getTime()
-          }
-          const timeSinceLastSelect = new Date().getTime() - timeSinceLastSelection.current
-          if(timeSinceLastSelect > 500 && 
-          lastSelection.current !== selectedNode.current){
-              sendSelect(idInteger)
-              timeSinceLastSelection.current = new Date().getTime()
-          }
+        //   if(app.shiftKey && new Date().getTime() - timeSinceLastFork.current > 2000){
+        //     sendFork(idInteger)
+        //     timeSinceLastFork.current = new Date().getTime()
+        //     timeSinceLastSelection.current = new Date().getTime()
+        //   }else{
+        //     sendSelect(idInteger)
+        const timeSinceLastSelect = new Date().getTime() - timeSinceLastSelection.current
+        //     // if(timeSinceLastSelect > 500 && 
+        //     // lastSelection.current !== selectedNode.current){
+        //     //     sendSelect(idInteger)
+        //     //     timeSinceLastSelection.current = new Date().getTime()
+        //     // }
 
-          if(timeSinceLastSelect > 500 && 
-          lastSelection.current === selectedNode.current){
-            const then = new Date().getTime()
-            setTimeout(()=>{ //if we dont get a selected event in the next half second
-              if(then > timeSinceLastSelection.current){
-                sendSelect(idInteger)
-                timeSinceLastSelection.current = new Date().getTime()
-              }
-            },500)
-          }
+            if(app.shiftKey && timeSinceLastSelect > 500 && 
+            lastSelection.current === selectedNode.current){
+              const then = new Date().getTime()
+              setTimeout(()=>{ //if we dont get a selected event in the next half second
+                if(then > timeSinceLastSelection.current){
+                  sendFork(currentVersion.current.toString())
+                  timeSinceLastSelection.current = new Date().getTime()
+                }
+              },500)
+            }
+        //   }
         }
         break;
       }
@@ -585,12 +587,11 @@ const sendSelect = async (id: string) => {
             sendFork(idInteger)
             timeSinceLastFork.current = new Date().getTime()
             timeSinceLastSelection.current = new Date().getTime()
-         }
-          if(new Date().getTime() - timeSinceLastSelection.current > 500 &&
-          lastSelection.current !== selectedNode.current){
-              sendSelect(idInteger)
-              timeSinceLastSelection.current = new Date().getTime()
+          }else{
+            sendSelect(idInteger)
+            timeSinceLastSelection.current = new Date().getTime()
           }
+  
         }
         break
       }
