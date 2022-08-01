@@ -265,7 +265,11 @@ const sendSelect = async (id: string) => {
             },
           },
         }
-        app.patchState(patch,"Quickpose Draw Update")
+   
+        if(Object.keys(nextPage.bindings).length > 0 || Object.keys(nextPage.shapes).length > 0){
+          app.patchState(patch,"Quickpose Draw Update")
+        }
+
       })
       console.timeStamp("end animframe");
     }
@@ -526,7 +530,7 @@ const sendSelect = async (id: string) => {
         // started translating...
         rIsDragging.current = true
         lastSelection.current = null
-        sendToLog("translate")
+        sendToLog("translate" + app.selectedIds)
         break
       }
       case 'set_status:creating': {

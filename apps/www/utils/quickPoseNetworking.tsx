@@ -76,7 +76,10 @@ export function connectWebSocket(
                           resetState(app)
                     
                         }
-                        app.setCurrentProject(msg[key]);
+                        if(app.appState.currentProject !== msg[key]){
+                          app.setCurrentProject(msg[key]);
+                        }
+
                         break;
                       }
                       case "version_id": {
