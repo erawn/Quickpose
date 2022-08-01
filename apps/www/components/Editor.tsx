@@ -535,6 +535,7 @@ const sendSelect = async (id: string) => {
       }
       case 'set_status:creating': {
         // started translating...
+        sendToLog("creating"+app.pageState.editingId)
         rIsDragging.current = true
         lastSelection.current = null
         break
