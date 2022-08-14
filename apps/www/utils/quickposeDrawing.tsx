@@ -1,4 +1,4 @@
-import { ArrowBinding, ArrowShape, ColorStyle, DashStyle, shapeUtils, SizeStyle, TDBinding, TDShape, TDShapeType, TldrawApp, VersionNodeShape, TDFile} from "@tldraw/tldraw"
+import { ArrowBinding, ArrowShape, ColorStyle, DashStyle, shapeUtils, SizeStyle, TDBinding, TDShape, TDShapeType, TldrawApp, VersionNodeShape, TDFile, TLDR} from "@tldraw/tldraw"
 import { dataLink, dataNode, inputShape, inputVersionNodeShape, quickPoseFile } from "./quickPoseTypes"
 import deepEqual from "deep-equal";
 import { ALPHA_TARGET_REFRESH, d3TlScale, D3_LINK_DISTANCE, TL_DRAW_RADIUS } from "components/Editor";
@@ -7,8 +7,7 @@ import { forceSimulation, forceManyBody, forceLink, forceCollide, Simulation, Si
 import forceBoundary from 'd3-force-boundary'
 import type  {Patch} from "@tldraw/core";
 import { MutableRefObject } from "react";
-import { n } from "@liveblocks/client/shared";
-
+import Vec from "@tldraw/vec";
 export const nodeRegex = new RegExp(/node\d/);
 export const linkRegex = new RegExp(/link\d/);
 
@@ -205,9 +204,11 @@ export const updateBinding = (app:TldrawApp, link, startNode,endNode,drawLink,ne
     tlNodes: TDShape[],
     currentVersion: MutableRefObject<number>,
     centerPoint: MutableRefObject<[number, number]>,
-    selectedIds: string[]
+    selectedIds: string[],
+    app: TldrawApp
     ):[Patch<Record<string, TDShape>>,inputVersionNodeShape[]] => {
-    const nextShapes: Patch<Record<string, TDShape>> = {}
+      
+    let nextShapes: Patch<Record<string, TDShape>> = {}
     const createShapes: inputVersionNodeShape[] = []
     graphData.nodes.map(function(node: dataNode){
       const tlDrawNode:VersionNodeShape = tlNodes.find(n => n.id === 'node'+node.id) as VersionNodeShape
@@ -254,7 +255,7 @@ export const updateBinding = (app:TldrawApp, link, startNode,endNode,drawLink,ne
           //nextShapes[n.id] = {...n}
 
       }else if(tlDrawNode){ 
-          if(selectedIds.includes(tlDrawNode.id)){ //If we have a node selected, update the d3 sim instead
+          if(selectedIds.includes(tlDrawNode.id) && tlDrawNode.parentId !== "CurrentPageId"){ //If we have a node selected, update the d3 sim instead
               const d3Coords = tldrawCoordstod3(tlDrawNode.point[0],tlDrawNode.point[1])
               node.x = d3Coords[0]
               node.y = d3Coords[1]
@@ -287,9 +288,39 @@ export const updateBinding = (app:TldrawApp, link, startNode,endNode,drawLink,ne
             node.x = tldrawCoordstod3(...centerPoint.current as [number,number])[0]
             node.y = tldrawCoordstod3(...centerPoint.current as [number,number])[1]
           }
-          const newCoords = d3toTldrawCoords(node.x ,node.y)
-          if ((Math.abs(newCoords[0] - tlDrawNode.point[0]) > .1 || Math.abs(newCoords[1] - tlDrawNode.point[1]) > .1)){
-            nextShapes[tlDrawNode.id] = {...nextShapes[tlDrawNode.id], point: newCoords}
+          const newCoords = Vec.toFixed(d3toTldrawCoords(node.x ,node.y))
+          if ((Math.abs(newCoords[0] - tlDrawNode.point[0]) > .5 || Math.abs(newCoords[1] - tlDrawNode.point[1]) > .5)){
+            const parent = app.getShape(tlDrawNode.parentId)
+            if(parent !== undefined && parent.type === TDShapeType.Group){
+              const delta = [newCoords[0] - tlDrawNode.point[0],newCoords[1] - tlDrawNode.point[1]]
+              const idsToMutate = parent.children
+              .filter((id) => !app.getShape(id).isLocked)
+
+              const change = TLDR.mutateShapes(
+                app.state,
+                idsToMutate,
+                (shape) => ({
+                  point: Vec.toFixed(Vec.add(shape.point, delta)),
+                }),
+                app.currentPageId
+              )
+              const groupShapes = change.after
+              nextShapes = {...nextShapes, ...groupShapes}
+              idsToMutate.map((id) => {
+                const shape = app.getShape(id)
+                if(shape !== undefined && shape.type === TDShapeType.VersionNode){
+                  const idInteger = shape.id.replace(/\D/g, '')
+                  const d3Coords = tldrawCoordstod3(groupShapes[shape.id].point[0],groupShapes[shape.id].point[1])
+                  const graphNodeInd = graphData.nodes.findIndex((node) => node.id === idInteger)
+                  graphData.nodes[graphNodeInd].x = d3Coords[0]
+                  graphData.nodes[graphNodeInd].y = d3Coords[1]
+                  graphData.nodes[graphNodeInd].fx = d3Coords[0]
+                  graphData.nodes[graphNodeInd].fy = d3Coords[1]
+                }
+              })
+            }else{
+              nextShapes[tlDrawNode.id] = {...nextShapes[tlDrawNode.id], point: newCoords}
+            }
           }
       }
     })

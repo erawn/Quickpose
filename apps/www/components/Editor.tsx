@@ -4,9 +4,7 @@ import {
   Tldraw, 
   TldrawApp, 
   TldrawProps, 
-  useFileSystem, 
   TDShapeType, 
-  TDFile,
   Patch,
   PagePartial,
   TDPage,
@@ -15,8 +13,6 @@ import {
   TDExport,
   ColorStyle,
   TDShape,
-  GroupShape,
-  TLDR,
   TDExportType
 } from '@tldraw/tldraw'
 
@@ -79,7 +75,6 @@ const Editor = ({
 
   //selection/dragging
   const rIsDragging = React.useRef(false)
-  const selectedNode = React.useRef<string>(null)
   const lastSelection = React.useRef<string>(null)
   const currentVersion = React.useRef<number>(null)
   const timeSinceLastSelection = React.useRef<number>(0)
@@ -176,7 +171,7 @@ const sendSelect = async (id: string) => {
           updateThumbnail(app,'node'+currentVersion.current,currentVersion)
           currentVersion.current = parseInt(response.data)
           app.setIsLoading(false)
-          app.pageState.selectedIds = ['node'+currentVersion.current]
+          //app.pageState.selectedIds = ['node'+currentVersion.current]
           drawInterval()
         }
       })
@@ -216,7 +211,8 @@ const sendSelect = async (id: string) => {
           tlNodes,
           currentVersion,
           centerPoint,
-          selectedIdsWithGroups
+          selectedIdsWithGroups,
+          app
         )
         const tlLinks = app.getShapes().filter((shape) => linkRegex.test(shape.id))
         const [nextLinkShapes, nextLinkBindings, createLinkShapes] = updateLinkShapes(app, tlLinks, graphData, tlNodes)
@@ -491,7 +487,9 @@ const sendSelect = async (id: string) => {
 
   //https://codesandbox.io/s/tldraw-context-menu-wen03q
   const handlePatch = React.useCallback((app: TldrawApp, patch: TldrawPatch, reason?: string) => {
-    //console.log(reason)
+    if(process.env.NODE_ENV !== 'production'){
+      //console.log(reason)
+    }
     if(networkIntervalRef.current === null){
       clearInterval(networkIntervalRef.current)
       networkIntervalRef.current = null
@@ -567,57 +565,89 @@ const sendSelect = async (id: string) => {
         break
       }
 
-      case 'set_status:pointingBounds': { //pointing bounds can never trigger selects
-        lastSelection.current = selectedNode.current
+      case 'set_status:pointingBounds': { //pointing bounds can never trigger selects unless node is in a group
+        //lastSelection.current = selectedNodeId.current
+        const hovered = app.getShape(app.pageState.hoveredId)
         if (app.selectedIds.length == 1 &&
           app.getShape(app.selectedIds[0]).type === TDShapeType.VersionNode
         ) {
-        //console.log(patch)
-        //   selectedNode.current = app.selectedIds[0]
-        //   const selectedShape = app.getShape(selectedNode.current)
-        //   const idInteger = selectedShape.id.replace(/\D/g, '')
-          
-        //   if(app.shiftKey && new Date().getTime() - timeSinceLastFork.current > 2000){
-        //     sendFork(idInteger)
-        //     timeSinceLastFork.current = new Date().getTime()
-        //     timeSinceLastSelection.current = new Date().getTime()
-        //   }else{
-        //     sendSelect(idInteger)
-        const timeSinceLastSelect = new Date().getTime() - timeSinceLastSelection.current
-        //     // if(timeSinceLastSelect > 500 && 
-        //     // lastSelection.current !== selectedNode.current){
-        //     //     sendSelect(idInteger)
-        //     //     timeSinceLastSelection.current = new Date().getTime()
-        //     // }
 
-            if(app.shiftKey && timeSinceLastSelect > 500 && 
-            lastSelection.current === selectedNode.current){
-              const then = new Date().getTime()
-              setTimeout(()=>{ //if we dont get a selected event in the next half second
-                if(then > timeSinceLastSelection.current){
-                  sendFork(currentVersion.current.toString())
-                  timeSinceLastSelection.current = new Date().getTime()
-                }
-              },500)
+          const timeSinceLastSelect = new Date().getTime() - timeSinceLastSelection.current
+          if(app.shiftKey && timeSinceLastSelect > 200 
+            //&& lastSelection.current === selectedNodeId.current
+            ){
+            if(hovered !== undefined && hovered.type == TDShapeType.VersionNode){
+              const idIntegerHovered = hovered.id.replace(/\D/g, '')
+              if(idIntegerHovered === currentVersion.current.toString()){
+                const then = new Date().getTime()
+                setTimeout(()=>{ //if we dont get a selected event in the next half second
+                  if(then > timeSinceLastSelection.current){
+                    sendFork(currentVersion.current.toString())
+                    timeSinceLastSelection.current = new Date().getTime()
+                  }
+                },200)
+              }
             }
-        //   }
+          }else{
+            if(hovered !== undefined && hovered.type == TDShapeType.VersionNode){
+              const idInteger = hovered.id.replace(/\D/g, '')
+              //console.log("select",idInteger)
+              sendSelect(idInteger)
+              timeSinceLastSelection.current = new Date().getTime()
+            }
+          }
+        
+        }else{
+          //console.log(app.pageState.hoveredId)
+      
+          if (hovered !== undefined){
+            if(hovered.type === TDShapeType.VersionNode){
+              const timeSinceLastSelect = new Date().getTime() - timeSinceLastSelection.current
+              //console.log( hovered.id)
+              if(app.shiftKey && timeSinceLastSelect > 100 
+                //&& hovered.id === selectedNodeId.current
+              ){
+                const then = new Date().getTime()
+                setTimeout(()=>{ //if we dont get a selected event in the next half second
+                  if(then > timeSinceLastSelection.current){
+                    sendFork(currentVersion.current.toString())
+                    timeSinceLastSelection.current = new Date().getTime()
+                  }
+                },100)
+              }else{
+                const idInteger = hovered.id.replace(/\D/g, '')
+                //console.log("select",idInteger)
+                sendSelect(idInteger)
+                timeSinceLastSelection.current = new Date().getTime()
+              }
+            }
+          }
         }
         break;
       }
       case 'selected': { //select events are never the second click, so they can never trigger forks
         //Select Node
-        
-        lastSelection.current = selectedNode.current
+        const hovered = app.getShape(app.pageState.hoveredId)
+        //lastSelection.current = selectedNodeId.current
         if (
           app.selectedIds.length == 1 &&
           app.getShape(app.selectedIds[0]).type === TDShapeType.VersionNode
         ) {
 
-          selectedNode.current = app.selectedIds[0]
-          const selectedShape = app.getShape(selectedNode.current)
+          //selectedNodeId.current = app.selectedIds[0]
+          const selectedShape = app.getShape(app.selectedIds[0])
           const idInteger = selectedShape.id.replace(/\D/g, '')
-
-          if(app.shiftKey && new Date().getTime() - timeSinceLastFork.current > 2000){
+          //console.log(hovered)
+          let hoveredCheck = false
+          if(hovered !== undefined && hovered.type == TDShapeType.VersionNode){
+            const idIntegerHovered = hovered.id.replace(/\D/g, '')
+            if(idIntegerHovered === currentVersion.current.toString()){
+              hoveredCheck = true
+            }
+          }else{
+            hoveredCheck = true
+          }
+          if(app.shiftKey && new Date().getTime() - timeSinceLastFork.current > 2000 && hoveredCheck){
             sendFork(idInteger)
             timeSinceLastFork.current = new Date().getTime()
             timeSinceLastSelection.current = new Date().getTime()
@@ -625,7 +655,24 @@ const sendSelect = async (id: string) => {
             sendSelect(idInteger)
             timeSinceLastSelection.current = new Date().getTime()
           }
-  
+        }else{
+          //(app.pageState.hoveredId)
+     
+          if (hovered !== undefined){
+            if(hovered.type === TDShapeType.VersionNode){
+              //selectedNodeId.current = hovered.id
+              //const selectedShape = app.getShape(selectedNodeId.current)
+              const idInteger = hovered.id.replace(/\D/g, '')
+              if(app.shiftKey && new Date().getTime() - timeSinceLastFork.current > 2000){
+                sendFork(idInteger)
+                timeSinceLastFork.current = new Date().getTime()
+                timeSinceLastSelection.current = new Date().getTime()
+              }else{
+                sendSelect(idInteger)
+                timeSinceLastSelection.current = new Date().getTime()
+              }
+            }
+          }
         }
         break
       }
