@@ -250,9 +250,7 @@ const sendSelect = async (id: string) => {
 
         const currentPageId = app.currentPageId
         const patch = {
-          appState: {
-            currentStyle:currentStyle
-          },
+
           document: {
             pages: {
               [currentPageId]: {
@@ -303,7 +301,7 @@ const sendSelect = async (id: string) => {
             thumbnailSocket.current.send("/tldrfile");
             loadFileFromProcessing(loadFile,abortFileController)
             updateLoadingTicks(app, loadingTicks)
-            app.setSetting("keepStyleMenuOpen",false)
+            //app.setSetting("keepStyleMenuOpen",false)
           }else if(loadFile.current === undefined){ //there is no file, we need to start fresh
             loadedFile.current = true
             app.resetDocument()
@@ -321,7 +319,7 @@ const sendSelect = async (id: string) => {
 
             dataInterval(netData,graphData,simulation)
             refreshSim(simulation)
-            app.setSetting("keepStyleMenuOpen",true)
+            //app.setSetting("keepStyleMenuOpen",true)
             //simulation.current.alpha(ALPHA_TARGET_REFRESH)
             drawInterval()
             app.zoomToContent()
@@ -334,7 +332,7 @@ const sendSelect = async (id: string) => {
             refreshSim(simulation)
             dataInterval(netData,graphData,simulation)
             drawInterval()
-            app.setSetting("keepStyleMenuOpen",true)
+            //app.setSetting("keepStyleMenuOpen",true)
             loadedFile.current = true
           }
         }else if(loadedFile.current === true){ //default update loop
@@ -347,7 +345,7 @@ const sendSelect = async (id: string) => {
   
           //console.log('saving/updating?')
           if (!(app.document === undefined)) {
-            console.log('saving/updating...')
+            //console.log('saving/updating...')
             saveToProcessing(
               app.document, 
               JSON.stringify(graphData.current),
@@ -488,7 +486,7 @@ const sendSelect = async (id: string) => {
   //https://codesandbox.io/s/tldraw-context-menu-wen03q
   const handlePatch = React.useCallback((app: TldrawApp, patch: TldrawPatch, reason?: string) => {
     if(process.env.NODE_ENV !== 'production'){
-      //console.log(reason)
+      console.log(reason)
     }
     if(networkIntervalRef.current === null){
       clearInterval(networkIntervalRef.current)
