@@ -71,6 +71,8 @@ const themeSelector = (s: TDSnapshot) => (s.settings.isDarkMode ? 'dark' : 'ligh
 
 const keepOpenSelector = (s: TDSnapshot) => s.settings.keepStyleMenuOpen
 
+const isOpenSelector = (s: TDSnapshot) => s.appState.isMenuOpen
+
 const optionsSelector = (s: TDSnapshot) => {
   const { activeTool, currentPageId: pageId } = s.appState
   switch (activeTool) {
@@ -113,6 +115,8 @@ export const StyleMenu = React.memo(function ColorMenu() {
   const theme = app.useStore(themeSelector)
 
   const keepOpen = app.useStore(keepOpenSelector)
+
+  const isOpen = app.useStore(isOpenSelector)
 
   const options = app.useStore(optionsSelector)
 
@@ -197,7 +201,7 @@ export const StyleMenu = React.memo(function ColorMenu() {
     <DropdownMenu.Root
       dir="ltr"
       onOpenChange={handleMenuOpenChange}
-      open={keepOpen ? true : undefined}
+      open={keepOpen ? true : isOpen}
       modal={false}
     >
       <DropdownMenu.Trigger asChild id="TD-Styles">
@@ -337,7 +341,7 @@ export const StyleMenu = React.memo(function ColorMenu() {
             )}
           </>
         )}
-        <Divider />
+        {/* <Divider />
         <DMCheckboxItem
           variant="styleMenu"
           checked={keepOpen}
@@ -345,7 +349,7 @@ export const StyleMenu = React.memo(function ColorMenu() {
           id="TD-Styles-Keep-Open"
         >
           <FormattedMessage id="style.menu.keep.open" />
-        </DMCheckboxItem>
+        </DMCheckboxItem> */}
       </DMContent>
     </DropdownMenu.Root>
   )
