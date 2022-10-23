@@ -48,6 +48,7 @@
     "fake-indexeddb": "^3.1.7",
     "form-data": "^4.0.0",
     "fs": "^0.0.1-security",
+    "https": "^1.0.0",
     "husky": "^7.0.4",
     "jshint": "^2.13.4",
     "lint-staged": "^12.3.3",

@@ -9,7 +9,7 @@ import { nodeRegex } from './quickposeDrawing'
 import * as BSON from 'bson'
 import React from 'react'
 import { quickPoseFile } from './quickPoseTypes'
-
+import https from 'https'
 export const LOCALHOST_BASE = 'http://127.0.0.1:8080'
 export const WEBSOCKET = 'ws://127.0.0.1:8080/thumbnail'
 export function getIconImageURLNoTime(id: number) {
@@ -189,41 +189,45 @@ export const exportByColor = async (app: TldrawApp, color: ColorStyle) => {
 }
 
 export const saveToProcessing = async (
-  document: TDDocument,
-  simData: string,
-  alpha: any,
-  centerPoint: [number, number],
-  projectName: any,
-  backup: boolean
-) => {
-  const file: quickPoseFile = {
-    name: 'quickpose.tldr',
-    fileHandle: null,
-    document,
-    assets: {
-      ...document.assets,
-    },
-    graphData: {
-      simData: simData,
-      alpha: alpha.toString(),
-      centerPoint: JSON.stringify(centerPoint),
-    },
-  }
-
-  // Serialize to JSON
-  const json = JSON.stringify(file, null, 2)
-  // Create blob
-  const blob = new Blob([json], {
-    type: 'application/vnd.Tldraw+json',
-  })
-  const formData = new FormData()
-  formData.append('uploaded_file', blob, {
-    //'uploaded_file' is a special name that the Processing side is looking for, don't change or itll break
-    filename: 'quickpose.tldr',
-    contentType: 'application/vnd.Tldraw+json',
-  })
-
-  const url = backup ? LOCALHOST_BASE + '/tldrfile_backup' : LOCALHOST_BASE + '/tldrfile'
+  document: TDDocument, 
+  simData: string, 
+  alpha, 
+  centerPoint: [number,number], 
+  projectName,
+  backup:boolean) => {
+    const file: quickPoseFile = {
+        name: 'quickpose.tldr',
+        fileHandle: null,
+        document,
+        assets:{
+          ...document.assets
+        },
+        graphData: {"simData":simData,
+                "alpha":alpha.toString(),
+                "centerPoint": JSON.stringify(centerPoint),
+                },
+      }
+      
+    const httpsAgent = new https.Agent({
+      cert: process.env.client_cert,
+      key: process.env.client_key,
+      ca: process.env.ca_cert,
+    });  
+    const result = await axios.get('https://localhost:4000', { httpsAgent });
+    console.log(result)
+    // Serialize to JSON
+    const json = JSON.stringify(file, null, 2)
+    // Create blob
+    const blob = new Blob([json], {
+      type: 'application/vnd.Tldraw+json',
+    })
+    const formData = new FormData()
+    formData.append('uploaded_file', blob, { //'uploaded_file' is a special name that the Processing side is looking for, don't change or itll break
+      filename: 'quickpose.tldr',
+      contentType: 'application/vnd.Tldraw+json'
+    })
+    
+    const url = backup ? LOCALHOST_BASE+'/tldrfile_backup' : LOCALHOST_BASE+'/tldrfile'
 
   axios
     .post(url, formData, {
