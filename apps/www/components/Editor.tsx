@@ -32,14 +32,14 @@ import {
   exportByColor,
   connectWebSocket,
   updateThumbnail
-} from "../utils/quickPoseNetworking"
+} from "utils/quickPoseNetworking"
 import * as lodash from 'lodash'
 
 import { 
   EditorProps,
   forceLink,
   quickPoseFile
- } from '../utils/quickPoseTypes'
+ } from 'utils/quickPoseTypes'
 
  import {
    d3Sim,

@@ -443,7 +443,7 @@ export const updateBinding = (app:TldrawApp, link, startNode,endNode,drawLink,ne
       simulation.current.alpha(ALPHA_TARGET_REFRESH)
     }
     const page = loadFile.current.document.pages[Object.keys(loadFile.current.document.pages)[0]]
-    Object.values(page.shapes).forEach((shape) => {
+    Object.values(page.shapes).forEach((shape : TDShape) => {
       const {type, id} = shape
       if(type === TDShapeType.VersionNode){
         if(shape.imgLink.startsWith("blob")){

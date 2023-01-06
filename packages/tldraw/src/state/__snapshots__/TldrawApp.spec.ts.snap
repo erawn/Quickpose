@@ -7,6 +7,7 @@ TldrawTestApp {
     "appState": Object {
       "activeTool": "select",
       "currentPageId": "page",
+      "currentProject": "",
       "currentStyle": Object {
         "color": "black",
         "dash": "draw",
@@ -71,12 +72,14 @@ TldrawTestApp {
       "showCloneHandles": false,
       "showGrid": false,
       "showRotateHandles": true,
+      "sketchAutorun": false,
     },
   },
   "_state": Object {
     "appState": Object {
       "activeTool": "select",
       "currentPageId": "page1",
+      "currentProject": "",
       "currentStyle": Object {
         "color": "black",
         "dash": "draw",
@@ -223,6 +226,7 @@ TldrawTestApp {
       "showCloneHandles": false,
       "showGrid": false,
       "showRotateHandles": true,
+      "sketchAutorun": false,
     },
   },
   "_status": "ready",
@@ -305,6 +309,7 @@ TldrawTestApp {
   "expectSelectedIdsToBe": [Function],
   "expectShapesToBeAtPoints": [Function],
   "expectShapesToHaveProps": [Function],
+  "exportByColor": [Function],
   "exportImage": [Function],
   "exportJson": [Function],
   "fileSystemHandle": null,
@@ -332,6 +337,7 @@ TldrawTestApp {
     "appState": Object {
       "activeTool": "select",
       "currentPageId": "page",
+      "currentProject": "",
       "currentStyle": Object {
         "color": "black",
         "dash": "draw",
@@ -396,6 +402,7 @@ TldrawTestApp {
       "showCloneHandles": false,
       "showGrid": false,
       "showRotateHandles": true,
+      "sketchAutorun": false,
     },
   },
   "insertContent": [Function],
@@ -558,6 +565,7 @@ TldrawTestApp {
   "selectTool": [Function],
   "session": undefined,
   "setCamera": [Function],
+  "setCurrentProject": [Function],
   "setDisableAssets": [Function],
   "setEditingId": [Function],
   "setHoveredId": [Function],

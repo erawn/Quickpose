@@ -10,8 +10,8 @@
     "paths": {
       "~*": ["./src/*"],
       "@tldraw/core": ["../core"],
-      "@tldraw/vec": ["../packages/vec"],
-      "@tldraw/intersect": ["../packages/intersect"]
+      "@tldraw/vec": ["../vec"],
+      "@tldraw/intersect": ["../intersect"]
     }
   },
   "references": [{ "path": "../vec" }, { "path": "../intersect" }, { "path": "../core" }]
