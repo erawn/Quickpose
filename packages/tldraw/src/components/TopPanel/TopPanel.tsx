@@ -7,6 +7,9 @@ import { styled } from '~styles'
 import { Menu } from './Menu/Menu'
 import { MultiplayerMenu } from './MultiplayerMenu'
 import { CurrentVersionMenu } from './CurrentVersionMenu'
+import { PageMenu } from './PageMenu'
+import { StyleMenu } from './StyleMenu'
+import { ZoomMenu } from './ZoomMenu'
 
 interface TopPanelProps {
   readOnly: boolean

@@ -43,8 +43,9 @@
   },
   "engines": {
     "node": "^16.x"
-   },
+  },
   "devDependencies": {
+    "@changesets/cli": "^2.20.0",
     "@ggallon/prettier-plugin-sort-imports": "^3.4.2-canary.0",
     "@swc-node/jest": "^1.4.3",
     "@tldraw/lfg": "latest",
@@ -66,12 +67,12 @@
     "tslib": "^2.4.0",
     "turbo": "^1.3.4",
     "typescript": "^4.7.3",
-    "webpack": "^5.68.0",
-    "@changesets/cli": "^2.20.0"
+    "webpack": "^5.68.0"
   },
   "lint-staged": {
     "*": "prettier --ignore-unknown --write",
     "*.{ts,tsx}": "eslint --fix"
   },
-  "packageManager": "yarn@1.22.17"
+  "packageManager": "yarn@1.22.17",
+  "dependencies": {}
 }

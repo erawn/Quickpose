@@ -1,7 +1,5 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 import { ColorStyle, TDDocument, TDFile, TDShapeType, TldrawApp } from "@tldraw/tldraw";
 import FormData from 'form-data'
-import type { FileSystemHandle } from '@tldraw/tldraw'
 import { w3cwebsocket as W3CWebSocket } from "websocket";
 import axiosRetry from 'axios-retry';
 import deepEqual from "deep-equal";
@@ -23,11 +21,11 @@ export function getIconImageURL(id:number){
 }
 
 export function connectWebSocket(
-  thumbnailSocket: MutableRefObject<W3CWebSocket>,
-  currentVersion: MutableRefObject<number>, 
+  thumbnailSocket: MutableRefObject<W3CWebSocket | null>,
+  currentVersion: MutableRefObject<number | null>, 
   rTldrawApp: MutableRefObject<TldrawApp>,
   connectInterval: MutableRefObject<any>,
-  loadFile: MutableRefObject<quickPoseFile>,
+  loadFile: MutableRefObject<quickPoseFile | null>,
   netData: MutableRefObject<any>,
   abortFileController: AbortController,
   resetState: { (app: TldrawApp): void; },
@@ -141,9 +139,9 @@ export const exportByColor = async(
 ) => {
   app.setIsLoading(true)
   const ids = app.getShapes()
-  .filter((shape) => nodeRegex.test(shape.id))
-  .filter((node)=> node.style.color === color)
-  .map((node)=>{
+  .filter((shape: { id: string; }) => nodeRegex.test(shape.id))
+  .filter((node: { style: { color: any; }; })=> node.style.color === color)
+  .map((node: { id: string; })=>{
     return node.id.replace(/\D/g,"")
   })
   //console.log(ids.toString())
@@ -167,9 +165,9 @@ export const exportByColor = async(
 export const saveToProcessing = async (
   document: TDDocument, 
   simData: string, 
-  alpha, 
+  alpha: any, 
   centerPoint: [number,number], 
-  projectName,
+  projectName: any,
   backup:boolean) => {
     const file: quickPoseFile = {
         name: 'quickpose.tldr',
@@ -217,7 +215,7 @@ export const saveToProcessing = async (
     
     return true
 }
-export const loadFileFromProcessing = async(loadFile: MutableRefObject<TDFile>,abortFileController: AbortController) => {
+export const loadFileFromProcessing = async(loadFile: MutableRefObject<TDFile | undefined>,abortFileController: AbortController) => {
 
     const getFile = await axios.get(LOCALHOST_BASE+'/tldrfile', {
      // signal: abortFileController.signal
@@ -239,7 +237,7 @@ export const loadFileFromProcessing = async(loadFile: MutableRefObject<TDFile>,a
     });
   }
 
-export const updateVersions = async (netData) => {
+export const updateVersions = async (netData : any) => {
     //Update Versions
     axios.get(LOCALHOST_BASE+'/versions.json', {
       timeout: 500,
@@ -255,7 +253,7 @@ export const updateVersions = async (netData) => {
     })
   }
 
-const checkImage = path => {
+const checkImage = (path : any) => {
   return new Promise(resolve => {
     const img = new Image();
     img.onload = () => resolve({img, status: 'ok'});
@@ -267,7 +265,7 @@ const checkImage = path => {
   export const updateThumbnail = async (
     app: TldrawApp,
     shape_id: string,
-    currentVersion: MutableRefObject<number>
+    currentVersion: MutableRefObject<number | null>
     ) => {
           const selectedShape = app.getShape(shape_id)
           if( !(selectedShape === undefined) && selectedShape.type == TDShapeType.VersionNode){
@@ -276,7 +274,7 @@ const checkImage = path => {
             }
             const idInteger = parseInt(selectedShape.id.replace(/\D/g,""))
             const url = getIconImageURL(idInteger)
-            await checkImage(url).then((res)=>{
+            await checkImage(url).then((res : any)=>{
               if(res["status"] === 'ok'){
                 selectedShape.imgLink = url
                 const currentPageId = app.currentPageId
@@ -305,7 +303,7 @@ const checkImage = path => {
           }
       }
 
-export const updateThumbnailFromSocket = async (selectedNode, app, data) => {
+export const updateThumbnailFromSocket = async (selectedNode : number, app : TldrawApp, data : Blob) => {
     const selectedShape = app.getShape(('node'+selectedNode).toString())
     if( !(selectedShape === undefined) && selectedShape.type == TDShapeType.VersionNode){
       const idInteger = selectedShape.id.replace(/\D/g,"")
@@ -387,10 +385,12 @@ export const updateThumbnailFromSocket = async (selectedNode, app, data) => {
     )
     const onAssetDelete = useCallback(
       async (app: TldrawApp, id: string): Promise<boolean>=> {
-        const asset = app.assets.find(asset => asset.id === id)
-        await axios.delete(asset.src).then(response =>{
+        const asset = app.assets.find((asset: { id: string; }) => asset.id === id)
+        await axios.delete(asset.src).then((response) =>{
           if(response.status == 200){
             return true
+          }else{
+            return false
           }
         }).catch(function(error){ 
           console.error("error deleting image: ",id, error);

@@ -4,11 +4,11 @@ import dynamic from 'next/dynamic'
 import Head from 'next/head'
 import * as React from 'react'
 
-const IFrameWarning = dynamic(() => import('~components/IFrameWarning'), {
+const IFrameWarning = dynamic(() => import('../../components/IFrameWarning'), {
   ssr: false,
 }) as any
 
-const ReadOnlyMultiplayerEditor = dynamic(() => import('~components/ReadOnlyMultiplayerEditor'), {
+const ReadOnlyMultiplayerEditor = dynamic(() => import('../../components/ReadOnlyMultiplayerEditor'), {
   ssr: false,
 }) as any
 
@@ -31,12 +31,12 @@ export default function Room({ id }: RoomProps) {
   )
 }
 
-export const getServerSideProps: GetServerSideProps = async (context) => {
-  const id = context.query.id?.toString()
+// export const getServerSideProps: GetServerSideProps = async (context) => {
+//   const id = context.query.id?.toString()
 
-  return {
-    props: {
-      id: Utils.lns(id),
-    },
-  }
-}
+//   return {
+//     props: {
+//       id: Utils.lns(id),
+//     },
+//   }
+// }

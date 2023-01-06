@@ -1,5 +1,4 @@
 /* eslint-disable react-hooks/exhaustive-deps */
-/* eslint-disable @typescript-eslint/no-non-null-assertion */
 import { 
   Tldraw, 
   TldrawApp, 
@@ -33,14 +32,14 @@ import {
   exportByColor,
   connectWebSocket,
   updateThumbnail
-} from 'utils/quickPoseNetworking'
+} from "../utils/quickPoseNetworking"
 import * as lodash from 'lodash'
 
 import { 
   EditorProps,
   forceLink,
   quickPoseFile
- } from 'utils/quickPoseTypes'
+ } from '../utils/quickPoseTypes'
 
  import {
    d3Sim,
@@ -55,8 +54,6 @@ import {
   updateLoadingTicks,
   updateNodeShapes
  } from 'utils/quickposeDrawing'
-//import { dateTimestampInSeconds, timestampInSeconds } from '@sentry/utils'
-//import { constants } from 'fs'
 
 //declare const window: Window & { app: TldrawApp }
 
@@ -75,23 +72,23 @@ const Editor = ({
 
   //selection/dragging
   const rIsDragging = React.useRef(false)
-  const lastSelection = React.useRef<string>(null)
-  const currentVersion = React.useRef<number>(null)
+  const lastSelection = React.useRef<string | null>(null)
+  const currentVersion = React.useRef<number | null>(null)
   const timeSinceLastSelection = React.useRef<number>(0)
   const timeSinceLastFork = React.useRef<number>(0);
   const centerPoint = React.useRef<[number,number]>([600,600])
 
   const timeSinceLastSave = React.useRef<number>(0);
   //file loading
-  const loadFile = React.useRef<quickPoseFile>(null)
+  const loadFile = React.useRef<quickPoseFile | null>(null)
   const loadedFile = React.useRef<boolean>(false)
 
-  const thumbnailSocket = React.useRef<W3CWebSocket>(null);
+  const thumbnailSocket = React.useRef<W3CWebSocket | null>(null);
   // eslint-disable-next-line prefer-const
   let socketState = {status: W3CWebSocket.CLOSED};
   const connectInterval = React.useRef<any>(null);
   //d3 sim
-  const simulation = React.useRef<d3.Simulation<SimulationNodeDatum, undefined>>()
+  const simulation = React.useRef<d3.Simulation<SimulationNodeDatum, undefined> | undefined>()
 
   //data structs
   const netData = React.useRef<any>(undefined)
@@ -104,7 +101,7 @@ const Editor = ({
   const timeout = 2000
   const lock = new AsyncLock;
 
-  function refreshSim(simulation){
+  function refreshSim(simulation: React.MutableRefObject<Simulation<SimulationNodeDatum, undefined> | undefined>){
     if(simulation.current !== undefined){
       //simulation.current.alpha(ALPHA_TARGET_REFRESH)
       simulation.current.restart()
@@ -117,6 +114,7 @@ const Editor = ({
     const app = rTldrawApp.current!
     if(app !== undefined && 
       app.isLoading === false && 
+      currentVersion.current &&
       id === currentVersion.current.toString()
       ){
       app.setIsLoading(true)
@@ -201,11 +199,11 @@ const sendSelect = async (id: string) => {
         let selectedIdsWithGroups = [];
         
         if(content !== undefined && content.shapes !== undefined ){
-          selectedIdsWithGroups= content.shapes.map(shape => shape.id)
+          selectedIdsWithGroups= content.shapes.map((shape: { id: any; }) => shape.id)
         }
         
         gData.nodes = [...sim.nodes()] //get simulation data out
-        const tlNodes = app.getShapes().filter((shape) => nodeRegex.test(shape.id))
+        const tlNodes = app.getShapes().filter((shape: { id: any; }) => nodeRegex.test(shape.id))
         const [nextNodeShapes,createNodeShapes] =  updateNodeShapes(
           gData,
           tlNodes,
@@ -214,7 +212,7 @@ const sendSelect = async (id: string) => {
           selectedIdsWithGroups,
           app
         )
-        const tlLinks = app.getShapes().filter((shape) => linkRegex.test(shape.id))
+        const tlLinks = app.getShapes().filter((shape: { id: any; }) => linkRegex.test(shape.id))
         const [nextLinkShapes, nextLinkBindings, createLinkShapes] = updateLinkShapes(app, tlLinks, graphData, tlNodes)
         
         if (createNodeShapes.length > 0) {
@@ -229,10 +227,10 @@ const sendSelect = async (id: string) => {
           //console.log("createtllink",createLinkShapes)
           //console.log("tllink",tlLinks)
           const counts = lodash.countBy(createLinkShapes, 'id')
-          lodash.filter(createLinkShapes, shape => counts[shape.id] > 1)
-          const uniqueLinks : TDShape[] = lodash.filter(createLinkShapes, shape => counts[shape.id] == 1)
-          for(id in lodash.filter(createLinkShapes, shape => counts[shape.id] > 1)){
-            uniqueLinks.push(createLinkShapes.find(node => node.id === id))
+          lodash.filter(createLinkShapes, (shape: { id: string | number; }) => counts[shape.id] > 1)
+          const uniqueLinks : TDShape[] = lodash.filter(createLinkShapes, (shape: { id: string | number; }) => counts[shape.id] == 1)
+          for(id in lodash.filter(createLinkShapes, (shape: { id: string | number; }) => counts[shape.id] > 1)){
+            uniqueLinks.push(createLinkShapes.find((node: { id: any; }) => node.id === id))
           }
           app.patchCreate(createLinkShapes)
           app.selectNone()
@@ -270,13 +268,13 @@ const sendSelect = async (id: string) => {
   }
   //check for new data, if so, update graph data
   function dataInterval(
-    netData: React.MutableRefObject<JSON>,
+    netData: React.MutableRefObject<any>,
     graphData: React.MutableRefObject< { nodes: any[]; links: any[]; }>,
-    simulation: React.MutableRefObject<Simulation<SimulationNodeDatum, undefined>>)
+    simulation: React.MutableRefObject<d3.Simulation<SimulationNodeDatum, undefined> | undefined> | undefined)
     {
     //console.log(netData.current,graphData.current,simulation.current)
     //https://medium.com/ninjaconcept/interactive-dynamic-force-directed-graphs-with-d3-da720c6d7811
-    if (netData.current !== undefined && graphData.current !== undefined && simulation.current !== undefined) {
+    if (netData.current !== undefined && graphData.current !== undefined && simulation && simulation.current !== undefined) {
       if (updateGraphData(netData.current,graphData.current)) {
         currentVersion.current = parseInt(netData.current["CurrentNode"].toString())
         simulation.current.nodes(graphData.current.nodes)
@@ -292,7 +290,7 @@ const sendSelect = async (id: string) => {
   const networkInterval = () => {
     const app = rTldrawApp.current!
     
-    if (!(app === undefined)) {
+    if (!(app === undefined) && thumbnailSocket.current) {
       if(thumbnailSocket.current.readyState === thumbnailSocket.current.OPEN){
         if (loadedFile.current === false) { //still need to handle opening
           //updateVersions(netData, newData)
@@ -344,7 +342,7 @@ const sendSelect = async (id: string) => {
           }
   
           //console.log('saving/updating?')
-          if (!(app.document === undefined)) {
+          if (!(app.document === undefined) && simulation.current) {
             //console.log('saving/updating...')
             saveToProcessing(
               app.document, 
@@ -372,7 +370,7 @@ const sendSelect = async (id: string) => {
     const app = rTldrawApp.current!
     if (!(app === undefined)) {
       const tlNodes = app.getShapes().filter((shape:VersionNodeShape) => nodeRegex.test(shape.id) && shape.hasLoaded === false)
-      tlNodes.map(node => updateThumbnail(app,node.id,currentVersion))    
+      tlNodes.map((node: { id: any; }) => updateThumbnail(app,node.id,currentVersion))    
     }
   }
   
@@ -380,6 +378,7 @@ const sendSelect = async (id: string) => {
     if(e !== undefined){
       e.preventDefault();
     }
+    if(simulation.current)
     saveToProcessing(
       app.document, 
       JSON.stringify(graphData.current), 
@@ -408,8 +407,6 @@ const sendSelect = async (id: string) => {
   },[])
 
   const handleMount = React.useCallback((app: TldrawApp) => {
-    
-    
     rTldrawApp.current = app
     centerPoint.current = app.centerPoint as [number,number]
     resetState(app)
@@ -419,10 +416,9 @@ const sendSelect = async (id: string) => {
     app.selectNone()
     app.zoomToFit()
     app.setIsLoading(true)
-
   }, [])
+
   React.useEffect(() => {
-    //console.log("data interval")
     dataInterval(netData,graphData,simulation)
   },[netData.current])
 
@@ -494,7 +490,7 @@ const sendSelect = async (id: string) => {
       networkIntervalRef.current = setInterval(networkInterval, timeout*2) 
     }
     
-    if(loadedFile.current === true && app.document.name !== 'null'){
+    if(loadedFile.current === true && app.document.name !== 'null' && simulation.current){
       if(new Date().getTime() - timeSinceLastSave.current > 5 * 60 * 1000){ //every 5 min
         console.log("Backing up",new Date().getTime())
         saveToProcessing(
@@ -507,7 +503,6 @@ const sendSelect = async (id: string) => {
         timeSinceLastSave.current = new Date().getTime()
       }
     }
-    
     switch (reason) {
       case 'ui:set_current_project': {
         if(patch.appState.currentProject !== app.appState.currentProject){
@@ -574,12 +569,12 @@ const sendSelect = async (id: string) => {
           if(app.shiftKey && timeSinceLastSelect > 200 
             //&& lastSelection.current === selectedNodeId.current
             ){
-            if(hovered !== undefined && hovered.type == TDShapeType.VersionNode){
+            if(hovered !== undefined && hovered.type == TDShapeType.VersionNode && currentVersion.current){
               const idIntegerHovered = hovered.id.replace(/\D/g, '')
               if(idIntegerHovered === currentVersion.current.toString()){
                 const then = new Date().getTime()
                 setTimeout(()=>{ //if we dont get a selected event in the next half second
-                  if(then > timeSinceLastSelection.current){
+                  if(then > timeSinceLastSelection.current && currentVersion.current){
                     sendFork(currentVersion.current.toString())
                     timeSinceLastSelection.current = new Date().getTime()
                   }
@@ -607,7 +602,7 @@ const sendSelect = async (id: string) => {
               ){
                 const then = new Date().getTime()
                 setTimeout(()=>{ //if we dont get a selected event in the next half second
-                  if(then > timeSinceLastSelection.current){
+                  if(then > timeSinceLastSelection.current && currentVersion.current){
                     sendFork(currentVersion.current.toString())
                     timeSinceLastSelection.current = new Date().getTime()
                   }
@@ -637,7 +632,7 @@ const sendSelect = async (id: string) => {
           const idInteger = selectedShape.id.replace(/\D/g, '')
           //console.log(hovered)
           let hoveredCheck = false
-          if(hovered !== undefined && hovered.type == TDShapeType.VersionNode){
+          if(hovered !== undefined && hovered.type == TDShapeType.VersionNode && currentVersion.current){
             const idIntegerHovered = hovered.id.replace(/\D/g, '')
             if(idIntegerHovered === currentVersion.current.toString()){
               hoveredCheck = true
@@ -691,11 +686,12 @@ const sendSelect = async (id: string) => {
     if(info.type === "exportByColor"){
       exportByColor(app,info.name as ColorStyle)
     }else if(info.type == TDExportType.PNG){
-      const url = URL.createObjectURL(info.blob)
-      const link = document.createElement('a')
-      link.href = url
-      link.download = `${name}.${info.type}`
-      link.click()
+      app.exportImage(TDExportType.PNG, { scale: 2, quality: 1 })
+      // const url = URL.createObjectURL(info.blob)
+      // const link = document.createElement('a')
+      // link.href = url
+      // link.download = `${name}.${info.type}`
+      // link.click()
     }
   },[])
 
@@ -717,7 +713,6 @@ const sendSelect = async (id: string) => {
         onExport={handleExport}
         {...rest}
       />
-      <BetaNotification />
     </div>
   )
 }

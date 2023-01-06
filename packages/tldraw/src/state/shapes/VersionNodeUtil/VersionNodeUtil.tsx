@@ -1,5 +1,5 @@
 import * as React from 'react'
-import { Utils, SVGContainer, TLBounds, HTMLContainer, TLShape } from '@tldraw/core'
+import { Utils, SVGContainer, TLBounds} from '@tldraw/core'
 import { Vec } from '@tldraw/vec'
 import { defaultStyle, getShapeStyle, getFontStyle } from '~state/shapes/shared'
 import { VersionNodeShape, DashStyle, TDShapeType, TDShape, TransformInfo, TDMeta } from '~types'
@@ -60,7 +60,7 @@ export class VersionNodeUtil extends TDShapeUtil<T, E> {
         isCurrent: false,
         hasLoaded:false,
         isFixed:true,
-        checkpoints: 0
+        checkpoints: 0,
       },
       props
     )
@@ -216,6 +216,15 @@ export class VersionNodeUtil extends TDShapeUtil<T, E> {
       )
     }
   )
+
+  getSvgElement = (shape: VersionNodeShape, isDarkMode: boolean) => {
+    const bounds = this.getBounds(shape)
+    const elm = document.createElementNS('http://www.w3.org/2000/svg', 'image')
+    elm.setAttribute('width', `${bounds.width}`)
+    elm.setAttribute('height', `${bounds.height}`)
+    elm.setAttribute('xmlns:xlink', `http://www.w3.org/1999/xlink`)
+    return elm
+  }
 
   Indicator = TDShapeUtil.Indicator<T, M>(({ shape }) => {
     const { id, radius, style } = shape

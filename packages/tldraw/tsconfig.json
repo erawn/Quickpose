@@ -9,9 +9,9 @@
     "baseUrl": ".",
     "paths": {
       "~*": ["./src/*"],
-      "@tldraw/core": ["../../packages/core"],
-      "@tldraw/vec": ["../../packages/vec"],
-      "@tldraw/intersect": ["../../packages/intersect"]
+      "@tldraw/core": ["../core"],
+      "@tldraw/vec": ["../packages/vec"],
+      "@tldraw/intersect": ["../packages/intersect"]
     }
   },
   "references": [{ "path": "../vec" }, { "path": "../intersect" }, { "path": "../core" }]

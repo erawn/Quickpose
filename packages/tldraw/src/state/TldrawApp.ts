@@ -30,6 +30,7 @@ import {
   AlignStyle,
   AlignType,
   ArrowShape,
+  ColorStyle,
   DistributeType,
   FlipType,
   GroupShape,
@@ -2072,6 +2073,8 @@ export class TldrawApp extends StateManager<TDSnapshot> {
         elm.setAttribute('xlink:href', this.document.assets[shape.assetId].src)
       } else if (shape.type === TDShapeType.Video) {
         elm.setAttribute('xlink:href', this.serializeVideo(shape.id))
+      } else if (shape.type === TDShapeType.VersionNode) {
+        elm.setAttribute('xlink:href', shape.imgLink)
       }
 
       // Put the element in the correct position relative to the common bounds

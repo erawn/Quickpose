@@ -1,14 +1,8 @@
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu'
-import { HamburgerMenuIcon } from '@radix-ui/react-icons'
+import { GitHubLogoIcon, HamburgerMenuIcon, InfoCircledIcon } from '@radix-ui/react-icons'
 import { supported } from 'browser-fs-access'
 import * as React from 'react'
-import { FormattedMessage, useIntl } from 'react-intl'
-import { FilenameDialog } from '~components/Primitives/AlertDialog'
-import { Divider } from '~components/Primitives/Divider'
-import { DMContent, DMItem, DMSubMenu, DMTriggerIcon } from '~components/Primitives/DropdownMenu'
-import { preventEvent } from '~components/preventEvent'
 import { useTldrawApp } from '~hooks'
-import { PreferencesMenu } from '../PreferencesMenu'
 import {
   DMItem,
   DMContent,
@@ -22,6 +16,7 @@ import { TDExportType, TDSnapshot } from '~types'
 import { Divider } from '~components/Primitives/Divider'
 import { FormattedMessage, useIntl } from 'react-intl'
 import { PreferencesMenu } from '../PreferencesMenu'
+import { SmallIcon } from '~components/Primitives/SmallIcon'
 
 interface MenuProps {
   readOnly: boolean
@@ -334,7 +329,6 @@ export const Menu = React.memo(function Menu({ readOnly }: MenuProps) {
             >
               <FormattedMessage id="zoom.to.selection" />
             </DMItem>
-          </DMSubMenu>
           <Divider />
           <DMItem
             onSelect={preventEvent}
@@ -356,50 +350,7 @@ export const Menu = React.memo(function Menu({ readOnly }: MenuProps) {
           <DMItem onSelect={handleDelete} disabled={!hasSelection} kbd="⌫" id="TD-MenuItem-Delete">
             <FormattedMessage id="delete" />
           </DMItem>
-        </DMSubMenu>
-        <DMSubMenu label={intl.formatMessage({ id: 'menu.view' })} id="TD-MenuItem-Edit">
-          <DMItem
-            onSelect={preventEvent}
-            onClick={app.zoomIn}
-            kbd="#+"
-            id="TD-MenuItem-View-ZoomIn"
-          >
-            <FormattedMessage id="zoom.in" />
-          </DMItem>
-          <DMItem
-            onSelect={preventEvent}
-            onClick={app.zoomOut}
-            kbd="#-"
-            id="TD-MenuItem-View-ZoomOut"
-          >
-            <FormattedMessage id="zoom.out" />
-          </DMItem>
-          <DMItem
-            onSelect={preventEvent}
-            onClick={handleZoomTo100}
-            kbd="⇧+0"
-            id="TD-MenuItem-View-ZoomTo100"
-          >
-            <FormattedMessage id="zoom.to" /> 100%
-          </DMItem>
-          <DMItem
-            onSelect={preventEvent}
-            onClick={app.zoomToFit}
-            kbd="⇧+1"
-            id="TD-MenuItem-View-ZoomToFit"
-          >
-            <FormattedMessage id="zoom.to.fit" />
-          </DMItem>
-          <DMItem
-            onSelect={preventEvent}
-            onClick={app.zoomToSelection}
-            kbd="⇧+2"
-            id="TD-MenuItem-View-ZoomToSelection"
-          >
-            <FormattedMessage id="zoom.to.selection" />
-          </DMItem>
-        </DMSubMenu>
-        <Divider />
+        </DMSubMenu>        
         <PreferencesMenu />
         <DMDivider dir="ltr" />
         <a href="https://github.com/erawn/quickpose" target="_blank" rel="nofollow">
@@ -472,5 +423,6 @@ export const Menu = React.memo(function Menu({ readOnly }: MenuProps) {
         )} */}
       </DMContent>
     </DropdownMenu.Root>
+    </>
   )
 })
