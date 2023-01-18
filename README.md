@@ -39,6 +39,6 @@ This is an ongoing research project by [Eric Rawn](https://www.ericrawn.media/) 
 
 **If you're interested in this project and want to learn more, shoot me an email at erawn@berkeley.edu**
 
-Quickpose is currently in two parts: a canvas-editor front-end which is a fork of Tldraw, by steve ruiz, and a backend written as a Tool for Processing 4
+Quickpose is currently in two parts: a canvas-editor front-end which is a fork of Tldraw, by steve ruiz, and a [backend written as a Tool for Processing 4](https://github.com/erawn/Quickpose-Backend)
 
 This project relies on the amazing work in Tldraw and Processing - please consider becoming [a sponsor of Steve's](https://github.com/sponsors/steveruizok?frequency=recurring&sponsor=steveruizok) and [donating to the Processing Foundation](https://processing.org/donate)
