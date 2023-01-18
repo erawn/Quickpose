@@ -99,6 +99,7 @@ export interface TDSnapshot {
     dockPosition: TDDockPosition
     exportBackground: TDExportBackground
     sketchAutorun: boolean
+    simulationPause: boolean
   }
   appState: {
     currentStyle: ShapeStyles

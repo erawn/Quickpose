@@ -229,12 +229,12 @@ export const Menu = React.memo(function Menu({ readOnly }: MenuProps) {
               size="small"
               id="TD-MenuItem-Copy-As"
             >
-              <DMItem onClick={handleCopySVG} id="TD-MenuItem-Copy-as-SVG">
+              {/* <DMItem onClick={handleCopySVG} id="TD-MenuItem-Copy-as-SVG">
                 SVG
               </DMItem>
               <DMItem onClick={handleCopyPNG} id="TD-MenuItem-Copy-As-PNG">
                 PNG
-              </DMItem>
+              </DMItem> */}
               <DMItem onClick={handleCopyJSON} id="TD-MenuItem-Copy_as_JSON">
                 JSON
               </DMItem>
@@ -244,7 +244,7 @@ export const Menu = React.memo(function Menu({ readOnly }: MenuProps) {
               size="small"
               id="TD-MenuItem-Export"
             >
-              <DMItem onClick={handleExportSVG} id="TD-MenuItem-Export-SVG">
+              {/* <DMItem onClick={handleExportSVG} id="TD-MenuItem-Export-SVG">
                 SVG
               </DMItem>
               <DMItem onClick={handleExportPNG} id="TD-MenuItem-Export-PNG">
@@ -255,7 +255,7 @@ export const Menu = React.memo(function Menu({ readOnly }: MenuProps) {
               </DMItem>
               <DMItem onClick={handleExportWEBP} id="TD-MenuItem-Export-WEBP">
                 WEBP
-              </DMItem>
+              </DMItem> */}
               <DMItem onClick={handleExportJSON} id="TD-MenuItem-Export-JSON">
                 JSON
               </DMItem>
@@ -329,45 +329,52 @@ export const Menu = React.memo(function Menu({ readOnly }: MenuProps) {
             >
               <FormattedMessage id="zoom.to.selection" />
             </DMItem>
-          <Divider />
-          <DMItem
-            onSelect={preventEvent}
-            onClick={handleSelectAll}
-            kbd="#A"
-            id="TD-MenuItem-Select_All"
-          >
-            <FormattedMessage id="select.all" />
-          </DMItem>
-          <DMItem
-            onSelect={preventEvent}
-            disabled={!hasSelection}
-            onClick={handleSelectNone}
-            id="TD-MenuItem-Select_None"
-          >
-            <FormattedMessage id="select.none" />
-          </DMItem>
-          <Divider />
-          <DMItem onSelect={handleDelete} disabled={!hasSelection} kbd="⌫" id="TD-MenuItem-Delete">
-            <FormattedMessage id="delete" />
-          </DMItem>
-        </DMSubMenu>        
-        <PreferencesMenu />
-        <DMDivider dir="ltr" />
-        <a href="https://github.com/erawn/quickpose" target="_blank" rel="nofollow">
-          <DMItem id="TD-MenuItem-Github">
-            GitHub
-            <SmallIcon>
-              <GitHubLogoIcon />
-            </SmallIcon>
-          </DMItem>
-        </a>
-          <DMItem id="TD-MenuItem-Version">
-            Quickpose 0.1.6-StudyRC
-            <SmallIcon>
-              <InfoCircledIcon />
-            </SmallIcon>
-          </DMItem>
-        {/* <a href="https://twitter.com/Tldraw" target="_blank" rel="nofollow">
+            <Divider />
+            <DMItem
+              onSelect={preventEvent}
+              onClick={handleSelectAll}
+              kbd="#A"
+              id="TD-MenuItem-Select_All"
+            >
+              <FormattedMessage id="select.all" />
+            </DMItem>
+            <DMItem
+              onSelect={preventEvent}
+              disabled={!hasSelection}
+              onClick={handleSelectNone}
+              id="TD-MenuItem-Select_None"
+            >
+              <FormattedMessage id="select.none" />
+            </DMItem>
+            <Divider />
+            <DMItem
+              onSelect={handleDelete}
+              disabled={!hasSelection}
+              kbd="⌫"
+              id="TD-MenuItem-Delete"
+            >
+              <FormattedMessage id="delete" />
+            </DMItem>
+          </DMSubMenu>
+          <PreferencesMenu />
+          <DMDivider dir="ltr" />
+          <a href="https://github.com/erawn/quickpose" target="_blank" rel="nofollow">
+            <DMItem id="TD-MenuItem-Github">
+              GitHub
+              <SmallIcon>
+                <GitHubLogoIcon />
+              </SmallIcon>
+            </DMItem>
+          </a>
+          <a href="https://ericrawn.media/quickpose" target="_blank" rel="nofollow">
+            <DMItem id="TD-MenuItem-Info">
+              Quickpose 1.0.0
+              <SmallIcon>
+                <InfoCircledIcon />
+              </SmallIcon>
+            </DMItem>
+          </a>
+          {/* <a href="https://twitter.com/Tldraw" target="_blank" rel="nofollow">
           <DMItem id="TD-MenuItem-Twitter">
             Twitter
             <SmallIcon>
@@ -393,7 +400,7 @@ export const Menu = React.memo(function Menu({ readOnly }: MenuProps) {
             </DMItem>
           </a>
         )} */}
-        {/* {sponsor === true && (
+          {/* {sponsor === true && (
           <a href="https://github.com/sponsors/steveruizok" target="_blank" rel="nofollow">
             <DMItem id="TD-MenuItem-is_a_Sponsor">
               <FormattedMessage id="sponsored" />!
@@ -421,8 +428,8 @@ export const Menu = React.memo(function Menu({ readOnly }: MenuProps) {
             )}
           </>
         )} */}
-      </DMContent>
-    </DropdownMenu.Root>
+        </DMContent>
+      </DropdownMenu.Root>
     </>
   )
 })
