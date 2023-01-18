@@ -35,6 +35,9 @@ export function PreferencesMenu() {
   const toggleSketchAutorun = React.useCallback(() => {
     app.setSetting('sketchAutorun', (v) => !v)
   }, [app])
+  const toggleSimulationPause = React.useCallback(() => {
+    app.setSetting('simulationPause', (v) => !v)
+  }, [app])
   const toggleKeepStyleMenuOpen = React.useCallback(() => {
     app.setSetting('keepStyleMenuOpen', (v) => !v)
   }, [app])
@@ -66,6 +69,14 @@ export function PreferencesMenu() {
         id="TD-MenuItem-Preferences-SketchAutorun"
       >
         <FormattedMessage id="preferences.sketchAutorun" />
+      </DMCheckboxItem>
+      <DMCheckboxItem
+        checked={settings.simulationPause}
+        onCheckedChange={toggleSimulationPause}
+        kbd=""
+        id="TD-MenuItem-Preferences-SimulationPause"
+      >
+        <FormattedMessage id="preferences.simulationPause" />
       </DMCheckboxItem>
       <DMCheckboxItem
         checked={settings.isDarkMode}

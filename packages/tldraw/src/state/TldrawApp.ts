@@ -4222,6 +4222,7 @@ export class TldrawApp extends StateManager<TDSnapshot> {
       dockPosition: 'bottom',
       exportBackground: TDExportBackground.Transparent,
       sketchAutorun: false,
+      simulationPause: false
     },
     appState: {
       status: TDStatus.Idle,
