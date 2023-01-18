@@ -6,7 +6,7 @@
 ### Quickpose is a version control system for [Processing 4](https://processing.org) designed for creative exploration. With 1-click forking and navigating, canvas annotations and notes, and automatic saves and backups, Quickpose isn't just a version control system,  *it helps you manage your entire creative process*. 
 
 
-This is an ongoing research project by [Eric Rawn](https://www.ericrawn.media/) as a version control system for Processing. It's currently unreleased, but expect it soon! 
+This is an ongoing research project by [Eric Rawn](https://www.ericrawn.media/) as a version control system for Processing. 
 
 **[Project Homepage](https://ericrawn.media/quickpose)**
 
