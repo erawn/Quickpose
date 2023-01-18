@@ -1,15 +1,34 @@
-import * as React from 'react'
-import { Utils, TLBounds, SVGContainer } from '@tldraw/core'
-import { Vec } from '@tldraw/vec'
-import { defaultStyle } from '../shared/shape-styles'
-import { ArrowShape, TransformInfo, Decoration, TDShapeType, DashStyle, TDMeta } from '~types'
-import { TDShapeUtil } from '../TDShapeUtil'
+import { SVGContainer, TLBounds, Utils } from '@tldraw/core'
 import {
   intersectArcBounds,
   intersectLineSegmentBounds,
   intersectLineSegmentLineSegment,
 } from '@tldraw/intersect'
+import { Vec } from '@tldraw/vec'
+import * as React from 'react'
 import { GHOSTED_OPACITY } from '~constants'
+import { TDShapeUtil } from '~state/shapes/TDShapeUtil'
+import {
+  LabelMask,
+  TextLabel,
+  defaultStyle,
+  getFontFace,
+  getFontSize,
+  getFontStyle,
+  getShapeStyle,
+  getTextLabelSize,
+  getTextSvgElement,
+} from '~state/shapes/shared'
+import { styled } from '~styles'
+import {
+  AlignStyle,
+  ArrowShape,
+  DashStyle,
+  Decoration,
+  TDMeta,
+  TDShapeType,
+  TransformInfo,
+} from '~types'
 import {
   getArcLength,
   getArcPoints,
@@ -18,12 +37,8 @@ import {
   getCtp,
   isAngleBetween,
 } from './arrowHelpers'
-import { styled } from '~styles'
-import { TextLabel, getFontStyle, getShapeStyle } from '../shared'
-import { getTextLabelSize } from '../shared/getTextSize'
-import { StraightArrow } from './components/StraightArrow'
 import { CurvedArrow } from './components/CurvedArrow.tsx'
-import { LabelMask } from '../shared/LabelMask'
+import { StraightArrow } from './components/StraightArrow'
 
 type T = ArrowShape
 type E = HTMLDivElement
@@ -363,7 +378,10 @@ export class ArrowUtil extends TDShapeUtil<T, E> {
     const initialShapeBounds = this.getBounds(initialShape)
     const handles: (keyof T['handles'])[] = ['start', 'end']
     const nextHandles = { ...initialShape.handles }
+
     handles.forEach((handle) => {
+      if (handle === 'bend') return
+
       const [x, y] = nextHandles[handle].point
       const nw = x / initialShapeBounds.width
       const nh = y / initialShapeBounds.height
@@ -375,19 +393,22 @@ export class ArrowUtil extends TDShapeUtil<T, E> {
         ],
       }
     })
-    const { start, bend, end } = nextHandles
-    const dist = Vec.dist(start.point, end.point)
-    const midPoint = Vec.med(start.point, end.point)
-    const bendDist = (dist / 2) * initialShape.bend
-    const u = Vec.uni(Vec.vec(start.point, end.point))
-    const point = Vec.add(midPoint, Vec.mul(Vec.per(u), bendDist))
-    nextHandles['bend'] = {
-      ...bend,
-      point: Vec.toFixed(Math.abs(bendDist) < 10 ? midPoint : point),
-    }
+
+    // If we've flipped one of the dimensions (but not both) then invert shape.bend
+
+    const nextBend =
+      (scaleX > 0 && scaleY < 0) || (scaleX < 0 && scaleY > 0)
+        ? -initialShape.bend
+        : initialShape.bend
+
+    // Find the position of the bend handle based on the new start / end handles and the new bend
+    const bendPoint = getBendPoint(nextHandles, nextBend)
+    nextHandles.bend.point = bendPoint
+
     return {
       point: Vec.toFixed([bounds.minX, bounds.minY]),
       handles: nextHandles,
+      bend: nextBend, // does this change?
     }
   }
 
@@ -511,6 +532,64 @@ export class ArrowUtil extends TDShapeUtil<T, E> {
     }
 
     return nextShape
+  }
+
+  getSvgElement = (shape: ArrowShape, isDarkMode: boolean): SVGElement | void => {
+    const elm = document.getElementById(shape.id + '_svg')?.cloneNode(true) as SVGElement
+    if (!elm) return // possibly in test mode
+    const hasLabel = shape.label?.trim()?.length ?? 0 > 0
+    if (hasLabel) {
+      const s = shape as ArrowShape
+      const g = document.createElementNS('http://www.w3.org/2000/svg', 'g')
+
+      const font = getFontStyle(shape.style)
+      const labelSize = getTextLabelSize(shape.label!, font)
+      const fontSize = getFontSize(shape.style.size, shape.style.font) * (shape.style.scale ?? 1)
+      const fontFamily = getFontFace(shape.style.font).slice(1, -1)
+
+      const labelElm = getTextSvgElement(
+        s.label!,
+        fontSize,
+        fontFamily,
+        AlignStyle.Start,
+        labelSize[0],
+        false
+      )
+
+      let dist: number
+
+      const { start, bend, end } = shape.handles
+      const isStraightLine = Vec.dist(bend.point, Vec.toFixed(Vec.med(start.point, end.point))) < 1
+      if (isStraightLine) {
+        dist = Vec.dist(start.point, end.point)
+      } else {
+        const circle = getCtp(start.point, bend.point, end.point)
+        const center = circle.slice(0, 2)
+        const radius = circle[2]
+        const length = getArcLength(center, radius, start.point, end.point)
+        dist = Math.abs(length)
+      }
+
+      const scale = Math.max(
+        0.5,
+        Math.min(1, Math.max(dist / (labelSize[1] + 128), dist / (labelSize[0] + 128)))
+      )
+      const bounds = this.getBounds(shape)
+
+      const offset = Vec.sub(shape.handles.bend.point, [bounds.width / 2, bounds.height / 2])
+      const x = bounds.width / 2 - (labelSize[0] / 2) * scale + offset[0]
+      const y = bounds.height / 2 - (labelSize[1] / 2) * scale + offset[1]
+
+      labelElm.setAttribute('transform', `translate(${x}, ${y})`)
+      labelElm.setAttribute('fill', getShapeStyle(shape.style, isDarkMode).stroke)
+      labelElm.setAttribute('transform-origin', 'center center')
+      g.setAttribute('text-align', 'center')
+      g.setAttribute('text-anchor', 'middle')
+      g.appendChild(elm)
+      g.appendChild(labelElm)
+      return g
+    }
+    return elm
   }
 }
 

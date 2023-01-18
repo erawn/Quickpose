@@ -1,6 +1,6 @@
 {
   "extends": "../../tsconfig.base.json",
-  "exclude": ["node_modules", "dist", "docs"],
+  "exclude": ["node_modules", "dist"],
   "include": ["src", "./src/translations/*.json"],
   "compilerOptions": {
     "skipLibCheck": true,
@@ -9,14 +9,10 @@
     "baseUrl": ".",
     "paths": {
       "~*": ["./src/*"],
-      "@tldraw/core": ["../../packages/core"],
-      "@tldraw/vec": ["../../packages/vec"],
-      "@tldraw/intersect": ["../../packages/intersect"]
+      "@tldraw/core": ["../core"],
+      "@tldraw/vec": ["../vec"],
+      "@tldraw/intersect": ["../intersect"]
     }
   },
-  "references": [{ "path": "../vec" }, { "path": "../intersect" }, { "path": "../core" }],
-  "typedocOptions": {
-    "entryPoints": ["src/index.ts"],
-    "out": "docs"
-  }
+  "references": [{ "path": "../vec" }, { "path": "../intersect" }, { "path": "../core" }]
 }

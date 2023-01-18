@@ -1,8 +1,9 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
+import { TDUserStatus, Tldraw } from '@tldraw/tldraw'
 import * as React from 'react'
-import { Tldraw } from '@tldraw/tldraw'
 import { RoomProvider } from './liveblocks.config'
 import { useMultiplayerState } from './useMultiplayerState'
+
 const roomId = 'mp-test-8'
 
 /*
@@ -20,7 +21,20 @@ Amazon AWS S3. See the www project for our implementation.
 
 export function Multiplayer() {
   return (
-    <RoomProvider id={roomId}>
+    <RoomProvider
+      id={roomId}
+      initialPresence={{
+        id: 'DEFAULT_ID',
+        user: {
+          id: 'DEFAULT_ID',
+          status: TDUserStatus.Connecting,
+          activeShapes: [],
+          color: 'black',
+          point: [0, 0],
+          selectedIds: [],
+        },
+      }}
+    >
       <Editor roomId={roomId} />
     </RoomProvider>
   )

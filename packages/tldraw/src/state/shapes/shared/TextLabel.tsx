@@ -3,8 +3,8 @@ import { stopPropagation } from '~components/stopPropagation'
 import { GHOSTED_OPACITY, LETTER_SPACING } from '~constants'
 import { TLDR } from '~state/TLDR'
 import { styled } from '~styles'
-import { getTextLabelSize } from './getTextSize'
 import { TextAreaUtils } from './TextAreaUtils'
+import { getTextLabelSize } from './getTextSize'
 
 export interface TextLabelProps {
   font: string
@@ -112,8 +112,11 @@ export const TextLabel = React.memo(function TextLabel({
     [isEditing]
   )
 
+  const rWasEditing = React.useRef(isEditing)
+
   React.useEffect(() => {
     if (isEditing) {
+      rWasEditing.current = true
       requestAnimationFrame(() => {
         rIsMounted.current = true
         const elm = rInput.current
@@ -122,8 +125,9 @@ export const TextLabel = React.memo(function TextLabel({
           elm.select()
         }
       })
-    } else {
+    } else if (rWasEditing.current) {
       onBlur?.()
+      rWasEditing.current = false
     }
   }, [isEditing, onBlur])
 
@@ -211,6 +215,7 @@ const TextWrapper = styled('div', {
 const commonTextWrapping = {
   whiteSpace: 'pre-wrap',
   overflowWrap: 'break-word',
+  letterSpacing: LETTER_SPACING,
 }
 
 const InnerWrapper = styled('div', {
@@ -220,7 +225,6 @@ const InnerWrapper = styled('div', {
   minHeight: 1,
   minWidth: 1,
   lineHeight: 1,
-  letterSpacing: LETTER_SPACING,
   outline: 0,
   fontWeight: '500',
   textAlign: 'center',
@@ -265,7 +269,6 @@ const TextArea = styled('textarea', {
   minHeight: 'inherit',
   minWidth: 'inherit',
   lineHeight: 'inherit',
-  letterSpacing: 'inherit',
   outline: 0,
   fontWeight: 'inherit',
   overflow: 'hidden',

@@ -6,9 +6,9 @@
 ### Quickpose is a version control system for [Processing 4](https://processing.org) designed for creative exploration. With 1-click forking and navigating, canvas annotations and notes, and automatic saves and backups, Quickpose isn't just a version control system,  *it helps you manage your entire creative process*. 
 
 
-This is an ongoing research project by [Eric Rawn](https://www.ericrawn.media/) as a version control system for Processing.
+This is an ongoing research project by [Eric Rawn](https://www.ericrawn.media/) as a version control system for Processing. It's currently unreleased, but expect it soon! 
 
-**[Project Homepage](https://ericrawn.media/quickpose)**
+**[Interested in participating in a (paid) study of this tool?](https://github.com/erawn/Quickpose/wiki)**
 
 
 ***
@@ -36,9 +36,16 @@ This is an ongoing research project by [Eric Rawn](https://www.ericrawn.media/) 
   <img src="./assets/stickies.gif"/>
 </div>
 
+## Putting version control in a canvas allows us to do things like _export by color_:
+Export By Color Menu       |  Your Export in Your Sketch Folder
+:-------------------------:|:-------------------------:
+![](./assets/export1.gif)  |  ![](./assets/export2.gif)
 
-**If you're interested in this project and want to learn more, shoot me an email at erawn@berkeley.edu**
 
-Quickpose is currently in two parts: a canvas-editor front-end which is a fork of Tldraw, by steve ruiz, and a [backend written as a Tool for Processing 4](https://github.com/erawn/Quickpose-Backend)
+**If you're interested in this project and want to learn more, shoot me an email at erawn@berkeley.edu**. Otherwise, stay tuned for an official release (hopefully this fall!) 
+
+If you've been invited to evaluate it and are looking for info, please take a look at the [documentation in the wiki](https://github.com/erawn/Quickpose/wiki/Information-for-Study-Participants).
+
+Quickpose is currently in two parts: a canvas-editor front-end which is a fork of Tldraw, by steve ruiz, and a backend written as a Tool for Processing 4
 
 This project relies on the amazing work in Tldraw and Processing - please consider becoming [a sponsor of Steve's](https://github.com/sponsors/steveruizok?frequency=recurring&sponsor=steveruizok) and [donating to the Processing Foundation](https://processing.org/donate)

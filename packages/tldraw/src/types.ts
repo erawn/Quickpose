@@ -1,25 +1,23 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-/* eslint-disable @typescript-eslint/ban-types */
 import type {
-  TLPage,
-  TLUser,
-  TLPageState,
+  TLAsset,
   TLBinding,
   TLBoundsCorner,
   TLBoundsEdge,
-  TLShape,
-  TLHandle,
-  TLSnapLine,
-  TLPinchEventHandler,
-  TLKeyboardEventHandler,
-  TLPointerEventHandler,
-  TLWheelEventHandler,
-  TLCanvasEventHandler,
   TLBoundsEventHandler,
   TLBoundsHandleEventHandler,
+  TLCanvasEventHandler,
+  TLHandle,
+  TLKeyboardEventHandler,
+  TLPage,
+  TLPageState,
+  TLPinchEventHandler,
+  TLPointerEventHandler,
+  TLShape,
   TLShapeBlurHandler,
   TLShapeCloneHandler,
-  TLAsset,
+  TLSnapLine,
+  TLUser,
+  TLWheelEventHandler,
 } from '@tldraw/core'
 import { TDLanguage } from '~translations'
 
@@ -101,6 +99,7 @@ export interface TDSnapshot {
     dockPosition: TDDockPosition
     exportBackground: TDExportBackground
     sketchAutorun: boolean
+    simulationPause: boolean
   }
   appState: {
     currentStyle: ShapeStyles
@@ -133,7 +132,7 @@ export type TldrawCommand = Command<TDSnapshot>
 // The shape of the files stored in JSON
 export interface TDFile {
   name: string
-  fileHandle: FileSystemHandle | null
+  fileHandle: FileSystemFileHandle | null
   document: TDDocument
   assets: Record<string, unknown>
 }
@@ -180,7 +179,7 @@ export enum TDUserStatus {
 }
 
 // A TDUser, for multiplayer rooms
-export interface TDUser extends TLUser<TDShape> {
+export interface TDUser extends TLUser {
   activeShapes: TDShape[]
   status: TDUserStatus
   session?: boolean
@@ -487,7 +486,7 @@ export enum AlignStyle {
 export enum FontStyle {
   Script = 'script',
   Sans = 'sans',
-  Serif = 'erif',
+  Serif = 'serif',
   Mono = 'mono',
 }
 
@@ -546,14 +545,13 @@ export enum TDExportBackground {
   Transparent = 'transparent',
   Auto = 'auto',
   Light = 'light',
-  Dark = 'dark'
+  Dark = 'dark',
 }
 
 /* -------------------------------------------------- */
 /*                    Type Helpers                    */
 /* -------------------------------------------------- */
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export type ParametersExceptFirst<F> = F extends (arg0: any, ...rest: infer R) => any ? R : never
 
 export type ExceptFirst<T extends unknown[]> = T extends [any, ...infer U] ? U : never
@@ -561,7 +559,6 @@ export type ExceptFirst<T extends unknown[]> = T extends [any, ...infer U] ? U :
 export type ExceptFirstTwo<T extends unknown[]> = T extends [any, any, ...infer U] ? U : never
 
 export type PropsOfType<U> = {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   [K in keyof TDShape]: TDShape[K] extends any ? (TDShape[K] extends U ? K : never) : never
 }[keyof TDShape]
 
@@ -596,11 +593,11 @@ export interface Command<T extends { [key: string]: any }> {
 }
 
 export interface FileWithHandle extends File {
-  handle?: FileSystemHandle
+  handle?: FileSystemFileHandle
 }
 
 export interface FileWithDirectoryHandle extends File {
-  directoryHandle?: FileSystemHandle
+  directoryHandle?: FileSystemDirectoryHandle
 }
 
 // The following typings implement the relevant parts of the File System Access

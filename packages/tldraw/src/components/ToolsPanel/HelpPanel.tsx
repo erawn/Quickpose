@@ -1,24 +1,25 @@
-import * as React from 'react'
-import * as Popover from '@radix-ui/react-popover'
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu'
-import { FormattedMessage } from 'react-intl'
-import { styled } from '~styles'
-import { useTldrawApp } from '~hooks'
-import { TDSnapshot } from '~types'
-import { breakpoints } from '~components/breakpoints'
 import {
+  ExternalLinkIcon,
   GitHubLogoIcon,
   HeartFilledIcon,
   QuestionMarkIcon,
   TwitterLogoIcon,
 } from '@radix-ui/react-icons'
-import { RowButton } from '~components/Primitives/RowButton'
+import * as Popover from '@radix-ui/react-popover'
+import * as React from 'react'
+import { FormattedMessage } from 'react-intl'
+import { Divider } from '~components/Primitives/Divider'
 import { MenuContent } from '~components/Primitives/MenuContent'
+import { RowButton } from '~components/Primitives/RowButton'
 import { SmallIcon } from '~components/Primitives/SmallIcon'
 import { DiscordIcon } from '~components/Primitives/icons'
 import { LanguageMenu } from '~components/TopPanel/LanguageMenu/LanguageMenu'
-import { KeyboardShortcutDialog } from './keyboardShortcutDialog'
-import { Divider } from '~components/Primitives/Divider'
+import { breakpoints } from '~components/breakpoints'
+import { useTldrawApp } from '~hooks'
+import { styled } from '~styles'
+import { TDSnapshot } from '~types'
+import { KeyboardShortcutDialog } from './KeyboardShortcutDialog'
 
 const isDebugModeSelector = (s: TDSnapshot) => s.settings.isDebugMode
 const dockPositionState = (s: TDSnapshot) => s.settings.dockPosition
@@ -32,14 +33,14 @@ export function HelpPanel() {
 
   return (
     <Popover.Root>
-      <PopoverAnchor dir="ltr">
+      <PopoverAnchor dir="ltr" debug={isDebugMode} side={side} bp={breakpoints}>
         <Popover.Trigger dir="ltr" asChild>
-          <HelpButton side={side} debug={isDebugMode} bp={breakpoints}>
+          <HelpButton>
             <QuestionMarkIcon />
           </HelpButton>
         </Popover.Trigger>
       </PopoverAnchor>
-      <Popover.Content dir="ltr" asChild>
+      <Popover.Content dir="ltr" align="end" side="top" alignOffset={10} sideOffset={8} asChild>
         <StyledContent style={{ visibility: isKeyboardShortcutsOpen ? 'hidden' : 'visible' }}>
           <LanguageMenuDropdown />
           <KeyboardShortcutDialog onOpenChange={setIsKeyboardShortcutsOpen} />
@@ -65,6 +66,7 @@ const LanguageMenuDropdown = () => {
 }
 
 const linksData = [
+  { id: 'tldraw-beta', icon: ExternalLinkIcon, url: 'https://beta.tldraw.com' },
   { id: 'github', icon: GitHubLogoIcon, url: 'https://github.com/tldraw/tldraw' },
   { id: 'twitter', icon: TwitterLogoIcon, url: 'https://twitter.com/tldraw' },
   { id: 'discord', icon: DiscordIcon, url: 'https://discord.gg/SBBEVCA4PG' },
@@ -93,79 +95,23 @@ const Links = () => {
 }
 
 const HelpButton = styled('button', {
-  width: 28,
-  height: 28,
+  width: 32,
+  height: 32,
   borderRadius: '100%',
-  position: 'fixed',
-  right: 10,
-  padding: 0,
   display: 'flex',
-  alignItems: 'center',
+  padding: 0,
   justifyContent: 'center',
+  alignItems: 'center',
+  outline: 'none',
   backgroundColor: '$panel',
   cursor: 'pointer',
   boxShadow: '$panel',
   border: '1px solid $panelContrast',
-  bottom: 10,
   color: '$text',
-  variants: {
-    debug: {
-      true: {},
-      false: {},
-    },
-    bp: {
-      mobile: {},
-      small: {},
-      medium: {},
-      large: {},
-    },
-    side: {
-      top: {},
-      left: {},
-      right: {},
-      bottom: {},
-    },
+  '& svg': {
+    height: 12,
+    width: 12,
   },
-  compoundVariants: [
-    {
-      bp: 'mobile',
-      side: 'bottom',
-      debug: false,
-      css: {
-        bottom: 70,
-      },
-    },
-    {
-      bp: 'mobile',
-      debug: true,
-      css: {
-        bottom: 50, // 40 + 10
-      },
-    },
-    {
-      bp: 'mobile',
-      side: 'bottom',
-      debug: true,
-      css: {
-        bottom: 110,
-      },
-    },
-    {
-      bp: 'small',
-      side: 'bottom',
-      debug: true,
-      css: {
-        bottom: 50,
-      },
-    },
-    {
-      bp: 'small',
-      debug: false,
-      css: {
-        bottom: 10,
-      },
-    },
-  ],
 })
 
 export const StyledContent = styled(MenuContent, {
@@ -176,6 +122,9 @@ export const StyledContent = styled(MenuContent, {
   overflowY: 'auto',
   '& *': {
     boxSizing: 'border-box',
+  },
+  '& a': {
+    outline: 'none',
   },
   variants: {
     variant: {
@@ -191,7 +140,49 @@ export const StyledContent = styled(MenuContent, {
 
 const PopoverAnchor = styled(Popover.Anchor, {
   position: 'absolute',
-  right: 10,
   zIndex: 999,
-  bottom: 50,
+  right: 10,
+  bottom: 10,
+  width: 32,
+  height: 32,
+  variants: {
+    debug: {
+      true: {},
+      false: {},
+    },
+    bp: {
+      mobile: {
+        bottom: 64,
+      },
+      small: {
+        bottom: 10,
+      },
+      medium: {},
+      large: {},
+    },
+    side: {
+      top: {},
+      left: {},
+      right: {},
+      bottom: {},
+    },
+  },
+  compoundVariants: [
+    {
+      bp: 'mobile',
+      side: 'bottom',
+      debug: true,
+      css: {
+        bottom: 104,
+      },
+    },
+    {
+      bp: 'small',
+      side: 'bottom',
+      debug: true,
+      css: {
+        bottom: 50,
+      },
+    },
+  ],
 })

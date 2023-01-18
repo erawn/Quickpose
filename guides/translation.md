@@ -20,23 +20,24 @@ Want to add a new language to our translations?
 
 Create a new branch on Github.
 
-In the `packages/tldraw/src/translations` folder, duplicate the `main.json` file. 
+In the `packages/tldraw/src/translations` folder, duplicate the `main.json` file.
 
 Rename the new file to the [language code](https://gist.github.com/wpsmith/7604842) for that language. For example, if you were making an Esperanto translation, name the new file `eo.json`.
 
 In the `packages/tldraw/src/translations/translations.ts` file, import your file and create a new entry in to the `TRANSLATIONS` array like this:
 
 ```ts
-import en from './en.json'
 import ar from './ar.json'
-import eo from './eo.json' // <-- import here
+import en from './en.json'
+// import here ↲
+import eo from './eo.json'
 
 export const TRANSLATIONS: TDTranslations = [
   // Default language:
-  { code: 'en', label: 'English', messages: en },
+  { locale: 'en', label: 'English', messages: en },
   // Translations:
-  { code: 'ar', label: 'عربي', messages: ar },
-  { code: 'eo', label: 'Esperanto', messages: eo }, // <-- add an entry here
+  { locale: 'ar', label: 'عربي', messages: ar },
+  { locale: 'eo', label: 'Esperanto', messages: eo }, // <-- add an entry here
 ]
 ```
 

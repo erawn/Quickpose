@@ -1,6 +1,6 @@
 /* eslint-disable */
-import fs from 'fs'
 import esbuild from 'esbuild'
+import fs from 'fs'
 import { createRequire } from 'module'
 import path from 'path'
 
@@ -40,6 +40,10 @@ async function main() {
       tsconfig: './tsconfig.json',
       define: {
         'process.env.NODE_ENV': '"production"',
+      },
+      loader: {
+        '.woff2': 'dataurl',
+        '.woff': 'dataurl',
       },
     })
 

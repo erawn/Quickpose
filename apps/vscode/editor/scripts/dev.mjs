@@ -1,7 +1,7 @@
 /* eslint-disable no-undef */
-import fs from 'fs'
-import esbuildServe from 'esbuild-serve'
 import dotenv from 'dotenv'
+import esbuildServe from 'esbuild-serve'
+import fs from 'fs'
 import path from 'path'
 
 dotenv.config()
@@ -38,6 +38,10 @@ async function main() {
         target: 'es6',
         jsxFactory: 'React.createElement',
         jsxFragment: 'React.Fragment',
+        loader: {
+          '.woff2': 'dataurl',
+          '.woff': 'dataurl',
+        },
         define: {
           'process.env.NODE_ENV': '"production"',
         },

@@ -1,6 +1,6 @@
 /* eslint-disable no-unused-labels */
 import React from 'react'
-import { styled } from 'styles'
+import { styled } from '~styles'
 
 export default function IFrameWarning({ url = 'https://tldraw.com' }: { url?: string }) {
   const [copied, setCopied] = React.useState(false)
@@ -23,8 +23,7 @@ export default function IFrameWarning({ url = 'https://tldraw.com' }: { url?: st
     document.body.appendChild(textarea)
     textarea.focus()
     textarea.select()
-    //tldraw.com/r/hasdasdsad sad sadaasdasdasdsdasdadssdadadsd as ello
-    https: try {
+    try {
       const range = document.createRange()
       range.selectNodeContents(textarea)
       const sel = window.getSelection()

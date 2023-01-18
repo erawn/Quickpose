@@ -1,12 +1,13 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
-exports[` 1`] = `
+exports[`TldrawTestApp Copies to JSON: copied json 1`] = `
 TldrawTestApp {
   "_idbId": undefined,
   "_snapshot": Object {
     "appState": Object {
       "activeTool": "select",
       "currentPageId": "page",
+      "currentProject": "",
       "currentStyle": Object {
         "color": "black",
         "dash": "draw",
@@ -71,12 +72,14 @@ TldrawTestApp {
       "showCloneHandles": false,
       "showGrid": false,
       "showRotateHandles": true,
+      "sketchAutorun": false,
     },
   },
   "_state": Object {
     "appState": Object {
       "activeTool": "select",
       "currentPageId": "page1",
+      "currentProject": "",
       "currentStyle": Object {
         "color": "black",
         "dash": "draw",
@@ -223,6 +226,7 @@ TldrawTestApp {
       "showCloneHandles": false,
       "showGrid": false,
       "showRotateHandles": true,
+      "sketchAutorun": false,
     },
   },
   "_status": "ready",
@@ -305,6 +309,7 @@ TldrawTestApp {
   "expectSelectedIdsToBe": [Function],
   "expectShapesToBeAtPoints": [Function],
   "expectShapesToHaveProps": [Function],
+  "exportByColor": [Function],
   "exportImage": [Function],
   "exportJson": [Function],
   "fileSystemHandle": null,
@@ -332,6 +337,7 @@ TldrawTestApp {
     "appState": Object {
       "activeTool": "select",
       "currentPageId": "page",
+      "currentProject": "",
       "currentStyle": Object {
         "color": "black",
         "dash": "draw",
@@ -396,16 +402,20 @@ TldrawTestApp {
       "showCloneHandles": false,
       "showGrid": false,
       "showRotateHandles": true,
+      "sketchAutorun": false,
     },
   },
   "insertContent": [Function],
   "isCreating": false,
   "isDirty": false,
+  "isErasingWithPen": false,
   "isForcePanning": false,
+  "isPastePrevented": false,
   "isPaused": false,
   "isPointing": false,
   "justSent": false,
   "loadDocument": [Function],
+  "loadPageFromURL": [Function],
   "loadRoom": [Function],
   "mergeDocument": [Function],
   "metaKey": false,
@@ -494,8 +504,10 @@ TldrawTestApp {
   "pointCanvas": [Function],
   "pointShape": [Function],
   "pointer": -1,
+  "pressEraser": [Function],
   "pressKey": [Function],
   "prevSelectedIds": Array [],
+  "preventPaste": [Function],
   "previousPoint": Array [
     0,
     0,
@@ -505,6 +517,7 @@ TldrawTestApp {
   "redo": [Function],
   "redoSelect": [Function],
   "refreshBoundingBoxes": [Function],
+  "releaseEraser": [Function],
   "releaseKey": [Function],
   "removeUser": [Function],
   "renamePage": [Function],
@@ -552,6 +565,7 @@ TldrawTestApp {
   "selectTool": [Function],
   "session": undefined,
   "setCamera": [Function],
+  "setCurrentProject": [Function],
   "setDisableAssets": [Function],
   "setEditingId": [Function],
   "setHoveredId": [Function],
@@ -818,3 +832,156 @@ TldrawTestApp {
   "zoomToSelection": [Function],
 }
 `;
+
+exports[`TldrawTestApp Exposes undo/redo stack: history 1`] = `
+Array [
+  Object {
+    "after": Object {
+      "document": Object {
+        "pageStates": Object {
+          "page1": Object {
+            "selectedIds": Array [
+              "rect1",
+            ],
+          },
+        },
+        "pages": Object {
+          "page1": Object {
+            "bindings": Object {},
+            "shapes": Object {
+              "rect1": Object {
+                "childIndex": 1,
+                "id": "rect1",
+                "label": "",
+                "labelPoint": Array [
+                  0.5,
+                  0.5,
+                ],
+                "name": "Rectangle",
+                "parentId": "page1",
+                "point": Array [
+                  0,
+                  0,
+                ],
+                "rotation": 0,
+                "size": Array [
+                  100,
+                  200,
+                ],
+                "style": Object {
+                  "color": "black",
+                  "dash": "draw",
+                  "isFilled": false,
+                  "scale": 1,
+                  "size": "small",
+                },
+                "type": "rectangle",
+              },
+            },
+          },
+        },
+      },
+    },
+    "before": Object {
+      "document": Object {
+        "pageStates": Object {
+          "page1": Object {
+            "selectedIds": Array [],
+          },
+        },
+        "pages": Object {
+          "page1": Object {
+            "bindings": Object {},
+            "shapes": Object {
+              "rect1": undefined,
+            },
+          },
+        },
+      },
+    },
+    "id": "create",
+  },
+  Object {
+    "after": Object {
+      "document": Object {
+        "pageStates": Object {
+          "page1": Object {
+            "selectedIds": Array [
+              "rect2",
+            ],
+          },
+        },
+        "pages": Object {
+          "page1": Object {
+            "bindings": Object {},
+            "shapes": Object {
+              "rect2": Object {
+                "childIndex": 1,
+                "id": "rect2",
+                "label": "",
+                "labelPoint": Array [
+                  0.5,
+                  0.5,
+                ],
+                "name": "Rectangle",
+                "parentId": "page1",
+                "point": Array [
+                  0,
+                  0,
+                ],
+                "rotation": 0,
+                "size": Array [
+                  100,
+                  200,
+                ],
+                "style": Object {
+                  "color": "black",
+                  "dash": "draw",
+                  "isFilled": false,
+                  "scale": 1,
+                  "size": "small",
+                },
+                "type": "rectangle",
+              },
+            },
+          },
+        },
+      },
+    },
+    "before": Object {
+      "document": Object {
+        "pageStates": Object {
+          "page1": Object {
+            "selectedIds": Array [
+              "rect1",
+            ],
+          },
+        },
+        "pages": Object {
+          "page1": Object {
+            "bindings": Object {},
+            "shapes": Object {
+              "rect2": undefined,
+            },
+          },
+        },
+      },
+    },
+    "id": "create",
+  },
+]
+`;
+
+exports[`TldrawTestApp Selection When selecting all selects all: selected all 1`] = `
+Array [
+  "rect1",
+  "rect2",
+  "rect3",
+]
+`;
+
+exports[`TldrawTestApp When copying to SVG Copies grouped shapes.: copied svg with group 1`] = `"<svg xmlns=\\"http://www.w3.org/2000/svg\\" viewBox=\\"0 0 232 232\\" width=\\"232\\" height=\\"232\\" style=\\"background-color: transparent;\\"><defs><style>@import url('https://fonts.googleapis.com/css2?family=Caveat+Brush&amp;family=Source+Code+Pro&amp;family=Source+Sans+Pro&amp;family=Crimson+Pro&amp;display=block');</style></defs><g/></svg>"`;
+
+exports[`TldrawTestApp When copying to SVG Copies shapes.: copied svg 1`] = `"<svg xmlns=\\"http://www.w3.org/2000/svg\\" viewBox=\\"0 0 236.74 236.74\\" width=\\"236.74\\" height=\\"236.74\\" style=\\"background-color: transparent;\\"><defs><style>@import url('https://fonts.googleapis.com/css2?family=Caveat+Brush&amp;family=Source+Code+Pro&amp;family=Source+Sans+Pro&amp;family=Crimson+Pro&amp;display=block');</style></defs></svg>"`;
+
+exports[`TldrawTestApp When copying to SVG Respects child index: copied svg with reordered elements 1`] = `"<svg xmlns=\\"http://www.w3.org/2000/svg\\" viewBox=\\"0 0 232 232\\" width=\\"232\\" height=\\"232\\" style=\\"background-color: transparent;\\"><defs><style>@import url('https://fonts.googleapis.com/css2?family=Caveat+Brush&amp;family=Source+Code+Pro&amp;family=Source+Sans+Pro&amp;family=Crimson+Pro&amp;display=block');</style></defs></svg>"`;

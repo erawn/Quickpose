@@ -1,15 +1,15 @@
 import * as React from 'react'
-import { Menu } from './Menu/Menu'
-import { styled } from '~styles'
-import { PageMenu } from './PageMenu'
-import { ZoomMenu } from './ZoomMenu'
-import { StyleMenu } from './StyleMenu'
 import { Panel } from '~components/Primitives/Panel'
 import { ToolButton } from '~components/Primitives/ToolButton'
 import { UndoIcon } from '~components/Primitives/icons'
 import { useTldrawApp } from '~hooks'
+import { styled } from '~styles'
+import { Menu } from './Menu/Menu'
 import { MultiplayerMenu } from './MultiplayerMenu'
 import { CurrentVersionMenu } from './CurrentVersionMenu'
+import { PageMenu } from './PageMenu'
+import { StyleMenu } from './StyleMenu'
+import { ZoomMenu } from './ZoomMenu'
 
 interface TopPanelProps {
   readOnly: boolean
@@ -20,7 +20,7 @@ interface TopPanelProps {
   showMultiplayerMenu: boolean
 }
 
-export function TopPanel({
+export function _TopPanel({
   readOnly,
   showPages,
   showMenu,
@@ -93,3 +93,5 @@ const ReadOnlyLabel = styled('div', {
   paddingRight: '$1',
   userSelect: 'none',
 })
+
+export const TopPanel = React.memo(_TopPanel)

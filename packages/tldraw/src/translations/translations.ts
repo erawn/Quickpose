@@ -9,12 +9,18 @@ import he from './he.json'
 import it from './it.json'
 import ja from './ja.json'
 import ko_kr from './ko-kr.json'
+import ku from './ku.json'
 import main from './main.json'
+import my from "./my.json"
 import ne from './ne.json'
 import no from './no.json'
 import pl from './pl.json'
 import pt_br from './pt-br.json'
+import pt_pt from './pt-pt.json'
 import ru from './ru.json'
+import sv from './sv.json'
+import te from './te.json'
+import th from './th.json'
 import tr from './tr.json'
 import uk from './uk.json'
 import zh_cn from './zh-cn.json'
@@ -37,15 +43,21 @@ export const TRANSLATIONS: TDTranslations = [
   { locale: 'it', label: 'Italiano', messages: it },
   { locale: 'ja', label: '日本語', messages: ja },
   { locale: 'ko-kr', label: '한국어', messages: ko_kr },
+  { locale: 'my', label: 'မြန်မာစာ', messages: my},
   { locale: 'ne', label: 'नेपाली', messages: ne },
   { locale: 'no', label: 'Norwegian', messages: no },
   { locale: 'pl', label: 'Polski', messages: pl },
+  { locale: 'pt', label: 'Português - Europeu', messages: pt_pt },
   { locale: 'pt-br', label: 'Português - Brasil', messages: pt_br },
   { locale: 'ru', label: 'Russian', messages: ru },
+  { locale: 'sv', label: 'Svenska', messages: sv },
+  { locale: 'te', label: 'తెలుగు', messages: te },
   { locale: 'tr', label: 'Türkçe', messages: tr },
   { locale: 'uk', label: 'Ukrainian', messages: uk },
-  { locale: 'zh-ch', label: 'Chinese - Simplified', messages: zh_cn },
+  { locale: 'zh-ch', label: '简体中文', messages: zh_cn },
   { locale: 'zh-tw', label: '繁體中文 (台灣)', messages: zh_tw },
+  { locale: 'th', label: 'ภาษาไทย', messages: th },
+  { locale: 'ku', label: 'کوردی', messages: ku },
 ]
 
 /* ----------------- (do not change) ---------------- */

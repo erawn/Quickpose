@@ -1,7 +1,7 @@
+import { Arrow, Sub, SubContent, SubTrigger } from '@radix-ui/react-dropdown-menu'
 import * as React from 'react'
-import { Root, TriggerItem, Content, Arrow } from '@radix-ui/react-dropdown-menu'
-import { RowButton } from '~components/Primitives/RowButton'
 import { MenuContent } from '~components/Primitives/MenuContent'
+import { RowButton } from '~components/Primitives/RowButton'
 
 export interface DMSubMenuProps {
   label: string
@@ -21,20 +21,18 @@ export function DMSubMenu({
   id,
 }: DMSubMenuProps) {
   return (
-    <span id={id}>
-      <Root dir="ltr">
-        <TriggerItem dir="ltr" asChild>
-          <RowButton disabled={disabled} hasArrow>
-            {label}
-          </RowButton>
-        </TriggerItem>
-        <Content dir="ltr" asChild sideOffset={2} alignOffset={-2} align="start">
-          <MenuContent size={size} overflow={overflow}>
-            {children}
-            <Arrow offset={13} />
-          </MenuContent>
-        </Content>
-      </Root>
-    </span>
+    <Sub key={id}>
+      <SubTrigger dir="ltr" asChild>
+        <RowButton disabled={disabled} hasArrow>
+          {label}
+        </RowButton>
+      </SubTrigger>
+      <SubContent asChild sideOffset={4} alignOffset={-4}>
+        <MenuContent size={size} overflow={overflow}>
+          {children}
+          <Arrow offset={13} />
+        </MenuContent>
+      </SubContent>
+    </Sub>
   )
 }

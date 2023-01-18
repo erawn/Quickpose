@@ -1,16 +1,16 @@
-import * as React from 'react'
-import { useTldrawApp } from '~hooks'
-import type { TDSnapshot } from '~types'
-import { styled } from '~styles'
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu'
-import { DMItem, DMContent } from '~components/Primitives/DropdownMenu'
+import * as React from 'react'
+import { FormattedMessage } from 'react-intl'
+import { DMContent, DMItem } from '~components/Primitives/DropdownMenu'
 import { ToolButton } from '~components/Primitives/ToolButton'
 import { preventEvent } from '~components/preventEvent'
-import { FormattedMessage } from 'react-intl'
+import { useTldrawApp } from '~hooks'
+import { styled } from '~styles'
+import type { TDSnapshot } from '~types'
 
 const zoomSelector = (s: TDSnapshot) => s.document.pageStates[s.appState.currentPageId].camera.zoom
 
-export const ZoomMenu = React.memo(function ZoomMenu() {
+export const ZoomMenu = function ZoomMenu() {
   const app = useTldrawApp()
 
   const zoom = app.useStore(zoomSelector)
@@ -46,7 +46,7 @@ export const ZoomMenu = React.memo(function ZoomMenu() {
       </DMContent>
     </DropdownMenu.Root>
   )
-})
+}
 
 const FixedWidthToolButton = styled(ToolButton, {
   minWidth: 56,

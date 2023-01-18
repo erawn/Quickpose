@@ -1,5 +1,105 @@
 # Changelog
 
+## 1.20.3
+
+### Patch Changes
+
+- Add external fonts, new translations, duplicate page fix.
+
+## 1.20.2
+
+### Patch Changes
+
+- Fix text placement.
+
+## 1.20.1
+
+### Patch Changes
+
+- Fix types in core.
+
+## 1.20.0
+
+### Minor Changes
+
+- Add metadata property to user.
+
+## 1.19.0
+
+### Minor Changes
+
+- - Adds `components` prop to Tldraw component (for custom Cursor, etc) @jamesbvaughan
+  - Adds Thai language @watchakorn-18k
+  - Fix event bug on `onRightPointCanvas`
+  - Fix bug with bad data in document with up-to-date version number
+  - Fix bug with arrow bindings
+  - Improves freehand line performance
+  - Improves performance of shape tree
+  - Improved .tldr file size (strip white space)
+
+### Patch Changes
+
+- Updated dependencies
+  - @tldraw/intersect@1.8.0
+  - @tldraw/vec@1.8.0
+
+## 1.18.4
+
+### Patch Changes
+
+- Fix mouse events.
+
+## 1.18.3
+
+### Patch Changes
+
+- Small bump.
+
+## 1.18.2
+
+### Patch Changes
+
+- Fix bug with scrolling.
+
+## 1.18.1
+
+### Patch Changes
+
+- - Fix bug with mouse button state
+
+## 1.18.0
+
+### Minor Changes
+
+- - Remove `mobx` and `mobx-react-lite` as dependencies. This is a breaking change for libraries that expect data to be observable in `@tldraw/core`.
+
+## 1.17.0
+
+### Minor Changes
+
+- - Improve middle mouse panning
+  - Fix bug with assets in VS Code plugin
+  - Improve performance of draw-style shapes
+  - Fix bug with creating assets
+  - Fix bug with text align in labels when outputting images
+  - Fix bug with middle mouse panning on Linux
+  - Fix bug with zoom shortcuts on number pad
+  - Fix bug with draw and erase direction when holding shift
+
+## 1.16.0
+
+### Minor Changes
+
+- - Improve text (and multiline text) in image exports
+  - Create European Portugese translation
+  - Create Swedish translation
+  - Use system default for theme default
+  - Update translation label for Chinese
+  - Fix bugs with flip command
+  - Fix bug with duplicate page command
+  - Improve dialogs
+  - Improve SVG pasting
+
 ## 1.15.0
 
 ### Minor Changes

@@ -1,16 +1,16 @@
-import * as React from 'react'
 import { ExternalLinkIcon } from '@radix-ui/react-icons'
+import * as React from 'react'
 import { FormattedMessage } from 'react-intl'
-import { DMCheckboxItem, DMContent, DMDivider, DMItem } from '~components/Primitives/DropdownMenu'
+import { Divider } from '~components/Primitives/Divider'
+import { DMCheckboxItem, DMContent, DMItem } from '~components/Primitives/DropdownMenu'
 import { SmallIcon } from '~components/Primitives/SmallIcon'
 import { useTldrawApp } from '~hooks'
 import { TDLanguage, TRANSLATIONS } from '~translations'
 import { TDSnapshot } from '~types'
-import { Divider } from '~components/Primitives/Divider'
 
 const languageSelector = (s: TDSnapshot) => s.settings.language
 
-export function LanguageMenu() {
+export const LanguageMenu = () => {
   const app = useTldrawApp()
   const language = app.useStore(languageSelector)
 
@@ -22,7 +22,7 @@ export function LanguageMenu() {
   )
 
   return (
-    <DMContent variant="menu" overflow={true} id="language-menu" side="left" sideOffset={8}>
+    <DMContent variant="menu" overflow id="language-menu" side="left" sideOffset={8}>
       {TRANSLATIONS.map(({ locale, label }) => (
         <DMCheckboxItem
           key={locale}

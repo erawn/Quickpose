@@ -1,16 +1,16 @@
-import * as React from 'react'
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu'
-import { PlusIcon, CheckIcon } from '@radix-ui/react-icons'
-import { PageOptionsDialog } from '../PageOptionsDialog'
-import { styled } from '~styles'
-import { useTldrawApp } from '~hooks'
-import type { TDSnapshot } from '~types'
-import { DMContent, DMDivider } from '~components/Primitives/DropdownMenu'
-import { SmallIcon } from '~components/Primitives/SmallIcon'
-import { RowButton } from '~components/Primitives/RowButton'
-import { ToolButton } from '~components/Primitives/ToolButton'
+import { CheckIcon, PlusIcon } from '@radix-ui/react-icons'
+import * as React from 'react'
 import { FormattedMessage, useIntl } from 'react-intl'
 import { Divider } from '~components/Primitives/Divider'
+import { DMContent } from '~components/Primitives/DropdownMenu'
+import { RowButton } from '~components/Primitives/RowButton'
+import { SmallIcon } from '~components/Primitives/SmallIcon'
+import { ToolButton } from '~components/Primitives/ToolButton'
+import { useTldrawApp } from '~hooks'
+import { styled } from '~styles'
+import type { TDSnapshot } from '~types'
+import { PageOptionsDialog } from '../PageOptionsDialog'
 
 const sortedSelector = (s: TDSnapshot) =>
   Object.values(s.document.pages).sort((a, b) => (a.childIndex || 0) - (b.childIndex || 0))
@@ -21,6 +21,8 @@ const currentPageIdSelector = (s: TDSnapshot) => s.document.pages[s.appState.cur
 
 export function PageMenu() {
   const app = useTldrawApp()
+
+  const intl = useIntl()
 
   const rIsOpen = React.useRef(false)
 
@@ -49,9 +51,9 @@ export function PageMenu() {
   return (
     <DropdownMenu.Root dir="ltr" open={isOpen} onOpenChange={handleOpenChange}>
       <DropdownMenu.Trigger dir="ltr" asChild id="TD-Page">
-        <ToolButton variant="text">{currentPageName || 'Page'}</ToolButton>
+        <ToolButton variant="text">{currentPageName || intl.formatMessage({ id: 'page' })}</ToolButton>
       </DropdownMenu.Trigger>
-      <DMContent variant="menu" align="start">
+      <DMContent variant="menu" align="start" sideOffset={4}>
         {isOpen && <PageMenuContent onClose={handleClose} />}
       </DMContent>
     </DropdownMenu.Root>
@@ -66,9 +68,11 @@ function PageMenuContent({ onClose }: { onClose: () => void }) {
 
   const currentPageId = app.useStore(currentPageIdSelector)
 
+  const defaultPageName = intl.formatMessage({ id: 'page' })
+
   const handleCreatePage = React.useCallback(() => {
     const pageName =
-      intl.formatMessage({ id: 'page' }) + ' ' + (Object.keys(app.document.pages).length + 1)
+    defaultPageName + ' ' + (Object.keys(app.document.pages).length + 1)
     app.createPage(undefined, pageName)
   }, [app])
 
@@ -125,7 +129,7 @@ function PageMenuContent({ onClose }: { onClose: () => void }) {
             isDropBelow={dropIndex !== null && i === dropIndex - 1}
           >
             <DropdownMenu.RadioItem
-              title={page.name || 'Page'}
+              title={page.name || defaultPageName}
               value={page.id}
               key={page.id}
               id={page.id}
@@ -137,7 +141,7 @@ function PageMenuContent({ onClose }: { onClose: () => void }) {
               draggable={true}
             >
               <PageButton>
-                <span id={page.id}>{page.name || 'Page'}</span>
+                <span id={page.id}>{page.name || defaultPageName}</span>
                 <DropdownMenu.ItemIndicator>
                   <SmallIcon>
                     <CheckIcon />

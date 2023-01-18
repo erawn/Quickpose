@@ -7,10 +7,10 @@
     "**/*.spec.tsx",
     "**/*.spec.ts",
     "src/test",
-    "dist",
-    "docs"
+    "dist"
   ],
   "compilerOptions": {
+    "skipLibCheck": true,
     "composite": false,
     "incremental": false,
     "declaration": true,

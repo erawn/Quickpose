@@ -1,10 +1,8 @@
-import '../styles/globals.css'
+import '@fontsource/recursive'
 import Head from 'next/head'
-import useGtag from 'utils/useGtag'
-import { init } from 'utils/sentry'
 import type React from 'react'
-
-init()
+import '~styles/globals.css'
+import useGtag from '~utils/useGtag'
 
 const APP_NAME = 'Quickpose'
 const APP_DESCRIPTION = 'Version Control for Processing'

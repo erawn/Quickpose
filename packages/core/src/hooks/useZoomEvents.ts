@@ -1,10 +1,8 @@
-/* eslint-disable @typescript-eslint/ban-ts-comment */
-/* eslint-disable @typescript-eslint/explicit-module-boundary-types */
-import * as React from 'react'
-import { useTLContext } from './useTLContext'
-import { Handler, useGesture, WebKitGestureEvent } from '@use-gesture/react'
 import { Vec } from '@tldraw/vec'
+import { Handler, WebKitGestureEvent, useGesture } from '@use-gesture/react'
+import * as React from 'react'
 import Utils from '~utils'
+import { useTLContext } from './useTLContext'
 
 // Capture zoom gestures (pinches, wheels and pans)
 export function useZoomEvents<T extends HTMLElement>(
@@ -14,6 +12,7 @@ export function useZoomEvents<T extends HTMLElement>(
   const rOriginPoint = React.useRef<number[] | undefined>(undefined)
   const rPinchPoint = React.useRef<number[] | undefined>(undefined)
   const rDelta = React.useRef<number[]>([0, 0])
+  const rWheelLastTimeStamp = React.useRef<number>(0)
 
   const { inputs, bounds, callbacks } = useTLContext()
 
@@ -34,11 +33,13 @@ export function useZoomEvents<T extends HTMLElement>(
   const handleWheel = React.useCallback<Handler<'wheel', WheelEvent>>(
     ({ event: e }) => {
       e.preventDefault()
-      if (inputs.isPinching) return
+      if (inputs.isPinching || e.timeStamp <= rWheelLastTimeStamp.current) return
+
+      rWheelLastTimeStamp.current = e.timeStamp
 
       const [x, y, z] = normalizeWheel(e)
 
-      // alt+scroll or ctrl+scroll = zoom
+      // alt+scroll or ctrl+scroll = zoom (when not clicking)
       if ((e.altKey || e.ctrlKey || e.metaKey) && e.buttons === 0) {
         const point = inputs.pointer?.point ?? [bounds.width / 2, bounds.height / 2]
         const delta = [...point, z * 0.618]
@@ -50,7 +51,7 @@ export function useZoomEvents<T extends HTMLElement>(
 
       // otherwise pan
       const delta = Vec.mul(
-        e.shiftKey && !Utils.isDarwin
+        e.shiftKey && !Utils.isDarwin()
           ? // shift+scroll = pan horizontally
             [y, 0]
           : // scroll = pan vertically (or in any direction on a trackpad)

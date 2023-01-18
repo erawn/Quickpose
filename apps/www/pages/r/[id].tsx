@@ -1,15 +1,15 @@
+import type { GetServerSideProps } from 'next'
+import dynamic from 'next/dynamic'
+import Head from 'next/head'
 import * as React from 'react'
 
-import { getSession } from 'next-auth/react'
-import dynamic from 'next/dynamic'
-
-const IFrameWarning = dynamic(() => import('components/IFrameWarning'), {
+const IFrameWarning = dynamic(() => import('~components/IFrameWarning'), {
   ssr: false,
 }) as any
 
-// const MultiplayerEditor = dynamic(() => import('components/MultiplayerEditor'), {
-//   ssr: false,
-// }) as any
+const MultiplayerEditor = dynamic(() => import('~components/MultiplayerEditor'), {
+  ssr: false,
+}) as any
 
 interface RoomProps {
   id: string
@@ -20,5 +20,12 @@ export default function Room({ id }: RoomProps) {
     return <IFrameWarning url={`https://tldraw.com/r/${id}`} />
   }
 
-  // return <MultiplayerEditor isUser={isUser} isSponsor={isSponsor} roomId={id} />
+  return (
+    <>
+      <Head>
+        <title>tldraw - {id}</title>
+      </Head>
+      <MultiplayerEditor roomId={id} />
+    </>
+  )
 }

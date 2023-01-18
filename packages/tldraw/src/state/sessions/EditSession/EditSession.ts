@@ -1,7 +1,6 @@
-/* eslint-disable @typescript-eslint/no-non-null-assertion */
-import { TDShape, SessionType, TldrawPatch, TldrawCommand } from '~types'
-import { BaseSession } from '../BaseSession'
-import type { TldrawApp } from '../../internal'
+import type { TldrawApp } from '~state/TldrawApp'
+import { BaseSession } from '~state/sessions/BaseSession'
+import { SessionType, TDShape, TldrawCommand, TldrawPatch } from '~types'
 
 export class EditSession extends BaseSession {
   type = SessionType.Edit

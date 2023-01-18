@@ -1,10 +1,10 @@
 import * as React from 'react'
 import { FormattedMessage, useIntl } from 'react-intl'
-import { DMCheckboxItem, DMDivider, DMSubMenu } from '~components/Primitives/DropdownMenu'
-import { useTldrawApp } from '~hooks'
-import { TDDockPosition, TDExportBackground, TDSnapshot } from '~types'
-import { styled } from '~styles'
 import { Divider } from '~components/Primitives/Divider'
+import { DMCheckboxItem, DMSubMenu } from '~components/Primitives/DropdownMenu'
+import { useTldrawApp } from '~hooks'
+import { styled } from '~styles'
+import { TDDockPosition, TDExportBackground, TDSnapshot } from '~types'
 
 const settingsSelector = (s: TDSnapshot) => s.settings
 
@@ -28,31 +28,18 @@ export function PreferencesMenu() {
     app.setSetting('isFocusMode', (v) => !v)
   }, [app])
 
-  const toggleRotateHandle = React.useCallback(() => {
-    app.setSetting('showRotateHandles', (v) => !v)
-  }, [app])
-
   const toggleGrid = React.useCallback(() => {
     app.setSetting('showGrid', (v) => !v)
   }, [app])
 
-  const toggleBoundShapesHandle = React.useCallback(() => {
-    app.setSetting('showBindingHandles', (v) => !v)
-  }, [app])
-
-  const toggleisSnapping = React.useCallback(() => {
-    app.setSetting('isSnapping', (v) => !v)
-  }, [app])
   const toggleSketchAutorun = React.useCallback(() => {
     app.setSetting('sketchAutorun', (v) => !v)
   }, [app])
-
+  const toggleSimulationPause = React.useCallback(() => {
+    app.setSetting('simulationPause', (v) => !v)
+  }, [app])
   const toggleKeepStyleMenuOpen = React.useCallback(() => {
     app.setSetting('keepStyleMenuOpen', (v) => !v)
-  }, [app])
-
-  const toggleCloneControls = React.useCallback(() => {
-    app.setSetting('showCloneHandles', (v) => !v)
   }, [app])
 
   const toggleCadSelectMode = React.useCallback(() => {
@@ -82,6 +69,14 @@ export function PreferencesMenu() {
         id="TD-MenuItem-Preferences-SketchAutorun"
       >
         <FormattedMessage id="preferences.sketchAutorun" />
+      </DMCheckboxItem>
+      <DMCheckboxItem
+        checked={settings.simulationPause}
+        onCheckedChange={toggleSimulationPause}
+        kbd=""
+        id="TD-MenuItem-Preferences-SimulationPause"
+      >
+        <FormattedMessage id="preferences.simulationPause" />
       </DMCheckboxItem>
       <DMCheckboxItem
         checked={settings.isDarkMode}
@@ -129,7 +124,7 @@ export function PreferencesMenu() {
       >
         <FormattedMessage id="preferences.keep.stylemenu.open" />
       </DMCheckboxItem>
-      <DMSubMenu label={intl.formatMessage({ id: 'dock.position' })} overflow={false}>
+      <DMSubMenu label={intl.formatMessage({ id: 'dock.position' })}>
         {DockPosition.map((position) => (
           <DMCheckboxItem
             key={position}
@@ -143,7 +138,7 @@ export function PreferencesMenu() {
           </DMCheckboxItem>
         ))}
       </DMSubMenu>
-      <DMSubMenu label={intl.formatMessage({ id: 'export.background' })} overflow={false}>
+      <DMSubMenu label={intl.formatMessage({ id: 'export.background' })}>
         {Object.values(TDExportBackground).map((exportBackground) => (
           <DMCheckboxItem
             key={exportBackground}
