@@ -553,9 +553,9 @@ export const installHelper = (centerPoint: number[]) => {
       id: 'installHelper1',
       type: 'text',
       name: 'Text',
-      point: [centerPoint[0] - 220, centerPoint[1] + 250], //[247.14, 653.4],
+      point: [centerPoint[0] - 220, centerPoint[1] + 300], //[247.14, 653.4],
       rotation: 0,
-      text: "1. Download Processing 4 from\n https://processing.org/download\n(you'll have to open it once to make your\n /Processing Folder appear in your Documents)",
+      text: "1. Download Quickpose from https://www.ericrawn.media/quickpose",
       style: {
         color: 'white',
         size: 'small',
@@ -570,7 +570,7 @@ export const installHelper = (centerPoint: number[]) => {
       id: 'installHelper2',
       type: 'text',
       name: 'Text',
-      point: [centerPoint[0] + 200, centerPoint[1] + 250], //[670.88, 652.49],
+      point: [centerPoint[0] + 200, centerPoint[1] + 300], //[670.88, 652.49],
       rotation: 0,
       text: '2. Extract /Quickpose to /Processing/tools, \nrestart Processing,\nopen your sketch (or a new one), \nand click Tools-> Quickpose. ',
       style: {
@@ -587,7 +587,7 @@ export const installHelper = (centerPoint: number[]) => {
       id: 'installHelper3',
       type: 'text',
       name: 'Text',
-      point: [centerPoint[0] + 130, centerPoint[1] + 200], //[574.34, 607.04],
+      point: [centerPoint[0] + 130, centerPoint[1] + 250], //[574.34, 607.04],
       rotation: 0,
       text: 'To get started:',
       style: {

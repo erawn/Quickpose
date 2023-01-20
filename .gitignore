@@ -22,3 +22,7 @@ apps/new-tab-extension/tsconfig.tsbuildinfo
 apps/.cache
 .yarn
 .yarnrc
+packages/**/**.d.ts
+packages/**/**.d.ts.map
+packages/**/**.map
+packages/**/**.js
