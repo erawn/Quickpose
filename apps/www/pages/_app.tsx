@@ -3,14 +3,14 @@ import Head from 'next/head'
 import type React from 'react'
 import '~styles/globals.css'
 import useGtag from '~utils/useGtag'
-
+import ReactGA from 'react-ga'
 const APP_NAME = 'Quickpose'
 const APP_DESCRIPTION = 'Version Control for Processing'
 const APP_URL = 'https://quickpose.ericrawn.media'
 const IMAGE = 'https://github.com/erawn/Quickpose/blob/ab4f533c0e6f3f2c45337b2157b81a9e43fff7bc/assets/quickpose-social.png?raw=true'
 
 function MyApp({ Component, pageProps }: any) {
-  useGtag()
+  ReactGA.initialize(process.env.GA_ID_QUICKPOSE);
 
   return (
     <>
