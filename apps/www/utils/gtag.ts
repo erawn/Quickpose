@@ -1,5 +1,4 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-export const GA_TRACKING_ID = process.env.GA_MEASUREMENT_ID
+export const GA_TRACKING_ID = process.env.GA_ID_QUICKPOSE
 
 type GTagEvent = {
   action: string

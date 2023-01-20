@@ -21,7 +21,7 @@ class MyDocument extends NextDocument {
     return (
       <Html lang="en">
         <Head>
-          {/* <script async src={`https://www.googletagmanager.com/gtag/js?id=${GA_TRACKING_ID}`} />
+          <script async src={`https://www.googletagmanager.com/gtag/js?id=${GA_TRACKING_ID}`} />
           <script
             dangerouslySetInnerHTML={{
               __html: `
@@ -33,7 +33,7 @@ class MyDocument extends NextDocument {
               });
           `,
             }}
-          /> */}
+          />
         </Head>
         <body>
           <Main />

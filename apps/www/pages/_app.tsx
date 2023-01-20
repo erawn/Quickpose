@@ -2,15 +2,12 @@ import '@fontsource/recursive'
 import Head from 'next/head'
 import type React from 'react'
 import '~styles/globals.css'
-import useGtag from '~utils/useGtag'
-import ReactGA from 'react-ga'
 const APP_NAME = 'Quickpose'
 const APP_DESCRIPTION = 'Version Control for Processing'
 const APP_URL = 'https://quickpose.ericrawn.media'
 const IMAGE = 'https://github.com/erawn/Quickpose/blob/ab4f533c0e6f3f2c45337b2157b81a9e43fff7bc/assets/quickpose-social.png?raw=true'
 
 function MyApp({ Component, pageProps }: any) {
-  ReactGA.initialize(process.env.GA_ID_QUICKPOSE);
 
   return (
     <>
@@ -24,13 +21,13 @@ function MyApp({ Component, pageProps }: any) {
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="theme-color" content="#fafafa" />
 
-        {/* <meta name="twitter:url" content={APP_URL} />
+        <meta name="twitter:url" content={APP_URL} />
         <meta name="twitter:title" content={APP_NAME} />
         <meta name="twitter:description" content={APP_DESCRIPTION} />
-        <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:creator" content="@tldraw" />
-        <meta name="twitter:site" content="@tldraw" />
-        <meta name="twitter:image" content={IMAGE} /> */}
+        <meta name="twitter:card" content={IMAGE} />
+        <meta name="twitter:creator" content="@erawn" />
+        <meta name="twitter:site" content="@erawn" />
+        <meta name="twitter:image" content={IMAGE} />
 
         <meta property="og:type" content="website" />
         <meta property="og:title" content={APP_NAME} />
