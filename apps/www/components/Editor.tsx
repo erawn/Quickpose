@@ -544,7 +544,7 @@ const Editor = ({ id = 'home', ...rest }: EditorProps & Partial<TldrawProps>) =>
           app.document.name,
           true
         )
-        window.gtag('event', 'backup')
+        ;(window as any).gtag('event', 'backup')
         timeSinceLastSave.current = new Date().getTime()
       }
     }
