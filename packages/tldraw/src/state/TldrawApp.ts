@@ -4205,7 +4205,7 @@ export class TldrawApp extends StateManager<TDSnapshot> {
     settings: {
       isCadSelectMode: false,
       isPenMode: false,
-      isDarkMode: false,
+      isDarkMode: true,
       isZoomSnap: false,
       isFocusMode: false,
       isSnapping: false,
@@ -4221,7 +4221,7 @@ export class TldrawApp extends StateManager<TDSnapshot> {
       language: 'en',
       dockPosition: 'bottom',
       exportBackground: TDExportBackground.Transparent,
-      sketchAutorun: false,
+      sketchAutorun: true,
       simulationPause: false
     },
     appState: {
