@@ -47,6 +47,8 @@ import {
 } from 'utils/quickposeDrawing'
 // import * as gtag from 'utils/gtag'
 import { w3cwebsocket as W3CWebSocket } from 'websocket'
+import { StudyConsentPopup } from './StudyConsentPopup'
+import { BetaNotification } from './BetaNotification'
 
 //declare const window: Window & { app: TldrawApp }
 
@@ -770,6 +772,7 @@ const Editor = ({ id = 'home', ...rest }: EditorProps & Partial<TldrawProps>) =>
 
   return (
     <div className="tldraw">
+      <StudyConsentPopup container={undefined} />
       <Tldraw
         id={id}
         autofocus

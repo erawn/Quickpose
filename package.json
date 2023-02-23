@@ -44,9 +44,6 @@
   "engines": {
     "node": "^16.x"
   },
-  "engines": {
-    "node": "^16.x"
-   },
   "devDependencies": {
     "@changesets/cli": "^2.20.0",
     "@ggallon/prettier-plugin-sort-imports": "^3.4.2-canary.0",
