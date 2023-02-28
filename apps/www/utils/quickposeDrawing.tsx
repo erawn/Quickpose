@@ -476,6 +476,12 @@ export function loadTldrFile(
       number,
       number
     ]
+    const studyConsent = JSON.parse(loadFile.current.graphData?.studyConsent)
+    if (studyConsent === 'enabled') {
+      app.setSetting('sendUsageData', 'enabled')
+    } else if (studyConsent === 'disabled') {
+      app.setSetting('sendUsageData', 'disabled')
+    }
     const importNodes = loadedData.nodes as dataNode[]
     //console.log(importNodes)
     importNodes.forEach((node) => {
@@ -555,7 +561,7 @@ export const installHelper = (centerPoint: number[]) => {
       name: 'Text',
       point: [centerPoint[0] - 220, centerPoint[1] + 300], //[247.14, 653.4],
       rotation: 0,
-      text: "1. Download Quickpose from\n https://www.ericrawn.media/quickpose",
+      text: '1. Download Quickpose from\n https://www.ericrawn.media/quickpose',
       style: {
         color: 'white',
         size: 'small',

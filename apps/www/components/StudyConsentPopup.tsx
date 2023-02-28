@@ -1,10 +1,12 @@
 import * as AlertDialogPrimitive from '@radix-ui/react-alert-dialog'
+import * as Checkbox from '@radix-ui/react-checkbox'
+import { CheckIcon } from '@radix-ui/react-icons'
+import { scaleBand } from 'd3'
 import Link from 'next/link'
 import React, { useLayoutEffect } from 'react'
 import { FormattedMessage, useIntl } from 'react-intl'
 import { Panel } from '~../../packages/tldraw/src/components/Primitives/Panel'
 import { styled } from '~styles'
-import { DialogState, useDialog } from '../../../packages/tldraw/src/hooks/useDialog'
 
 const STORAGE_KEY = 'quickpose_study_consent'
 interface ContentProps {
@@ -30,169 +32,153 @@ function Content({ children, onClose, container }: ContentProps) {
     </AlertDialogPrimitive.Portal>
   )
 }
-
 const StyledDescription = styled(AlertDialogPrimitive.Description, {
   marginBottom: 20,
   color: '$text',
-  fontSize: '$2',
+  fontSize: '$3',
   lineHeight: 1.5,
-  textAlign: 'center',
-  maxWidth: '62%',
+  textAlign: 'left',
+  maxWidth: '90%',
   minWidth: 0,
   alignSelf: 'center',
+  textIndent: 50,
 })
-
 export const AlertDialogRoot = AlertDialogPrimitive.Root
 export const AlertDialogContent = Content
 export const AlertDialogDescription = StyledDescription
 export const AlertDialogAction = AlertDialogPrimitive.Action
 export const AlertDialogCancel = AlertDialogPrimitive.Cancel
 
-export function StudyConsentPopup({ container }: { container: any }) {
-  const [isDismissed, setIsDismissed] = React.useState(true)
-  const [dialogContainer, setDialogContainer] = React.useState<any>(null)
-  const [dialogState, setDialogState] = React.useState<any>('ready')
-  useLayoutEffect(() => {
-    try {
-      const storageIsDismissed = null //localStorage.getItem(STORAGE_KEY)
-
-      if (storageIsDismissed !== null) {
-        return
-      } else {
-        setIsDismissed(false)
-      }
-    } catch (err) {
-      setIsDismissed(false)
-    }
-  }, [])
-
-  const handleDismiss = React.useCallback(() => {
-    setIsDismissed(true)
-    localStorage.setItem(STORAGE_KEY, 'true')
-  }, [])
-
-  if (isDismissed) return null
+export function StudyConsentPopup({ container, setActive }: { container: any; setActive: any }) {
+  const [checked, setChecked] = React.useState<Checkbox.CheckedState>(false)
+  const handleCheckboxClick = (): void => {
+    setChecked(!checked)
+  }
 
   return (
-    // <LoadingScreen>Error: {"test message"}</LoadingScreen>
-
-    //     <div
-    //       style={{
-    //         position: 'absolute',
-    //         top: 0,
-    //   left: 0,
-    //   width: '100%',
-    //   height: '100%',
-    //   display: 'flex',
-    //   alignItems: 'center',
-    // justifyContent: 'center',
-    //         zIndex: 999,
-    //         fontSize: 'var(--fontSizes-2)',
-    //         fontFamily: 'var(--fonts-ui)',
-    //         color: '#fff',
-    //         mixBlendMode: 'difference',
-    //       }}
-    //     >
-    //       <Panel>
-    //       Consent Pop up
-    //       </Panel>
-    //       <a
-    //         href="https://beta.tldraw.com"
-    //         style={{
-    //           height: '48px',
-    //           display: 'flex',
-    //           alignItems: 'center',
-    //           justifyContent: 'center',
-    //           padding: 8,
-    //           fontSize: 'inherit',
-    //           color: 'inherit',
-    //         }}
-    //         title="Try the new tldraw at beta.tldraw.com"
-    //       >
-    //         Consent Pop up
-    //       </a>
-    //       <button
-    //         style={{
-    //           height: '48px',
-    //           display: 'flex',
-    //           alignItems: 'center',
-    //           justifyContent: 'center',
-    //           padding: 4,
-    //           color: 'inherit',
-    //           background: 'none',
-    //           border: 'none',
-    //           cursor: 'pointer',
-    //           opacity: 0.8,
-    //         }}
-    //         title="Dismiss"
-    //         onClick={handleDismiss}
-    //       >
-    //         ×
-    //       </button>
-    //     </div>
-
-    <AlertDialogRoot open={dialogState !== null}>
-      <AlertDialogContent onClose={() => setDialogState(null)} container={container}>
-        {dialogState && (
-          <AlertDialogDescription>
-            {
-              <>
-                Quickpose is an ongoing research project by{' '}
-                <StyledLink href="https://beta.tldraw.com">Eric Rawn</StyledLink>, a PhD student in
-                the
-                <a href="https://beta.tldraw.com" title="Hybrid Ecologies Lab">
-                  Hybrid Ecologies Lab
-                </a>{' '}
-                at the University of California, Berkeley.
-              </>
-            }
-          </AlertDialogDescription>
-        )}
+    <AlertDialogRoot open={true}>
+      <AlertDialogContent onClose={() => setActive(false)} container={container}>
+        {
+          <>
+            <AlertDialogDescription>
+              {
+                <>
+                  Quickpose is an ongoing research project by{' '}
+                  <StyledLink href="https://beta.tldraw.com" style={{ color: 'blue' }}>
+                    Eric Rawn
+                  </StyledLink>
+                  , a PhD student in the{' '}
+                  <StyledLink href="https://beta.tldraw.com">Hybrid Ecologies Lab</StyledLink> at
+                  the University of California, Berkeley. The software is 100% free to use and
+                  open-source. However, if you wish to participate in our research, we would really
+                  appreciate it! We&apos;re studying how folks use Quickpose for their everyday
+                  work.{' '}
+                  <b>
+                    If you consent below, Quickpose will automatically send anonymous, encrypted
+                    usage data to our collection server for analysis
+                  </b>
+                  . No code, images, GPS, or IP information will ever be collected (although we may
+                  collect statistics about the code you write in Quickpose projects). For
+                  information about the research, the data we collect, and what we do with it,{' '}
+                  <StyledLink href="https://www.ericrawn.media/quickpose-docs#faq">
+                    see our wiki page
+                  </StyledLink>
+                </>
+              }
+            </AlertDialogDescription>
+            <div style={{ textAlign: 'center', fontSize: '20px' }}>
+              <StyledLink href="" style={{}}>
+                Read the Entire Consent Form Here
+              </StyledLink>
+            </div>
+          </>
+        }
         <div
           style={{
             width: '100%',
-            gap: '$6',
+            gap: '10px',
             display: 'flex',
             justifyContent: 'space-between',
+            flexDirection: 'column',
+            alignItems: 'center',
           }}
         >
           {
-            <AlertDialogCancel asChild>
-              <Button
-                css={{ color: '$text' }}
-                onClick={() => {
-                  setDialogState(null)
-                }}
-              >
-                Cancel
-              </Button>
-            </AlertDialogCancel>
+            <AlertDialogAction asChild>
+              <form>
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    fontSize: '$1',
+                    marginTop: '10px',
+                  }}
+                >
+                  <StyledCheckbox
+                    checked={checked}
+                    onCheckedChange={handleCheckboxClick}
+                    className="CheckboxRoot"
+                    defaultChecked
+                    id="c1"
+                  >
+                    <Checkbox.Indicator className="CheckboxIndicator">
+                      <CheckIcon
+                        style={{
+                          transformOrigin: 'center center',
+                          transform: 'scale(1.7) translateX(-2px)',
+                        }}
+                      />
+                    </Checkbox.Indicator>
+                  </StyledCheckbox>
+                  <label htmlFor="c1">
+                    <div style={{ fontSize: '13px', marginLeft: '5px' }}>
+                      Save My Preference for All Future Projects (This can be changed at anytime in
+                      the settings)
+                    </div>
+                  </label>
+                </div>
+              </form>
+            </AlertDialogAction>
           }
           <div style={{ flexShrink: 0 }}>
             {
               <AlertDialogAction asChild>
                 <Button
                   onClick={() => {
-                    setDialogState(null)
+                    setActive(false)
+                  }}
+                  css={{
+                    border: '5px solid black',
+                    '&:hover': {
+                      color: 'white',
+                      backgroundColor: '#1b2024',
+                    },
                   }}
                 >
-                  No
-                </Button>
-              </AlertDialogAction>
-            }
-            {
-              <AlertDialogAction asChild>
-                <Button
-                  css={{ backgroundColor: '#2F80ED', color: 'White' }}
-                  onClick={() => {
-                    setDialogState(null)
-                  }}
-                >
-                  Yes
+                  <b>I DO NOT CONSENT, DO NOT SEND ANONYMOUS USAGE DATA.</b>
                 </Button>
               </AlertDialogAction>
             }
           </div>
+          {
+            <AlertDialogAction asChild>
+              <Button
+                css={{
+                  backgroundColor: '#65A5FF',
+                  color: 'White',
+                  '&:hover': {
+                    backgroundColor: '#1b2024',
+                  },
+                }}
+                onClick={() => {
+                  setActive(false)
+                }}
+              >
+                I CONSENT TO PARTICIPATE IN RESEARCH AND HAVE READ THE CONSENT FORM. I UNDERSTAND I
+                CAN OPT-OUT AT ANY TIME
+              </Button>
+            </AlertDialogAction>
+          }
         </div>
       </AlertDialogContent>
     </AlertDialogRoot>
@@ -229,7 +215,8 @@ const StyledContent = styled(AlertDialogPrimitive.Content, {
   top: '50%',
   left: '50%',
   transform: 'translate(-50%, -50%)',
-  width: 'max-content',
+  maxwidth: '80%',
+  minwidth: '20%',
   padding: '$3',
   pointerEvents: 'all',
   backgroundColor: '$panel',
@@ -240,6 +227,7 @@ const StyledContent = styled(AlertDialogPrimitive.Content, {
   fontFamily: '$ui',
   border: '1px solid $panelContrast',
   boxShadow: '$panel',
+  fontSize: '30px',
 })
 
 export const Button = styled('button', {
@@ -248,19 +236,35 @@ export const Button = styled('button', {
   alignItems: 'center',
   justifyContent: 'center',
   borderRadius: '$2',
-  padding: '0 15px',
+  padding: '4px 15px',
   fontSize: '$1',
-  lineHeight: 1,
+  lineHeight: 1.5,
   fontWeight: 'normal',
   height: 36,
   color: '$text',
   cursor: 'pointer',
   minWidth: 48,
+  textAlign: 'center',
 })
 
-const StyledLink = styled(Link, {
+const StyledLink = styled('a', {
   color: 'Blue',
   '&:hover': {
-    color: 'BlueViolet',
+    color: 'DarkBlue',
+  },
+})
+
+const StyledCheckbox = styled(Checkbox.Root, {
+  display: 'flex',
+  alignItems: 'center',
+  fontSize: '$1',
+  width: '25px',
+  height: '25px',
+  borderRadius: '4px',
+  '&:hover': {
+    backgroundColor: 'Gray',
+  },
+  '&:focus': {
+    boxShadow: '0 0 0 2px black',
   },
 })

@@ -88,6 +88,8 @@ const Editor = ({ id = 'home', ...rest }: EditorProps & Partial<TldrawProps>) =>
 
   const networkIntervalRef = React.useRef<any>(null)
 
+  const [showStudyConsent, setShowStudyConsent] = React.useState<Boolean>(false)
+
   let abortFileController = new AbortController()
   const timeout = 2000
   const lock = new AsyncLock()
@@ -118,7 +120,7 @@ const Editor = ({ id = 'home', ...rest }: EditorProps & Partial<TldrawProps>) =>
 
         console.log('send fork', id)
         lock
-          .acquire('select', async function() {
+          .acquire('select', async function () {
             await axios
               .get(LOCALHOST_BASE + '/fork/' + id, {
                 timeout: 600,
@@ -126,7 +128,7 @@ const Editor = ({ id = 'home', ...rest }: EditorProps & Partial<TldrawProps>) =>
                   Autorun: app.settings.sketchAutorun,
                 },
               })
-              .then(response => {
+              .then((response) => {
                 if (response.status === 200) {
                   netData.current = response.data
                   dataInterval(netData, graphData, simulation)
@@ -134,15 +136,15 @@ const Editor = ({ id = 'home', ...rest }: EditorProps & Partial<TldrawProps>) =>
                   app.setIsLoading(false)
                 }
               })
-              .catch(error => {
+              .catch((error) => {
                 console.warn('error forking current version: ', error)
                 return null
               })
           })
-          .then(function() {
+          .then(function () {
             app.setIsLoading(false)
           })
-          .catch(error => {
+          .catch((error) => {
             console.warn('error forking current version: ', error)
             return null
           })
@@ -157,7 +159,7 @@ const Editor = ({ id = 'home', ...rest }: EditorProps & Partial<TldrawProps>) =>
       app.setIsLoading(true)
       console.log('send select', id)
       lock
-        .acquire('select', async function() {
+        .acquire('select', async function () {
           await axios
             .get(LOCALHOST_BASE + '/select/' + id, {
               timeout: 600,
@@ -165,7 +167,7 @@ const Editor = ({ id = 'home', ...rest }: EditorProps & Partial<TldrawProps>) =>
                 Autorun: app.settings.sketchAutorun,
               },
             })
-            .then(function(response) {
+            .then(function (response) {
               if (response.status === 200) {
                 //updateThumbnail(app, 'node' + currentVersion.current, currentVersion)
                 currentVersion.current = parseInt(response.data)
@@ -174,12 +176,12 @@ const Editor = ({ id = 'home', ...rest }: EditorProps & Partial<TldrawProps>) =>
                 //drawInterval()
               }
             })
-            .catch(error => {
+            .catch((error) => {
               console.warn('error selecting current version: ', error)
               return null
             })
         })
-        .then(function() {
+        .then(function () {
           app.setIsLoading(false)
         })
     }
@@ -352,6 +354,7 @@ const Editor = ({ id = 'home', ...rest }: EditorProps & Partial<TldrawProps>) =>
             //simulation.current.alpha(ALPHA_TARGET_REFRESH)
             drawInterval()
             app.zoomToContent()
+            app.setSetting('sendUsageData', 'prompt')
             //app.appState.isLoading = false
             //make new file, do intro experience?
           } else if (loadFile.current !== null && simulation) {
@@ -495,6 +498,12 @@ const Editor = ({ id = 'home', ...rest }: EditorProps & Partial<TldrawProps>) =>
     //   }
     // }
   }, [socketState.status])
+
+  React.useEffect(() => {
+    if (rTldrawApp.current?.settings.sendUsageData === 'prompt') {
+      setShowStudyConsent(true)
+    }
+  }, [rTldrawApp.current?.settings.sendUsageData])
 
   React.useEffect(() => {
     //https://sparkjava.com/documentation#examples-and-faq
@@ -772,7 +781,10 @@ const Editor = ({ id = 'home', ...rest }: EditorProps & Partial<TldrawProps>) =>
 
   return (
     <div className="tldraw">
-      <StudyConsentPopup container={undefined} />
+      {showStudyConsent && (
+        <StudyConsentPopup container={undefined} setActive={setShowStudyConsent} />
+      )}
+
       <Tldraw
         id={id}
         autofocus

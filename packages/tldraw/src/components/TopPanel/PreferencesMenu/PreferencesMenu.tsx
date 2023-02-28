@@ -35,6 +35,9 @@ export function PreferencesMenu() {
   const toggleSketchAutorun = React.useCallback(() => {
     app.setSetting('sketchAutorun', (v) => !v)
   }, [app])
+  const toggleSendUsageData = React.useCallback(() => {
+    app.setSetting('sendUsageData', 'prompt')
+  }, [app])
   const toggleSimulationPause = React.useCallback(() => {
     app.setSetting('simulationPause', (v) => !v)
   }, [app])
@@ -62,7 +65,7 @@ export function PreferencesMenu() {
 
   return (
     <DMSubMenu label={intl.formatMessage({ id: 'menu.preferences' })} id="TD-MenuItem-Preferences">
-       <DMCheckboxItem
+      <DMCheckboxItem
         checked={settings.sketchAutorun}
         onCheckedChange={toggleSketchAutorun}
         kbd=""
@@ -77,6 +80,14 @@ export function PreferencesMenu() {
         id="TD-MenuItem-Preferences-SimulationPause"
       >
         <FormattedMessage id="preferences.simulationPause" />
+      </DMCheckboxItem>
+      <DMCheckboxItem
+        checked={settings.sendUsageData == 'enabled'}
+        onCheckedChange={toggleSendUsageData}
+        kbd=""
+        id="TD-MenuItem-Preferences-SendUsageData"
+      >
+        <FormattedMessage id="preferences.sendUsageData" />
       </DMCheckboxItem>
       <DMCheckboxItem
         checked={settings.isDarkMode}

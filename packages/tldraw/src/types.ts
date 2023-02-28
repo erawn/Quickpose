@@ -100,6 +100,7 @@ export interface TDSnapshot {
     exportBackground: TDExportBackground
     sketchAutorun: boolean
     simulationPause: boolean
+    sendUsageData: string
   }
   appState: {
     currentStyle: ShapeStyles

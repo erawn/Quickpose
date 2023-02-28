@@ -36,6 +36,7 @@ export type inputVersionNodeShape = {
 
 export interface quickPoseFile extends TDFile {
   graphData:{
+    studyConsent: any;
     simData: any,
     alpha: string,
     centerPoint: string,
