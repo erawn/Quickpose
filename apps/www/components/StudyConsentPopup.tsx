@@ -1,12 +1,11 @@
-import * as AlertDialogPrimitive from '@radix-ui/react-alert-dialog'
-import * as Checkbox from '@radix-ui/react-checkbox'
-import { CheckIcon } from '@radix-ui/react-icons'
-import { scaleBand } from 'd3'
-import Link from 'next/link'
-import React, { useLayoutEffect } from 'react'
-import { FormattedMessage, useIntl } from 'react-intl'
-import { Panel } from '~../../packages/tldraw/src/components/Primitives/Panel'
-import { styled } from '~styles'
+import * as AlertDialogPrimitive from '@radix-ui/react-alert-dialog';
+import * as Checkbox from '@radix-ui/react-checkbox';
+import { CheckIcon } from '@radix-ui/react-icons';
+import { scaleBand } from 'd3';
+import Link from 'next/link';
+import React, { useLayoutEffect } from 'react';
+import { styled } from '~styles';
+import { studyConsentResponse } from '~utils/quickPoseTypes';
 
 const STORAGE_KEY = 'quickpose_study_consent'
 interface ContentProps {
@@ -16,11 +15,11 @@ interface ContentProps {
 }
 function Content({ children, onClose, container }: ContentProps) {
   const handleKeyDown = (event: React.KeyboardEvent) => {
-    switch (event.key) {
-      case 'Escape':
-        onClose?.()
-        break
-    }
+    // switch (event.key) {
+    //   case 'Escape':
+    //     onClose?.()
+    //     break
+    // }
   }
   return (
     <AlertDialogPrimitive.Portal container={container}>
@@ -34,12 +33,12 @@ function Content({ children, onClose, container }: ContentProps) {
 }
 const StyledDescription = styled(AlertDialogPrimitive.Description, {
   marginBottom: 20,
-  color: '$text',
-  fontSize: '$3',
+  color: 'Black',
+  fontSize: '$2',
   lineHeight: 1.5,
   textAlign: 'left',
-  maxWidth: '90%',
-  minWidth: 0,
+  maxWidth: '80%',
+  minWidth: '10%',
   alignSelf: 'center',
   textIndent: 50,
 })
@@ -57,7 +56,7 @@ export function StudyConsentPopup({ container, setActive }: { container: any; se
 
   return (
     <AlertDialogRoot open={true}>
-      <AlertDialogContent onClose={() => setActive(false)} container={container}>
+      <AlertDialogContent onClose={() => {}} container={container}>
         {
           <>
             <AlertDialogDescription>
@@ -145,7 +144,8 @@ export function StudyConsentPopup({ container, setActive }: { container: any; se
               <AlertDialogAction asChild>
                 <Button
                   onClick={() => {
-                    setActive(false)
+                    const response:studyConsentResponse = {preference: "Disabled", promptAgain: !checked as boolean};
+                    setActive(response)
                   }}
                   css={{
                     border: '5px solid black',
@@ -171,7 +171,8 @@ export function StudyConsentPopup({ container, setActive }: { container: any; se
                   },
                 }}
                 onClick={() => {
-                  setActive(false)
+                  const response:studyConsentResponse = {preference: "Enabled", promptAgain: !checked as boolean};
+                  setActive(response)
                 }}
               >
                 I CONSENT TO PARTICIPATE IN RESEARCH AND HAVE READ THE CONSENT FORM. I UNDERSTAND I
@@ -268,3 +269,10 @@ const StyledCheckbox = styled(Checkbox.Root, {
     boxShadow: '0 0 0 2px black',
   },
 })
+
+// const StyledLink = styled(Link,{
+//   color: 'Blue',
+//   text-decoration: none,
+//   margin: 1rem
+//   position: relative;
+// });

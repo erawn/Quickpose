@@ -476,12 +476,19 @@ export function loadTldrFile(
       number,
       number
     ]
-    const studyConsent = JSON.parse(loadFile.current.graphData?.studyConsent)
-    if (studyConsent === 'enabled') {
-      app.setSetting('sendUsageData', 'enabled')
-    } else if (studyConsent === 'disabled') {
-      app.setSetting('sendUsageData', 'disabled')
+    if(loadFile.current.graphData?.studyConsent !== undefined){
+      const studyConsent = loadFile.current.graphData?.studyConsent.toString()
+      if (studyConsent === 'enabled') {
+        app.setSetting('sendUsageData', 'Enabled')
+      } else if (studyConsent === 'disabled') {
+        app.setSetting('sendUsageData', 'Disabled')
+      }else{
+        app.setSetting('sendUsageData', 'Prompt')
+      }
+    }else{
+      app.setSetting('sendUsageData', 'Prompt')
     }
+  
     const importNodes = loadedData.nodes as dataNode[]
     //console.log(importNodes)
     importNodes.forEach((node) => {

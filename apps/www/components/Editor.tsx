@@ -31,7 +31,7 @@ import {
   updateVersions,
   useUploadAssets,
 } from 'utils/quickPoseNetworking'
-import { EditorProps, forceLink, quickPoseFile } from 'utils/quickPoseTypes'
+import { EditorProps, forceLink, quickPoseFile, studyConsentPreference } from 'utils/quickPoseTypes'
 import {
   d3Sim,
   defaultSticky,
@@ -45,6 +45,7 @@ import {
   updateLoadingTicks,
   updateNodeShapes,
 } from 'utils/quickposeDrawing'
+import { v4 as uuidv4 } from 'uuid';
 // import * as gtag from 'utils/gtag'
 import { w3cwebsocket as W3CWebSocket } from 'websocket'
 import { StudyConsentPopup } from './StudyConsentPopup'
@@ -89,6 +90,20 @@ const Editor = ({ id = 'home', ...rest }: EditorProps & Partial<TldrawProps>) =>
   const networkIntervalRef = React.useRef<any>(null)
 
   const [showStudyConsent, setShowStudyConsent] = React.useState<Boolean>(false)
+
+  const [userID, setUserID] = React.useState<String>("")
+  const [projectID, setProjectID] = React.useState<String>("")
+
+  function setStudyPreference(pref:studyConsentPreference){
+    setShowStudyConsent(false);
+    console.log(pref)
+    rTldrawApp.current?.setSetting('sendUsageData', pref.preference)
+    if(pref.preference == "Enabled"){
+      setProjectID(uuidv4());
+      console.log(projectID)
+    }
+
+  }
 
   let abortFileController = new AbortController()
   const timeout = 2000
@@ -354,7 +369,7 @@ const Editor = ({ id = 'home', ...rest }: EditorProps & Partial<TldrawProps>) =>
             //simulation.current.alpha(ALPHA_TARGET_REFRESH)
             drawInterval()
             app.zoomToContent()
-            app.setSetting('sendUsageData', 'prompt')
+            app.setSetting('sendUsageData', 'Prompt')
             //app.appState.isLoading = false
             //make new file, do intro experience?
           } else if (loadFile.current !== null && simulation) {
@@ -386,6 +401,7 @@ const Editor = ({ id = 'home', ...rest }: EditorProps & Partial<TldrawProps>) =>
               simulation.current.alpha(),
               centerPoint.current,
               app.document.name,
+              app.settings.sendUsageData,
               false
             )
           }
@@ -424,6 +440,7 @@ const Editor = ({ id = 'home', ...rest }: EditorProps & Partial<TldrawProps>) =>
         simulation.current.alpha(),
         centerPoint.current,
         app.document.name,
+        app.settings.sendUsageData,
         false
       )
   }, [])
@@ -437,6 +454,8 @@ const Editor = ({ id = 'home', ...rest }: EditorProps & Partial<TldrawProps>) =>
     loadFile.current = null
     loadedFile.current = false
     simulation.current = d3Sim()
+    setUserID("")
+    setProjectID("")
     if (app !== undefined) {
       app.setCurrentProject('')
       app.document.name = 'null'
@@ -500,9 +519,7 @@ const Editor = ({ id = 'home', ...rest }: EditorProps & Partial<TldrawProps>) =>
   }, [socketState.status])
 
   React.useEffect(() => {
-    if (rTldrawApp.current?.settings.sendUsageData === 'prompt') {
-      setShowStudyConsent(true)
-    }
+
   }, [rTldrawApp.current?.settings.sendUsageData])
 
   React.useEffect(() => {
@@ -536,6 +553,11 @@ const Editor = ({ id = 'home', ...rest }: EditorProps & Partial<TldrawProps>) =>
   const handlePatch = React.useCallback((app: TldrawApp, patch: TldrawPatch, reason?: string) => {
     if (process.env.NODE_ENV !== 'production') {
       console.log(reason)
+      console.log("usagedata",app.settings.sendUsageData)
+      console.log("panel",showStudyConsent)
+    }
+    if (rTldrawApp.current?.settings.sendUsageData === 'Prompt') {
+      setShowStudyConsent(true)
     }
     if (networkIntervalRef.current === null) {
       clearInterval(networkIntervalRef.current)
@@ -553,6 +575,7 @@ const Editor = ({ id = 'home', ...rest }: EditorProps & Partial<TldrawProps>) =>
           simulation.current.alpha(),
           centerPoint.current,
           app.document.name,
+          app.settings.sendUsageData,
           true
         )
         ;(window as any).gtag('event', 'backup')
@@ -782,7 +805,7 @@ const Editor = ({ id = 'home', ...rest }: EditorProps & Partial<TldrawProps>) =>
   return (
     <div className="tldraw">
       {showStudyConsent && (
-        <StudyConsentPopup container={undefined} setActive={setShowStudyConsent} />
+        <StudyConsentPopup container={undefined} setActive={setStudyPreference} />
       )}
 
       <Tldraw

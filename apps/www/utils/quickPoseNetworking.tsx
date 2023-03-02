@@ -194,6 +194,7 @@ export const saveToProcessing = async (
   alpha, 
   centerPoint: [number,number], 
   projectName,
+  studyConsent:string,
   backup:boolean) => {
     const file: quickPoseFile = {
         name: 'quickpose.tldr',
@@ -205,6 +206,7 @@ export const saveToProcessing = async (
         graphData: {"simData":simData,
                 "alpha":alpha.toString(),
                 "centerPoint": JSON.stringify(centerPoint),
+                "studyConsent": studyConsent.toLowerCase()
                 },
       }
       
@@ -213,8 +215,8 @@ export const saveToProcessing = async (
       key: process.env.client_key,
       ca: process.env.ca_cert,
     });  
-    const result = await axios.get('https://localhost:4000', { httpsAgent });
-    console.log(result)
+    //const result = await axios.get('https://localhost:4000', { httpsAgent });
+    //console.log(result)
     // Serialize to JSON
     const json = JSON.stringify(file, null, 2)
     // Create blob

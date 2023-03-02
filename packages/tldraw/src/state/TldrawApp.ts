@@ -4223,7 +4223,7 @@ export class TldrawApp extends StateManager<TDSnapshot> {
       exportBackground: TDExportBackground.Transparent,
       sketchAutorun: true,
       simulationPause: false,
-      sendUsageData: 'prompt',
+      sendUsageData: 'Prompt',
     },
     appState: {
       status: TDStatus.Idle,

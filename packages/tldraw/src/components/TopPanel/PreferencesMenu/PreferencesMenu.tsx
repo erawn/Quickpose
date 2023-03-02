@@ -36,7 +36,7 @@ export function PreferencesMenu() {
     app.setSetting('sketchAutorun', (v) => !v)
   }, [app])
   const toggleSendUsageData = React.useCallback(() => {
-    app.setSetting('sendUsageData', 'prompt')
+    app.setSetting('sendUsageData', 'Prompt')
   }, [app])
   const toggleSimulationPause = React.useCallback(() => {
     app.setSetting('simulationPause', (v) => !v)
@@ -82,7 +82,7 @@ export function PreferencesMenu() {
         <FormattedMessage id="preferences.simulationPause" />
       </DMCheckboxItem>
       <DMCheckboxItem
-        checked={settings.sendUsageData == 'enabled'}
+        checked={settings.sendUsageData == 'Enabled'}
         onCheckedChange={toggleSendUsageData}
         kbd=""
         id="TD-MenuItem-Preferences-SendUsageData"

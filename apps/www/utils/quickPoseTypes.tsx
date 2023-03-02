@@ -1,11 +1,19 @@
-import type { TDShapeType, TDShape, VersionNodeShape, TDFile } from "@tldraw/tldraw";
-import type { SimulationNodeDatum, SimulationLinkDatum } from "d3";
+import type { TDFile, TDShape, TDShapeType, VersionNodeShape } from "@tldraw/tldraw";
+import type { SimulationLinkDatum, SimulationNodeDatum } from "d3";
+
 
 export interface EditorProps {
     id?: string
     isUser?: boolean
     isSponsor?: boolean
   }
+
+export interface studyConsentPreference {
+  preference: 'Enabled' | 'Disabled' | 'Prompt'
+}
+export interface studyConsentResponse extends studyConsentPreference{
+  promptAgain: boolean
+}
   
 export interface dataNode extends SimulationNodeDatum {
     id: string;
