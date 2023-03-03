@@ -26,12 +26,13 @@ import {
   loadFileFromProcessing,
   saveToProcessing,
   sendToLog,
+  setStudyConsent,
   updateSocketVersions,
   updateThumbnail,
   updateVersions,
   useUploadAssets,
 } from 'utils/quickPoseNetworking'
-import { EditorProps, forceLink, quickPoseFile, studyConsentPreference } from 'utils/quickPoseTypes'
+import { EditorProps, forceLink, quickPoseFile, studyConsentPreference, studyConsentResponse } from 'utils/quickPoseTypes'
 import {
   d3Sim,
   defaultSticky,
@@ -94,13 +95,16 @@ const Editor = ({ id = 'home', ...rest }: EditorProps & Partial<TldrawProps>) =>
   const [userID, setUserID] = React.useState<String>("")
   const [projectID, setProjectID] = React.useState<String>("")
 
-  function setStudyPreference(pref:studyConsentPreference){
+  function setStudyPreference(pref:studyConsentResponse){
     setShowStudyConsent(false);
     console.log(pref)
     rTldrawApp.current?.setSetting('sendUsageData', pref.preference)
     if(pref.preference == "Enabled"){
       setProjectID(uuidv4());
       console.log(projectID)
+      setStudyConsent("Enabled", pref.promptAgain ? "True" : "False")
+    }else if(pref.preference == "Disabled"){
+      setStudyConsent("Disabled", pref.promptAgain ? "True" : "False")
     }
 
   }

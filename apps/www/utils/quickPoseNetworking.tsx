@@ -304,6 +304,51 @@ const checkImage = (path: any) => {
   })
 }
 
+export const setProjectID = async (projectID:string) => {
+  axios
+    .post(
+      LOCALHOST_BASE + '/usageID',
+      {},
+      {
+        params: {
+          usageID: projectID,
+        },
+      }
+    )
+    .then(function (response) {
+      //console.log(response);
+    })
+    .finally(() => {
+
+    })
+    .catch(function (error) {
+      console.log(error)
+    })
+}
+
+export const setStudyConsent = async (consentPreference:string, remind:string) => {
+  axios
+    .post(
+      LOCALHOST_BASE + '/usageConsent',
+      {},
+      {
+        params: {
+          Consent: consentPreference,
+          Remind: remind
+        },
+      }
+    )
+    .then(function (response) {
+      //console.log(response);
+    })
+    .finally(() => {
+
+    })
+    .catch(function (error) {
+      console.log(error)
+    })
+}
+
 export const updateThumbnail = async (
   app: TldrawApp,
   shape_id: string,
