@@ -22,17 +22,24 @@ import * as lodash from 'lodash'
 import React from 'react'
 import {
   connectWebSocket,
-  exportByColor, //updateCurrentVersion,
+  exportByColor,
+  getStudyConsent, //updateCurrentVersion,
   loadFileFromProcessing,
+  postStudyConsent,
   saveToProcessing,
   sendToLog,
-  setStudyConsent,
   updateSocketVersions,
   updateThumbnail,
   updateVersions,
   useUploadAssets,
 } from 'utils/quickPoseNetworking'
-import { EditorProps, forceLink, quickPoseFile, studyConsentPreference, studyConsentResponse } from 'utils/quickPoseTypes'
+import {
+  EditorProps,
+  forceLink,
+  quickPoseFile,
+  studyConsentPreference,
+  studyConsentResponse,
+} from 'utils/quickPoseTypes'
 import {
   d3Sim,
   defaultSticky,
@@ -46,11 +53,10 @@ import {
   updateLoadingTicks,
   updateNodeShapes,
 } from 'utils/quickposeDrawing'
-import { v4 as uuidv4 } from 'uuid';
 // import * as gtag from 'utils/gtag'
 import { w3cwebsocket as W3CWebSocket } from 'websocket'
-import { StudyConsentPopup } from './StudyConsentPopup'
 import { BetaNotification } from './BetaNotification'
+import { StudyConsentPopup } from './StudyConsentPopup'
 
 //declare const window: Window & { app: TldrawApp }
 
@@ -91,24 +97,42 @@ const Editor = ({ id = 'home', ...rest }: EditorProps & Partial<TldrawProps>) =>
   const networkIntervalRef = React.useRef<any>(null)
 
   const [showStudyConsent, setShowStudyConsent] = React.useState<Boolean>(false)
+  const checkSettings = React.useRef<Boolean>(false)
+  const [userID, setUserID] = React.useState<string>('')
+  const [projectID, setProjectID] = React.useState<string>('')
 
-  const [userID, setUserID] = React.useState<String>("")
-  const [projectID, setProjectID] = React.useState<String>("")
-
-  function setStudyPreference(pref:studyConsentResponse){
-    setShowStudyConsent(false);
-    console.log(pref)
+  function setStudyPreferenceFromInterface(pref: studyConsentResponse) {
+    setShowStudyConsent(false)
+    console.log('setfrominterface', pref)
     rTldrawApp.current?.setSetting('sendUsageData', pref.preference)
-    if(pref.preference == "Enabled"){
-      setProjectID(uuidv4());
-      console.log(projectID)
-      setStudyConsent("Enabled", pref.promptAgain ? "True" : "False")
-    }else if(pref.preference == "Disabled"){
-      setStudyConsent("Disabled", pref.promptAgain ? "True" : "False")
+    if (pref.preference == 'Enabled') {
+      postStudyConsent('Enabled', pref.promptAgain ? 'True' : 'False')
+    } else if (pref.preference == 'Disabled') {
+      postStudyConsent('Disabled', pref.promptAgain ? 'True' : 'False')
     }
-
   }
-
+  function setStudyPreferenceFromProject(pref: studyConsentResponse) {
+    console.log('setfromproject', pref)
+    if (pref.promptAgain) {
+      setShowStudyConsent(true)
+    } else {
+      setShowStudyConsent(false)
+    }
+    rTldrawApp.current?.setSetting('sendUsageData', pref.preference)
+    checkSettings.current = true
+  }
+  function setStudyPreferenceFromSettings(pref: studyConsentResponse) {
+    if (checkSettings.current == false) {
+      console.log('setfromsettings', pref)
+      if (pref.promptAgain) {
+        setShowStudyConsent(true)
+      } else {
+        setShowStudyConsent(false)
+      }
+      rTldrawApp.current?.setSetting('sendUsageData', pref.preference)
+      checkSettings.current = true
+    }
+  }
   let abortFileController = new AbortController()
   const timeout = 2000
   const lock = new AsyncLock()
@@ -346,6 +370,9 @@ const Editor = ({ id = 'home', ...rest }: EditorProps & Partial<TldrawProps>) =>
           if (loadFile.current === null) {
             //haven't found a file yet, so keep looking
             console.log('requesting file...')
+            if (checkSettings.current! === false) {
+              getStudyConsent(setStudyPreferenceFromSettings)
+            }
             thumbnailSocket.current.send('/tldrfile')
             loadFileFromProcessing(loadFile, abortFileController)
             updateLoadingTicks(app, loadingTicks)
@@ -379,7 +406,16 @@ const Editor = ({ id = 'home', ...rest }: EditorProps & Partial<TldrawProps>) =>
           } else if (loadFile.current !== null && simulation) {
             //we found an existing file
             abortFileController.abort()
-            loadTldrFile(app, graphData, simulation, centerPoint, loadFile, currentVersion)
+            loadTldrFile(
+              app,
+              graphData,
+              simulation,
+              centerPoint,
+              loadFile,
+              currentVersion,
+              setStudyPreferenceFromProject,
+              setProjectID
+            )
             refreshSim(simulation)
             dataInterval(netData, graphData, simulation)
             drawInterval()
@@ -406,6 +442,7 @@ const Editor = ({ id = 'home', ...rest }: EditorProps & Partial<TldrawProps>) =>
               centerPoint.current,
               app.document.name,
               app.settings.sendUsageData,
+              projectID,
               false
             )
           }
@@ -445,6 +482,7 @@ const Editor = ({ id = 'home', ...rest }: EditorProps & Partial<TldrawProps>) =>
         centerPoint.current,
         app.document.name,
         app.settings.sendUsageData,
+        projectID,
         false
       )
   }, [])
@@ -458,8 +496,8 @@ const Editor = ({ id = 'home', ...rest }: EditorProps & Partial<TldrawProps>) =>
     loadFile.current = null
     loadedFile.current = false
     simulation.current = d3Sim()
-    setUserID("")
-    setProjectID("")
+    setUserID('')
+    setProjectID('')
     if (app !== undefined) {
       app.setCurrentProject('')
       app.document.name = 'null'
@@ -522,9 +560,7 @@ const Editor = ({ id = 'home', ...rest }: EditorProps & Partial<TldrawProps>) =>
     // }
   }, [socketState.status])
 
-  React.useEffect(() => {
-
-  }, [rTldrawApp.current?.settings.sendUsageData])
+  React.useEffect(() => {}, [rTldrawApp.current?.settings.sendUsageData])
 
   React.useEffect(() => {
     //https://sparkjava.com/documentation#examples-and-faq
@@ -537,6 +573,8 @@ const Editor = ({ id = 'home', ...rest }: EditorProps & Partial<TldrawProps>) =>
       connectInterval,
       loadFile,
       netData,
+      setUserID,
+      setStudyPreferenceFromSettings,
       abortFileController,
       resetState
     )
@@ -557,8 +595,8 @@ const Editor = ({ id = 'home', ...rest }: EditorProps & Partial<TldrawProps>) =>
   const handlePatch = React.useCallback((app: TldrawApp, patch: TldrawPatch, reason?: string) => {
     if (process.env.NODE_ENV !== 'production') {
       console.log(reason)
-      console.log("usagedata",app.settings.sendUsageData)
-      console.log("panel",showStudyConsent)
+      console.log('usagedata', app.settings.sendUsageData)
+      console.log('panel', showStudyConsent)
     }
     if (rTldrawApp.current?.settings.sendUsageData === 'Prompt') {
       setShowStudyConsent(true)
@@ -580,6 +618,7 @@ const Editor = ({ id = 'home', ...rest }: EditorProps & Partial<TldrawProps>) =>
           centerPoint.current,
           app.document.name,
           app.settings.sendUsageData,
+          projectID,
           true
         )
         ;(window as any).gtag('event', 'backup')
@@ -809,7 +848,7 @@ const Editor = ({ id = 'home', ...rest }: EditorProps & Partial<TldrawProps>) =>
   return (
     <div className="tldraw">
       {showStudyConsent && (
-        <StudyConsentPopup container={undefined} setActive={setStudyPreference} />
+        <StudyConsentPopup container={undefined} setActive={setStudyPreferenceFromInterface} />
       )}
 
       <Tldraw

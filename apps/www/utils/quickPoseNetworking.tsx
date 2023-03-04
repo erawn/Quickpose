@@ -1,15 +1,16 @@
 import { ColorStyle, TDDocument, TDFile, TDShapeType, TldrawApp } from '@tldraw/tldraw'
-import FormData from 'form-data'
-import { w3cwebsocket as W3CWebSocket } from 'websocket'
-import axiosRetry from 'axios-retry'
-import deepEqual from 'deep-equal'
-import { MutableRefObject, useCallback } from 'react'
 import axios from 'axios'
-import { nodeRegex } from './quickposeDrawing'
+import axiosRetry from 'axios-retry'
 import * as BSON from 'bson'
-import React from 'react'
-import { quickPoseFile } from './quickPoseTypes'
+import deepEqual from 'deep-equal'
+import FormData from 'form-data'
 import https from 'https'
+import { MutableRefObject, useCallback } from 'react'
+import React from 'react'
+import { w3cwebsocket as W3CWebSocket } from 'websocket'
+import { quickPoseFile, studyConsentResponse } from './quickPoseTypes'
+import { nodeRegex } from './quickposeDrawing'
+
 export const LOCALHOST_BASE = 'http://127.0.0.1:8080'
 export const WEBSOCKET = 'ws://127.0.0.1:8080/thumbnail'
 export function getIconImageURLNoTime(id: number) {
@@ -27,6 +28,8 @@ export function connectWebSocket(
   connectInterval: MutableRefObject<any>,
   loadFile: MutableRefObject<quickPoseFile | null>,
   netData: MutableRefObject<any>,
+  setUserID,
+  setStudyPreferenceFromSettings,
   abortFileController: AbortController,
   resetState: { (app: TldrawApp): void }
 ) {
@@ -117,8 +120,35 @@ export function connectWebSocket(
                   }
                   break
                 }
+                case 'userID': {
+                  setUserID(msg[key].toString())
+                  break
+                }
+                case 'Consent': {
+                  //console.log('setfromsocket', msg[key])
+                  switch (msg[key]) {
+                    case 'EnabledNoPrompt': {
+                      setStudyPreferenceFromSettings({ preference: 'Enabled', promptAgain: false })
+                      break
+                    }
+
+                    case 'DisabledNoPrompt': {
+                      setStudyPreferenceFromSettings({ preference: 'Disabled', promptAgain: false })
+                      break
+                    }
+                    case 'Prompt': {
+                      //setStudyPreferenceFromSettings({ preference: 'Prompt', promptAgain: true })
+                      break
+                    }
+                    default: {
+                      console.log('unknown consent', key, msg[key])
+                      break
+                    }
+                  }
+                  break
+                }
                 default: {
-                  console.log('Unknown key')
+                  console.log('Unknown key', key, msg[key])
                   break
                 }
               }
@@ -146,6 +176,8 @@ export function connectWebSocket(
           connectInterval,
           loadFile,
           netData,
+          setUserID,
+          setStudyPreferenceFromSettings,
           abortFileController,
           resetState
         )
@@ -189,47 +221,52 @@ export const exportByColor = async (app: TldrawApp, color: ColorStyle) => {
 }
 
 export const saveToProcessing = async (
-  document: TDDocument, 
-  simData: string, 
-  alpha, 
-  centerPoint: [number,number], 
-  projectName,
-  studyConsent:string,
-  backup:boolean) => {
-    const file: quickPoseFile = {
-        name: 'quickpose.tldr',
-        fileHandle: null,
-        document,
-        assets:{
-          ...document.assets
-        },
-        graphData: {"simData":simData,
-                "alpha":alpha.toString(),
-                "centerPoint": JSON.stringify(centerPoint),
-                "studyConsent": studyConsent.toLowerCase()
-                },
-      }
-      
-    const httpsAgent = new https.Agent({
-      cert: process.env.client_cert,
-      key: process.env.client_key,
-      ca: process.env.ca_cert,
-    });  
-    //const result = await axios.get('https://localhost:4000', { httpsAgent });
-    //console.log(result)
-    // Serialize to JSON
-    const json = JSON.stringify(file, null, 2)
-    // Create blob
-    const blob = new Blob([json], {
-      type: 'application/vnd.Tldraw+json',
-    })
-    const formData = new FormData()
-    formData.append('uploaded_file', blob, { //'uploaded_file' is a special name that the Processing side is looking for, don't change or itll break
-      filename: 'quickpose.tldr',
-      contentType: 'application/vnd.Tldraw+json'
-    })
-    
-    const url = backup ? LOCALHOST_BASE+'/tldrfile_backup' : LOCALHOST_BASE+'/tldrfile'
+  document: TDDocument,
+  simData: string,
+  alpha: number,
+  centerPoint: [number, number],
+  projectName: string,
+  studyConsent: string,
+  projectID: string,
+  backup: boolean
+) => {
+  const file: quickPoseFile = {
+    name: 'quickpose.tldr',
+    fileHandle: null,
+    document,
+    assets: {
+      ...document.assets,
+    },
+    graphData: {
+      simData: simData,
+      alpha: alpha.toString(),
+      centerPoint: JSON.stringify(centerPoint),
+      studyConsent: studyConsent,
+      projectID: projectID,
+    },
+  }
+
+  const httpsAgent = new https.Agent({
+    cert: process.env.client_cert,
+    key: process.env.client_key,
+    ca: process.env.ca_cert,
+  })
+  //const result = await axios.get('https://localhost:4000', { httpsAgent });
+  //console.log(result)
+  // Serialize to JSON
+  const json = JSON.stringify(file, null, 2)
+  // Create blob
+  const blob = new Blob([json], {
+    type: 'application/vnd.Tldraw+json',
+  })
+  const formData = new FormData()
+  formData.append('uploaded_file', blob, {
+    //'uploaded_file' is a special name that the Processing side is looking for, don't change or itll break
+    filename: 'quickpose.tldr',
+    contentType: 'application/vnd.Tldraw+json',
+  })
+
+  const url = backup ? LOCALHOST_BASE + '/tldrfile_backup' : LOCALHOST_BASE + '/tldrfile'
 
   axios
     .post(url, formData, {
@@ -304,29 +341,7 @@ const checkImage = (path: any) => {
   })
 }
 
-export const setProjectID = async (projectID:string) => {
-  axios
-    .post(
-      LOCALHOST_BASE + '/usageID',
-      {},
-      {
-        params: {
-          usageID: projectID,
-        },
-      }
-    )
-    .then(function (response) {
-      //console.log(response);
-    })
-    .finally(() => {
-
-    })
-    .catch(function (error) {
-      console.log(error)
-    })
-}
-
-export const setStudyConsent = async (consentPreference:string, remind:string) => {
+export const postStudyConsent = async (consentPreference: string, remind: string) => {
   axios
     .post(
       LOCALHOST_BASE + '/usageConsent',
@@ -334,21 +349,40 @@ export const setStudyConsent = async (consentPreference:string, remind:string) =
       {
         params: {
           Consent: consentPreference,
-          Remind: remind
+          Remind: remind,
         },
       }
     )
     .then(function (response) {
       //console.log(response);
     })
-    .finally(() => {
-
-    })
+    .finally(() => {})
     .catch(function (error) {
       console.log(error)
     })
 }
 
+export const getStudyConsent = async (setStudyPreferenceFromSettings: {
+  (pref: studyConsentResponse): void
+}) => {
+  axios
+    .get(LOCALHOST_BASE + '/usageConsent')
+    .then(function (response) {
+      if (response.data !== undefined) {
+        if (response.data === 'Prompt') {
+          setStudyPreferenceFromSettings({ preference: 'Prompt', promptAgain: true })
+        } else if (response.data === 'EnabledNoPrompt') {
+          setStudyPreferenceFromSettings({ preference: 'Enabled', promptAgain: false })
+        } else if (response.data === 'DisabledNoPrompt') {
+          setStudyPreferenceFromSettings({ preference: 'Disabled', promptAgain: false })
+        }
+      }
+    })
+    .finally(() => {})
+    .catch(function (error) {
+      console.log(error)
+    })
+}
 export const updateThumbnail = async (
   app: TldrawApp,
   shape_id: string,
@@ -525,6 +559,16 @@ export function useUploadAssets() {
 export const sendToLog = async (message: string) => {
   axios
     .post(LOCALHOST_BASE + '/log', message, {})
+    .then(function (response) {
+      //console.log(response);
+    })
+    .catch(function (error) {
+      console.log(error)
+    })
+}
+export const sendToUsageData = async (message: string) => {
+  axios
+    .post(LOCALHOST_BASE + '/usageData', message, {})
     .then(function (response) {
       //console.log(response);
     })

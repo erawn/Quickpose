@@ -32,6 +32,7 @@ import {
 import forceBoundary from 'd3-force-boundary'
 import deepEqual from 'deep-equal'
 import { MutableRefObject } from 'react'
+import { v4 as uuidv4 } from 'uuid'
 import { getIconImageURL, getIconImageURLNoTime, updateThumbnail } from './quickPoseNetworking'
 import {
   dataLink,
@@ -456,7 +457,9 @@ export function loadTldrFile(
   simulation: MutableRefObject<Simulation<SimulationNodeDatum, undefined>>,
   centerPoint: MutableRefObject<[number, number]>,
   loadFile: MutableRefObject<quickPoseFile>,
-  currentVersion: MutableRefObject<number>
+  currentVersion: MutableRefObject<number>,
+  setStudyPreferenceFromProject,
+  setProjectID
 ) {
   app.replacePageContent({}, {}, {})
 
@@ -476,19 +479,24 @@ export function loadTldrFile(
       number,
       number
     ]
-    if(loadFile.current.graphData?.studyConsent !== undefined){
+    if (loadFile.current.graphData?.studyConsent !== undefined) {
       const studyConsent = loadFile.current.graphData?.studyConsent.toString()
-      if (studyConsent === 'enabled') {
-        app.setSetting('sendUsageData', 'Enabled')
-      } else if (studyConsent === 'disabled') {
-        app.setSetting('sendUsageData', 'Disabled')
-      }else{
+      if (studyConsent == 'Enabled') {
+        setStudyPreferenceFromProject({ preference: 'Enabled', promptAgain: false })
+      } else if (studyConsent === 'Disabled') {
+        setStudyPreferenceFromProject({ preference: 'Disabled', promptAgain: false })
+      } else {
         app.setSetting('sendUsageData', 'Prompt')
       }
-    }else{
+    } else {
       app.setSetting('sendUsageData', 'Prompt')
     }
-  
+    if (loadFile.current.graphData?.projectID !== undefined) {
+      setProjectID(loadFile.current.graphData?.projectID.toString())
+    } else {
+      setProjectID(uuidv4())
+    }
+
     const importNodes = loadedData.nodes as dataNode[]
     //console.log(importNodes)
     importNodes.forEach((node) => {
