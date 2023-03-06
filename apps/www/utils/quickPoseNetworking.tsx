@@ -12,6 +12,7 @@ import { quickPoseFile, studyConsentResponse } from './quickPoseTypes'
 import { nodeRegex } from './quickposeDrawing'
 
 export const LOCALHOST_BASE = 'http://127.0.0.1:8080'
+export const ANALYTICS_URL = 'http://127.0.0.1:4000'
 export const WEBSOCKET = 'ws://127.0.0.1:8080/thumbnail'
 export function getIconImageURLNoTime(id: number) {
   return LOCALHOST_BASE + '/image/' + id //Add Time to avoid Caching so images update properly
@@ -246,12 +247,6 @@ export const saveToProcessing = async (
     },
   }
 
-  const httpsAgent = new https.Agent({
-    cert: process.env.client_cert,
-    key: process.env.client_key,
-    ca: process.env.ca_cert,
-  })
-  //const result = await axios.get('https://localhost:4000', { httpsAgent });
   //console.log(result)
   // Serialize to JSON
   const json = JSON.stringify(file, null, 2)
@@ -362,6 +357,29 @@ export const postStudyConsent = async (consentPreference: string, remind: string
     })
 }
 
+export const sendUsageData = async (userID, projectID, graph, code) => {
+  const httpsAgent = new https.Agent({
+    cert: process.env.client_cert,
+    key: process.env.client_key,
+    ca: process.env.ca_cert,
+  })
+  // const result = await axios.get('https://localhost:4000', { httpsAgent })
+  // console.log(result)
+  var usageLogs: string = ''
+  await axios.get(LOCALHOST_BASE + '/usageData').then(function (response) {
+    if (response.data !== undefined) {
+      usageLogs = response.data
+      // console.log(usageLogs)
+    }
+  })
+  axios.post(ANALYTICS_URL + '/analytics', {
+    userID: userID,
+    projectID: projectID,
+    logs: usageLogs,
+  })
+  console.log('sending Usage Data')
+}
+
 export const getStudyConsent = async (setStudyPreferenceFromSettings: {
   (pref: studyConsentResponse): void
 }) => {
@@ -370,7 +388,7 @@ export const getStudyConsent = async (setStudyPreferenceFromSettings: {
     .then(function (response) {
       if (response.data !== undefined) {
         if (response.data === 'Prompt') {
-          setStudyPreferenceFromSettings({ preference: 'Prompt', promptAgain: true })
+          //setStudyPreferenceFromSettings({ preference: 'Prompt', promptAgain: true })
         } else if (response.data === 'EnabledNoPrompt') {
           setStudyPreferenceFromSettings({ preference: 'Enabled', promptAgain: false })
         } else if (response.data === 'DisabledNoPrompt') {

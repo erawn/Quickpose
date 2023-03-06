@@ -486,12 +486,14 @@ export function loadTldrFile(
       } else if (studyConsent === 'Disabled') {
         setStudyPreferenceFromProject({ preference: 'Disabled', promptAgain: false })
       } else {
-        app.setSetting('sendUsageData', 'Prompt')
+        setStudyPreferenceFromProject({ preference: 'Prompt', promptAgain: true })
+        //app.setSetting('sendUsageData', 'Prompt')
       }
     } else {
-      app.setSetting('sendUsageData', 'Prompt')
+      setStudyPreferenceFromProject({ preference: 'Prompt', promptAgain: true })
     }
-    if (loadFile.current.graphData?.projectID !== undefined) {
+    if (loadFile.current.graphData?.projectID !== undefined && 
+      loadFile.current.graphData?.projectID !== "") {
       setProjectID(loadFile.current.graphData?.projectID.toString())
     } else {
       setProjectID(uuidv4())

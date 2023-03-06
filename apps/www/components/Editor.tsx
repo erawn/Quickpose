@@ -28,6 +28,7 @@ import {
   postStudyConsent,
   saveToProcessing,
   sendToLog,
+  sendUsageData,
   updateSocketVersions,
   updateThumbnail,
   updateVersions,
@@ -100,8 +101,9 @@ const Editor = ({ id = 'home', ...rest }: EditorProps & Partial<TldrawProps>) =>
   const checkSettings = React.useRef<Boolean>(false)
   const [userID, setUserID] = React.useState<string>('')
   const [projectID, setProjectID] = React.useState<string>('')
-
+  const stopCheckConsent = React.useRef<Boolean>(false)
   function setStudyPreferenceFromInterface(pref: studyConsentResponse) {
+    stopCheckConsent.current = true
     setShowStudyConsent(false)
     console.log('setfrominterface', pref)
     rTldrawApp.current?.setSetting('sendUsageData', pref.preference)
@@ -113,21 +115,24 @@ const Editor = ({ id = 'home', ...rest }: EditorProps & Partial<TldrawProps>) =>
   }
   function setStudyPreferenceFromProject(pref: studyConsentResponse) {
     console.log('setfromproject', pref)
-    if (pref.promptAgain) {
-      setShowStudyConsent(true)
-    } else {
-      setShowStudyConsent(false)
+    if (stopCheckConsent.current == false) {
+      if (pref.promptAgain) {
+        setShowStudyConsent(true)
+      } else {
+        setShowStudyConsent(false)
+        stopCheckConsent.current = true
+      }
+      rTldrawApp.current?.setSetting('sendUsageData', pref.preference)
     }
-    rTldrawApp.current?.setSetting('sendUsageData', pref.preference)
-    checkSettings.current = true
   }
   function setStudyPreferenceFromSettings(pref: studyConsentResponse) {
-    if (checkSettings.current == false) {
+    if (checkSettings.current == false && stopCheckConsent.current == false) {
       console.log('setfromsettings', pref)
       if (pref.promptAgain) {
         setShowStudyConsent(true)
       } else {
         setShowStudyConsent(false)
+        stopCheckConsent.current = true
       }
       rTldrawApp.current?.setSetting('sendUsageData', pref.preference)
       checkSettings.current = true
@@ -161,7 +166,7 @@ const Editor = ({ id = 'home', ...rest }: EditorProps & Partial<TldrawProps>) =>
       if (id === currentVersion.current.toString()) {
         app.setIsLoading(true)
 
-        console.log('send fork', id)
+        //console.log('send fork', id)
         lock
           .acquire('select', async function () {
             await axios
@@ -400,7 +405,7 @@ const Editor = ({ id = 'home', ...rest }: EditorProps & Partial<TldrawProps>) =>
             //simulation.current.alpha(ALPHA_TARGET_REFRESH)
             drawInterval()
             app.zoomToContent()
-            app.setSetting('sendUsageData', 'Prompt')
+            //app.setSetting('sendUsageData', 'Prompt')
             //app.appState.isLoading = false
             //make new file, do intro experience?
           } else if (loadFile.current !== null && simulation) {
@@ -595,8 +600,8 @@ const Editor = ({ id = 'home', ...rest }: EditorProps & Partial<TldrawProps>) =>
   const handlePatch = React.useCallback((app: TldrawApp, patch: TldrawPatch, reason?: string) => {
     if (process.env.NODE_ENV !== 'production') {
       console.log(reason)
-      console.log('usagedata', app.settings.sendUsageData)
-      console.log('panel', showStudyConsent)
+      // console.log('usagedata', app.settings.sendUsageData)
+      // console.log('panel', showStudyConsent)
     }
     if (rTldrawApp.current?.settings.sendUsageData === 'Prompt') {
       setShowStudyConsent(true)
@@ -610,6 +615,9 @@ const Editor = ({ id = 'home', ...rest }: EditorProps & Partial<TldrawProps>) =>
     if (loadedFile.current === true && app.document.name !== 'null' && simulation.current) {
       if (new Date().getTime() - timeSinceLastSave.current > 5 * 60 * 1000) {
         //every 5 min
+        if (app.settings.sendUsageData == 'Enabled') {
+          sendUsageData(userID, projectID, '', '')
+        }
         console.log('Backing up', new Date().getTime())
         saveToProcessing(
           app.document,
