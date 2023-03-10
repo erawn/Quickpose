@@ -2,13 +2,10 @@ import { ColorStyle, TDDocument, TDFile, TDShapeType, TldrawApp } from '@tldraw/
 import axios from 'axios'
 import axiosRetry from 'axios-retry'
 import * as BSON from 'bson'
-import deepEqual from 'deep-equal'
 import FormData from 'form-data'
 import https from 'https'
 import { MutableRefObject, useCallback } from 'react'
-import React from 'react'
 import { w3cwebsocket as W3CWebSocket } from 'websocket'
-import { UsersIndicators } from '~../../packages/core/src/components/UsersIndicators'
 import { quickPoseFile, studyConsentResponse } from './quickPoseTypes'
 import { nodeRegex } from './quickposeDrawing'
 
