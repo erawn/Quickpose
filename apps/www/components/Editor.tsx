@@ -28,6 +28,7 @@ import {
   postStudyConsent,
   saveToProcessing,
   sendToLog,
+  sendToUsageData,
   sendUsageData,
   updateSocketVersions,
   updateThumbnail,
@@ -79,6 +80,7 @@ const Editor = ({ id = 'home', ...rest }: EditorProps & Partial<TldrawProps>) =>
   const centerPoint = React.useRef<[number, number]>([600, 600])
 
   const timeSinceLastSave = React.useRef<number>(0)
+  const timeSinceLastUsageLog = React.useRef<number>(0)
   //file loading
   const loadFile = React.useRef<quickPoseFile | null>(null)
   const loadedFile = React.useRef<boolean>(false)
@@ -99,8 +101,8 @@ const Editor = ({ id = 'home', ...rest }: EditorProps & Partial<TldrawProps>) =>
 
   const [showStudyConsent, setShowStudyConsent] = React.useState<Boolean>(false)
   const checkSettings = React.useRef<Boolean>(false)
-  const [userID, setUserID] = React.useState<string>('')
-  const [projectID, setProjectID] = React.useState<string>('')
+  const userID = React.useRef<string>('')
+  const projectID = React.useRef<string>('')
   const stopCheckConsent = React.useRef<Boolean>(false)
   function setStudyPreferenceFromInterface(pref: studyConsentResponse) {
     stopCheckConsent.current = true
@@ -419,7 +421,7 @@ const Editor = ({ id = 'home', ...rest }: EditorProps & Partial<TldrawProps>) =>
               loadFile,
               currentVersion,
               setStudyPreferenceFromProject,
-              setProjectID
+              projectID
             )
             refreshSim(simulation)
             dataInterval(netData, graphData, simulation)
@@ -501,8 +503,8 @@ const Editor = ({ id = 'home', ...rest }: EditorProps & Partial<TldrawProps>) =>
     loadFile.current = null
     loadedFile.current = false
     simulation.current = d3Sim()
-    setUserID('')
-    setProjectID('')
+    userID.current = ''
+    projectID.current = ''
     if (app !== undefined) {
       app.setCurrentProject('')
       app.document.name = 'null'
@@ -578,7 +580,7 @@ const Editor = ({ id = 'home', ...rest }: EditorProps & Partial<TldrawProps>) =>
       connectInterval,
       loadFile,
       netData,
-      setUserID,
+      userID,
       setStudyPreferenceFromSettings,
       abortFileController,
       resetState
@@ -613,11 +615,15 @@ const Editor = ({ id = 'home', ...rest }: EditorProps & Partial<TldrawProps>) =>
     }
 
     if (loadedFile.current === true && app.document.name !== 'null' && simulation.current) {
-      if (new Date().getTime() - timeSinceLastSave.current > 5 * 60 * 1000) {
-        //every 5 min
+      if (new Date().getTime() - timeSinceLastUsageLog.current > 10 * 60 * 1000) {
         if (app.settings.sendUsageData == 'Enabled') {
           sendUsageData(userID, projectID, '', '')
+          timeSinceLastUsageLog.current = new Date().getTime()
         }
+      }
+      if (new Date().getTime() - timeSinceLastSave.current > 5 * 60 * 1000) {
+        //every 5 min
+
         console.log('Backing up', new Date().getTime())
         saveToProcessing(
           app.document,
@@ -652,11 +658,17 @@ const Editor = ({ id = 'home', ...rest }: EditorProps & Partial<TldrawProps>) =>
         rIsDragging.current = true
         lastSelection.current = null
         sendToLog('translate' + app.selectedIds)
+        sendToUsageData('translate' + app.selectedIds)
         break
       }
       case 'set_status:creating': {
         // started translating...
-        sendToLog('creating' + app.pageState.editingId)
+        sendToLog(
+          'creating' +
+            app.pageState.editingId +
+            '| Type:' +
+            app.getShape(app.pageState.editingId).type.toString()
+        )
         rIsDragging.current = true
         lastSelection.current = null
         break

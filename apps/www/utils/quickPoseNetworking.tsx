@@ -8,11 +8,12 @@ import https from 'https'
 import { MutableRefObject, useCallback } from 'react'
 import React from 'react'
 import { w3cwebsocket as W3CWebSocket } from 'websocket'
+import { UsersIndicators } from '~../../packages/core/src/components/UsersIndicators'
 import { quickPoseFile, studyConsentResponse } from './quickPoseTypes'
 import { nodeRegex } from './quickposeDrawing'
 
 export const LOCALHOST_BASE = 'http://127.0.0.1:8080'
-export const ANALYTICS_URL = 'http://127.0.0.1:4000'
+export const ANALYTICS_URL = 'http://172.30.105.142:4000' // 'http://127.0.0.1:4000'
 export const WEBSOCKET = 'ws://127.0.0.1:8080/thumbnail'
 export function getIconImageURLNoTime(id: number) {
   return LOCALHOST_BASE + '/image/' + id //Add Time to avoid Caching so images update properly
@@ -29,7 +30,7 @@ export function connectWebSocket(
   connectInterval: MutableRefObject<any>,
   loadFile: MutableRefObject<quickPoseFile | null>,
   netData: MutableRefObject<any>,
-  setUserID,
+  userID,
   setStudyPreferenceFromSettings,
   abortFileController: AbortController,
   resetState: { (app: TldrawApp): void }
@@ -122,7 +123,8 @@ export function connectWebSocket(
                   break
                 }
                 case 'userID': {
-                  setUserID(msg[key].toString())
+                  //console.log(msg[key].toString())
+                  userID.current = msg[key].toString()
                   break
                 }
                 case 'Consent': {
@@ -177,7 +179,7 @@ export function connectWebSocket(
           connectInterval,
           loadFile,
           netData,
-          setUserID,
+          userID,
           setStudyPreferenceFromSettings,
           abortFileController,
           resetState
@@ -199,6 +201,7 @@ export const exportByColor = async (app: TldrawApp, color: ColorStyle) => {
     })
   //console.log(ids.toString())
   sendToLog('exportbycolor -- color:' + color + '| ids: ' + ids.toString())
+  sendToUsageData('exportbycolor -- color:' + color + '| ids: ' + ids.toString())
   axios
     .post(
       LOCALHOST_BASE + '/exportbycolor',
@@ -228,7 +231,7 @@ export const saveToProcessing = async (
   centerPoint: [number, number],
   projectName: string,
   studyConsent: string,
-  projectID: string,
+  projectID: MutableRefObject<string>,
   backup: boolean
 ) => {
   const file: quickPoseFile = {
@@ -243,7 +246,7 @@ export const saveToProcessing = async (
       alpha: alpha.toString(),
       centerPoint: JSON.stringify(centerPoint),
       studyConsent: studyConsent,
-      projectID: projectID,
+      projectID: projectID.current,
     },
   }
 
@@ -361,7 +364,6 @@ export const sendUsageData = async (userID, projectID, graph, code) => {
   const httpsAgent = new https.Agent({
     cert: process.env.client_cert,
     key: process.env.client_key,
-    ca: process.env.ca_cert,
   })
   // const result = await axios.get('https://localhost:4000', { httpsAgent })
   // console.log(result)
@@ -372,12 +374,18 @@ export const sendUsageData = async (userID, projectID, graph, code) => {
       // console.log(usageLogs)
     }
   })
-  axios.post(ANALYTICS_URL + '/analytics', {
-    userID: userID,
-    projectID: projectID,
-    logs: usageLogs,
-  })
-  console.log('sending Usage Data')
+  axios.post(
+    ANALYTICS_URL + '/analytics',
+    {
+      userID: userID.current,
+      projectID: projectID.current,
+      logs: usageLogs,
+    },
+    {
+      httpsAgent: httpsAgent,
+    }
+  )
+  console.log('sending Usage Data', userID, projectID)
 }
 
 export const getStudyConsent = async (setStudyPreferenceFromSettings: {

@@ -404,7 +404,7 @@ export function updateGraphData(netData: JSON, graphData: { nodes: any[]; links:
   //add new links and nodes from netData into graphData
   //only --adding-- nodes and links, so we can just append new incoming data to graphData
   netData['Nodes'].forEach(function (netNode: dataNode) {
-    if (!graphData.nodes.some((graphNode) => graphNode.id === netNode.id)) {
+    if (!graphData.nodes.some((graphNode) => graphNode.id! === netNode.id)) {
       const parentLink = netData['Edges'].find((link) => link.target === netNode.id)
       if (!(parentLink === undefined)) {
         const parent: dataNode = graphData.nodes.find((node) => node.id === parentLink.source)
@@ -459,7 +459,7 @@ export function loadTldrFile(
   loadFile: MutableRefObject<quickPoseFile>,
   currentVersion: MutableRefObject<number>,
   setStudyPreferenceFromProject,
-  setProjectID
+  projectID
 ) {
   app.replacePageContent({}, {}, {})
 
@@ -492,11 +492,14 @@ export function loadTldrFile(
     } else {
       setStudyPreferenceFromProject({ preference: 'Prompt', promptAgain: true })
     }
-    if (loadFile.current.graphData?.projectID !== undefined && 
-      loadFile.current.graphData?.projectID !== "") {
-      setProjectID(loadFile.current.graphData?.projectID.toString())
+    if (
+      loadFile.current.graphData?.projectID !== undefined &&
+      loadFile.current.graphData?.projectID != ''
+    ) {
+      projectID.current = loadFile.current.graphData?.projectID.toString()
     } else {
-      setProjectID(uuidv4())
+      console.log('setprojectid')
+      projectID.current = uuidv4()
     }
 
     const importNodes = loadedData.nodes as dataNode[]
