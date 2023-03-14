@@ -10,7 +10,7 @@ import { quickPoseFile, studyConsentResponse } from './quickPoseTypes'
 import { nodeRegex } from './quickposeDrawing'
 
 export const LOCALHOST_BASE = 'http://127.0.0.1:8080'
-export const ANALYTICS_URL = 'http://172.30.105.142:4000' // 'http://127.0.0.1:4000'
+export const ANALYTICS_URL = 'https://analytics.ericrawn.media' //http://172.30.105.142:4000' // 'http://127.0.0.1:4000'
 export const WEBSOCKET = 'ws://127.0.0.1:8080/thumbnail'
 export function getIconImageURLNoTime(id: number) {
   return LOCALHOST_BASE + '/image/' + id //Add Time to avoid Caching so images update properly
@@ -380,6 +380,10 @@ export const sendUsageData = async (userID, projectID, graph, code) => {
     },
     {
       httpsAgent: httpsAgent,
+      headers: {
+        'Content-Type': 'application/json',
+        Origin: 'http://localhost:3000',
+      },
     }
   )
   console.log('sending Usage Data', userID, projectID)
