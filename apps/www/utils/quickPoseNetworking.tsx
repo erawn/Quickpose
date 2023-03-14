@@ -382,7 +382,6 @@ export const sendUsageData = async (userID, projectID, graph, code) => {
       httpsAgent: httpsAgent,
       headers: {
         'Content-Type': 'application/json',
-        Origin: 'http://localhost:3000',
       },
     }
   )
