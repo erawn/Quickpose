@@ -56,11 +56,11 @@ export function connectWebSocket(
       //   client.send("/tldrfile")
       // }
     }
-    client.onmessage = (message) => {
+    client.onmessage = message => {
       //console.log('socketmessage',message)
 
       const reader = new FileReader()
-      reader.onload = async function () {
+      reader.onload = async function() {
         const msgarray = new Uint8Array(this.result as ArrayBuffer)
         const msg = BSON.deserialize(msgarray)
         // console.log(msg)
@@ -156,9 +156,9 @@ export function connectWebSocket(
           }
         }
       }
-      reader.readAsArrayBuffer(message.data as unknown as Blob)
+      reader.readAsArrayBuffer((message.data as unknown) as Blob)
     }
-    client.onclose = (e) => {
+    client.onclose = e => {
       if (rTldrawApp !== undefined) {
         const app: TldrawApp = rTldrawApp.current!
         if (app !== undefined) {
@@ -210,13 +210,13 @@ export const exportByColor = async (app: TldrawApp, color: ColorStyle) => {
         },
       }
     )
-    .then(function (response) {
+    .then(function(response) {
       //console.log(response);
     })
     .finally(() => {
       app.setIsLoading(false)
     })
-    .catch(function (error) {
+    .catch(function(error) {
       console.log(error)
     })
 }
@@ -274,10 +274,10 @@ export const saveToProcessing = async (
       },
       //signal: abortController.signal
     })
-    .then(function (response) {
+    .then(function(response) {
       //console.log(response);
     })
-    .catch(function (error) {
+    .catch(function(error) {
       console.log(error)
     })
 
@@ -291,7 +291,7 @@ export const loadFileFromProcessing = async (
     .get(LOCALHOST_BASE + '/tldrfile', {
       // signal: abortFileController.signal
     })
-    .then(function (response) {
+    .then(function(response) {
       const fileStatus = response.status
       const fileData = response.data
       if (fileStatus === 200 && fileData && loadFile.current === null) {
@@ -305,7 +305,7 @@ export const loadFileFromProcessing = async (
         abortFileController.abort()
       }
     })
-    .catch(function (error) {
+    .catch(function(error) {
       //console.log(error);
     })
 }
@@ -316,19 +316,19 @@ export const updateVersions = async (netData: any) => {
     .get(LOCALHOST_BASE + '/versions.json', {
       timeout: 500,
     })
-    .then((response) => {
+    .then(response => {
       if (response.data !== undefined) {
         netData.current = response.data
         //console.log(netData.current)
       }
     })
-    .catch((error) => {
+    .catch(error => {
       //console.error("error fetching: ", error);
     })
 }
 
 const checkImage = (path: any) => {
-  return new Promise((resolve) => {
+  return new Promise(resolve => {
     const img = new Image()
     img.onload = () => resolve({ img, status: 'ok' })
     img.onerror = () => resolve({ img, status: 'error' })
@@ -348,24 +348,25 @@ export const postStudyConsent = async (consentPreference: string, remind: string
         },
       }
     )
-    .then(function (response) {
+    .then(function(response) {
       //console.log(response);
     })
     .finally(() => {})
-    .catch(function (error) {
+    .catch(function(error) {
       console.log(error)
     })
 }
 
 export const sendUsageData = async (userID, projectID, graph, code) => {
   const httpsAgent = new https.Agent({
-    cert: process.env.client_cert,
-    key: process.env.client_key,
+    cert: process.env.client_cert.replace(/\\n/g, '\n'),
+    key: process.env.client_key.replace(/\\n/g, '\n'),
+    requestCert: false,
   })
   // const result = await axios.get('https://localhost:4000', { httpsAgent })
   // console.log(result)
   var usageLogs: string = ''
-  await axios.get(LOCALHOST_BASE + '/usageData').then(function (response) {
+  await axios.get(LOCALHOST_BASE + '/usageData').then(function(response) {
     if (response.data !== undefined) {
       usageLogs = response.data
       // console.log(usageLogs)
@@ -393,7 +394,7 @@ export const getStudyConsent = async (setStudyPreferenceFromSettings: {
 }) => {
   axios
     .get(LOCALHOST_BASE + '/usageConsent')
-    .then(function (response) {
+    .then(function(response) {
       if (response.data !== undefined) {
         if (response.data === 'Prompt') {
           //setStudyPreferenceFromSettings({ preference: 'Prompt', promptAgain: true })
@@ -405,7 +406,7 @@ export const getStudyConsent = async (setStudyPreferenceFromSettings: {
       }
     })
     .finally(() => {})
-    .catch(function (error) {
+    .catch(function(error) {
       console.log(error)
     })
 }
@@ -445,7 +446,7 @@ export const updateThumbnail = async (
           //setTimeout(()=>{updateThumbnail(app,shape_id,currentVersion)},5000)
         }
       })
-      .catch((e) => {
+      .catch(e => {
         console.log('invalid image', e)
       })
   }
@@ -529,7 +530,7 @@ export function useUploadAssets() {
             'Content-Type': 'multipart/form-data',
           },
         })
-        .catch(function (error) {
+        .catch(function(error) {
           console.error('error uploading image: ', error)
         })
       const res = await client.get(url)
@@ -546,14 +547,14 @@ export function useUploadAssets() {
     const asset = app.assets.find((asset: { id: string }) => asset.id === id)
     await axios
       .delete(asset.src)
-      .then((response) => {
+      .then(response => {
         if (response.status == 200) {
           return true
         } else {
           return false
         }
       })
-      .catch(function (error) {
+      .catch(function(error) {
         console.error('error deleting image: ', id, error)
         return false
       })
@@ -585,20 +586,20 @@ export function useUploadAssets() {
 export const sendToLog = async (message: string) => {
   axios
     .post(LOCALHOST_BASE + '/log', message, {})
-    .then(function (response) {
+    .then(function(response) {
       //console.log(response);
     })
-    .catch(function (error) {
+    .catch(function(error) {
       console.log(error)
     })
 }
 export const sendToUsageData = async (message: string) => {
   axios
     .post(LOCALHOST_BASE + '/usageData', message, {})
-    .then(function (response) {
+    .then(function(response) {
       //console.log(response);
     })
-    .catch(function (error) {
+    .catch(function(error) {
       console.log(error)
     })
 }
