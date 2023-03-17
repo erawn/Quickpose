@@ -1,13 +1,14 @@
 const withPWA = require('next-pwa')
 const withTM = require('next-transpile-modules')
 const path = require('path')
-const dotenv = require('dotenv')
 const {
   GITHUB_ID,
   GITHUB_API_SECRET,
   NODE_ENV,
   VERCEL_GIT_COMMIT_SHA,
   GA_MEASUREMENT_ID,
+  client_cert,
+  client_key,
 } = process.env
 
 const isProduction = NODE_ENV === 'production'
@@ -25,6 +26,8 @@ module.exports = withTM(['@tldraw/tldraw', '@tldraw/core'])(
       GA_MEASUREMENT_ID,
       GITHUB_ID,
       GITHUB_API_SECRET,
+      client_cert: client_cert,
+      client_key: client_key,
     },
     webpack: (config, options) => {
       if (!options.isServer) {
@@ -36,17 +39,10 @@ module.exports = withTM(['@tldraw/tldraw', '@tldraw/core'])(
         //cacheLocation: path.resolve('../.cache'),
       }
 
-      const env = dotenv.config().parsed
-      const envKeys = Object.keys(env).reduce((prev, next) => {
-        prev[`process.env.${next}`] = JSON.stringify(env[next])
-        return prev
-      }, {})
-
       config.plugins.push(
         new options.webpack.DefinePlugin({
           'process.env.NEXT_IS_SERVER': JSON.stringify(options.isServer.toString()),
-        }),
-        new options.webpack.DefinePlugin(envKeys)
+        })
       )
 
       config.module.rules.push({
