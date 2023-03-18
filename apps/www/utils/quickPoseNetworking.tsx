@@ -3,12 +3,10 @@ import axios from 'axios'
 import axiosRetry from 'axios-retry'
 import * as BSON from 'bson'
 import FormData from 'form-data'
-import https from 'https'
 import { MutableRefObject, useCallback } from 'react'
 import { w3cwebsocket as W3CWebSocket } from 'websocket'
 import { quickPoseFile, studyConsentResponse } from './quickPoseTypes'
 import { nodeRegex } from './quickposeDrawing'
-
 export const LOCALHOST_BASE = 'http://127.0.0.1:8080'
 export const ANALYTICS_URL = 'https://analytics.ericrawn.media' //http://172.30.105.142:4000' // 'http://127.0.0.1:4000'
 export const WEBSOCKET = 'ws://127.0.0.1:8080/thumbnail'
@@ -358,11 +356,6 @@ export const postStudyConsent = async (consentPreference: string, remind: string
 }
 
 export const sendUsageData = async (userID, projectID, graph, code) => {
-  const httpsAgent = new https.Agent({
-    cert: process.env.client_cert.replace(/\\n/g, '\n'),
-    key: process.env.client_key.replace(/\\n/g, '\n'),
-    requestCert: false,
-  })
   // const result = await axios.get('https://localhost:4000', { httpsAgent })
   // console.log(result)
   var usageLogs: string = ''
@@ -378,9 +371,9 @@ export const sendUsageData = async (userID, projectID, graph, code) => {
       userID: userID.current,
       projectID: projectID.current,
       logs: usageLogs,
+      dataKey: process.env.DATA_KEY,
     },
     {
-      httpsAgent: httpsAgent,
       headers: {
         'Content-Type': 'application/json',
       },

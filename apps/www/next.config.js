@@ -3,12 +3,12 @@ const withTM = require('next-transpile-modules')
 const path = require('path')
 const {
   GITHUB_ID,
+  GA_ID_QUICKPOSE,
   GITHUB_API_SECRET,
   NODE_ENV,
   VERCEL_GIT_COMMIT_SHA,
   GA_MEASUREMENT_ID,
-  client_cert,
-  client_key,
+  DATA_KEY,
 } = process.env
 
 const isProduction = NODE_ENV === 'production'
@@ -23,11 +23,10 @@ module.exports = withTM(['@tldraw/tldraw', '@tldraw/core'])(
     productionBrowserSourceMaps: true,
     env: {
       NEXT_PUBLIC_COMMIT_SHA: VERCEL_GIT_COMMIT_SHA,
-      GA_MEASUREMENT_ID,
+      GA_MEASUREMENT_ID: GA_ID_QUICKPOSE,
       GITHUB_ID,
       GITHUB_API_SECRET,
-      client_cert: client_cert,
-      client_key: client_key,
+      DATA_KEY,
     },
     webpack: (config, options) => {
       if (!options.isServer) {
