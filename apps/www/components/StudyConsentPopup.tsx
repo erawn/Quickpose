@@ -88,7 +88,10 @@ export function StudyConsentPopup({ container, setActive }: { container: any; se
               }
             </AlertDialogDescription>
             <div style={{ textAlign: 'center', fontSize: '20px' }}>
-              <StyledLink href="" style={{}}>
+              <StyledLink
+                href="https://github.com/erawn/Quickpose/files/11023935/Quickpose_Informed_Consent.pdf"
+                style={{}}
+              >
                 Read the Entire Consent Form Here
               </StyledLink>
             </div>
