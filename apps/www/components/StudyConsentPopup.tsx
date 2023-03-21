@@ -1,11 +1,11 @@
-import * as AlertDialogPrimitive from '@radix-ui/react-alert-dialog';
-import * as Checkbox from '@radix-ui/react-checkbox';
-import { CheckIcon } from '@radix-ui/react-icons';
-import { scaleBand } from 'd3';
-import Link from 'next/link';
-import React, { useLayoutEffect } from 'react';
-import { styled } from '~styles';
-import { studyConsentResponse } from '~utils/quickPoseTypes';
+import * as AlertDialogPrimitive from '@radix-ui/react-alert-dialog'
+import * as Checkbox from '@radix-ui/react-checkbox'
+import { CheckIcon } from '@radix-ui/react-icons'
+import { scaleBand } from 'd3'
+import Link from 'next/link'
+import React, { useLayoutEffect } from 'react'
+import { styled } from '~styles'
+import { studyConsentResponse } from '~utils/quickPoseTypes'
 
 const STORAGE_KEY = 'quickpose_study_consent'
 interface ContentProps {
@@ -63,12 +63,14 @@ export function StudyConsentPopup({ container, setActive }: { container: any; se
               {
                 <>
                   Quickpose is an ongoing research project by{' '}
-                  <StyledLink href="https://beta.tldraw.com" style={{ color: 'blue' }}>
+                  <StyledLink href="https://www.ericrawn.media/" style={{ color: 'blue' }}>
                     Eric Rawn
                   </StyledLink>
                   , a PhD student in the{' '}
-                  <StyledLink href="https://beta.tldraw.com">Hybrid Ecologies Lab</StyledLink> at
-                  the University of California, Berkeley. The software is 100% free to use and
+                  <StyledLink href="https://www.hybrid-ecologies.org/">
+                    Hybrid Ecologies Lab
+                  </StyledLink>{' '}
+                  at the University of California, Berkeley. The software is 100% free to use and
                   open-source. However, if you wish to participate in our research, we would really
                   appreciate it! We&apos;re studying how folks use Quickpose for their everyday
                   work.{' '}
@@ -76,7 +78,7 @@ export function StudyConsentPopup({ container, setActive }: { container: any; se
                     If you consent below, Quickpose will automatically send anonymous, encrypted
                     usage data to our collection server for analysis
                   </b>
-                  . No code, images, GPS, or IP information will ever be collected (although we may
+                  . No code, images, or IP information will ever be collected (although we may
                   collect statistics about the code you write in Quickpose projects). For
                   information about the research, the data we collect, and what we do with it,{' '}
                   <StyledLink href="https://www.ericrawn.media/quickpose-docs#faq">
@@ -144,7 +146,10 @@ export function StudyConsentPopup({ container, setActive }: { container: any; se
               <AlertDialogAction asChild>
                 <Button
                   onClick={() => {
-                    const response:studyConsentResponse = {preference: "Disabled", promptAgain: !checked as boolean};
+                    const response: studyConsentResponse = {
+                      preference: 'Disabled',
+                      promptAgain: !checked as boolean,
+                    }
                     setActive(response)
                   }}
                   css={{
@@ -171,7 +176,10 @@ export function StudyConsentPopup({ container, setActive }: { container: any; se
                   },
                 }}
                 onClick={() => {
-                  const response:studyConsentResponse = {preference: "Enabled", promptAgain: !checked as boolean};
+                  const response: studyConsentResponse = {
+                    preference: 'Enabled',
+                    promptAgain: !checked as boolean,
+                  }
                   setActive(response)
                 }}
               >
