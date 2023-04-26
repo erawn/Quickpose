@@ -32,6 +32,7 @@ import {
 import forceBoundary from 'd3-force-boundary'
 import deepEqual from 'deep-equal'
 import { MutableRefObject } from 'react'
+import { v4 as uuidv4 } from 'uuid'
 import { getIconImageURL, getIconImageURLNoTime, updateThumbnail } from './quickPoseNetworking'
 import {
   dataLink,
@@ -403,7 +404,7 @@ export function updateGraphData(netData: JSON, graphData: { nodes: any[]; links:
   //add new links and nodes from netData into graphData
   //only --adding-- nodes and links, so we can just append new incoming data to graphData
   netData['Nodes'].forEach(function (netNode: dataNode) {
-    if (!graphData.nodes.some((graphNode) => graphNode.id === netNode.id)) {
+    if (!graphData.nodes.some((graphNode) => graphNode.id! === netNode.id)) {
       const parentLink = netData['Edges'].find((link) => link.target === netNode.id)
       if (!(parentLink === undefined)) {
         const parent: dataNode = graphData.nodes.find((node) => node.id === parentLink.source)
@@ -456,7 +457,9 @@ export function loadTldrFile(
   simulation: MutableRefObject<Simulation<SimulationNodeDatum, undefined>>,
   centerPoint: MutableRefObject<[number, number]>,
   loadFile: MutableRefObject<quickPoseFile>,
-  currentVersion: MutableRefObject<number>
+  currentVersion: MutableRefObject<number>,
+  setStudyPreferenceFromProject,
+  projectID
 ) {
   app.replacePageContent({}, {}, {})
 
@@ -476,6 +479,29 @@ export function loadTldrFile(
       number,
       number
     ]
+    if (loadFile.current.graphData?.studyConsent !== undefined) {
+      const studyConsent = loadFile.current.graphData?.studyConsent.toString()
+      if (studyConsent == 'Enabled') {
+        setStudyPreferenceFromProject({ preference: 'Enabled', promptAgain: false })
+      } else if (studyConsent === 'Disabled') {
+        setStudyPreferenceFromProject({ preference: 'Disabled', promptAgain: false })
+      } else {
+        setStudyPreferenceFromProject({ preference: 'Prompt', promptAgain: true })
+        //app.setSetting('sendUsageData', 'Prompt')
+      }
+    } else {
+      setStudyPreferenceFromProject({ preference: 'Prompt', promptAgain: true })
+    }
+    if (
+      loadFile.current.graphData?.projectID !== undefined &&
+      loadFile.current.graphData?.projectID != ''
+    ) {
+      projectID.current = loadFile.current.graphData?.projectID.toString()
+    } else {
+      console.log('setprojectid')
+      projectID.current = uuidv4()
+    }
+
     const importNodes = loadedData.nodes as dataNode[]
     //console.log(importNodes)
     importNodes.forEach((node) => {
@@ -555,7 +581,7 @@ export const installHelper = (centerPoint: number[]) => {
       name: 'Text',
       point: [centerPoint[0] - 220, centerPoint[1] + 300], //[247.14, 653.4],
       rotation: 0,
-      text: "1. Download Quickpose from\n https://www.ericrawn.media/quickpose",
+      text: '1. Download Quickpose from\n https://www.ericrawn.media/quickpose',
       style: {
         color: 'white',
         size: 'small',

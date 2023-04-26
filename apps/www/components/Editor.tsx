@@ -22,16 +22,26 @@ import * as lodash from 'lodash'
 import React from 'react'
 import {
   connectWebSocket,
-  exportByColor, //updateCurrentVersion,
+  exportByColor,
+  getStudyConsent, //updateCurrentVersion,
   loadFileFromProcessing,
+  postStudyConsent,
   saveToProcessing,
   sendToLog,
+  sendToUsageData,
+  sendUsageData,
   updateSocketVersions,
   updateThumbnail,
   updateVersions,
   useUploadAssets,
 } from 'utils/quickPoseNetworking'
-import { EditorProps, forceLink, quickPoseFile } from 'utils/quickPoseTypes'
+import {
+  EditorProps,
+  forceLink,
+  quickPoseFile,
+  studyConsentPreference,
+  studyConsentResponse,
+} from 'utils/quickPoseTypes'
 import {
   d3Sim,
   defaultSticky,
@@ -47,6 +57,8 @@ import {
 } from 'utils/quickposeDrawing'
 // import * as gtag from 'utils/gtag'
 import { w3cwebsocket as W3CWebSocket } from 'websocket'
+import { BetaNotification } from './BetaNotification'
+import { StudyConsentPopup } from './StudyConsentPopup'
 
 //declare const window: Window & { app: TldrawApp }
 
@@ -68,6 +80,7 @@ const Editor = ({ id = 'home', ...rest }: EditorProps & Partial<TldrawProps>) =>
   const centerPoint = React.useRef<[number, number]>([600, 600])
 
   const timeSinceLastSave = React.useRef<number>(0)
+  const timeSinceLastUsageLog = React.useRef<number>(0)
   //file loading
   const loadFile = React.useRef<quickPoseFile | null>(null)
   const loadedFile = React.useRef<boolean>(false)
@@ -86,6 +99,47 @@ const Editor = ({ id = 'home', ...rest }: EditorProps & Partial<TldrawProps>) =>
 
   const networkIntervalRef = React.useRef<any>(null)
 
+  const [showStudyConsent, setShowStudyConsent] = React.useState<Boolean>(false)
+  const checkSettings = React.useRef<Boolean>(false)
+  const userID = React.useRef<string>('')
+  const projectID = React.useRef<string>('')
+  const stopCheckConsent = React.useRef<Boolean>(false)
+  function setStudyPreferenceFromInterface(pref: studyConsentResponse) {
+    stopCheckConsent.current = true
+    setShowStudyConsent(false)
+    console.log('setfrominterface', pref)
+    rTldrawApp.current?.setSetting('sendUsageData', pref.preference)
+    if (pref.preference == 'Enabled') {
+      postStudyConsent('Enabled', pref.promptAgain ? 'True' : 'False')
+    } else if (pref.preference == 'Disabled') {
+      postStudyConsent('Disabled', pref.promptAgain ? 'True' : 'False')
+    }
+  }
+  function setStudyPreferenceFromProject(pref: studyConsentResponse) {
+    console.log('setfromproject', pref)
+    if (stopCheckConsent.current == false) {
+      if (pref.promptAgain) {
+        setShowStudyConsent(true)
+      } else {
+        setShowStudyConsent(false)
+        stopCheckConsent.current = true
+      }
+      rTldrawApp.current?.setSetting('sendUsageData', pref.preference)
+    }
+  }
+  function setStudyPreferenceFromSettings(pref: studyConsentResponse) {
+    if (checkSettings.current == false && stopCheckConsent.current == false) {
+      console.log('setfromsettings', pref)
+      if (pref.promptAgain) {
+        setShowStudyConsent(true)
+      } else {
+        setShowStudyConsent(false)
+        stopCheckConsent.current = true
+      }
+      rTldrawApp.current?.setSetting('sendUsageData', pref.preference)
+      checkSettings.current = true
+    }
+  }
   let abortFileController = new AbortController()
   const timeout = 2000
   const lock = new AsyncLock()
@@ -114,9 +168,9 @@ const Editor = ({ id = 'home', ...rest }: EditorProps & Partial<TldrawProps>) =>
       if (id === currentVersion.current.toString()) {
         app.setIsLoading(true)
 
-        console.log('send fork', id)
+        //console.log('send fork', id)
         lock
-          .acquire('select', async function() {
+          .acquire('select', async function () {
             await axios
               .get(LOCALHOST_BASE + '/fork/' + id, {
                 timeout: 600,
@@ -124,7 +178,7 @@ const Editor = ({ id = 'home', ...rest }: EditorProps & Partial<TldrawProps>) =>
                   Autorun: app.settings.sketchAutorun,
                 },
               })
-              .then(response => {
+              .then((response) => {
                 if (response.status === 200) {
                   netData.current = response.data
                   dataInterval(netData, graphData, simulation)
@@ -132,15 +186,15 @@ const Editor = ({ id = 'home', ...rest }: EditorProps & Partial<TldrawProps>) =>
                   app.setIsLoading(false)
                 }
               })
-              .catch(error => {
+              .catch((error) => {
                 console.warn('error forking current version: ', error)
                 return null
               })
           })
-          .then(function() {
+          .then(function () {
             app.setIsLoading(false)
           })
-          .catch(error => {
+          .catch((error) => {
             console.warn('error forking current version: ', error)
             return null
           })
@@ -155,7 +209,7 @@ const Editor = ({ id = 'home', ...rest }: EditorProps & Partial<TldrawProps>) =>
       app.setIsLoading(true)
       console.log('send select', id)
       lock
-        .acquire('select', async function() {
+        .acquire('select', async function () {
           await axios
             .get(LOCALHOST_BASE + '/select/' + id, {
               timeout: 600,
@@ -163,7 +217,7 @@ const Editor = ({ id = 'home', ...rest }: EditorProps & Partial<TldrawProps>) =>
                 Autorun: app.settings.sketchAutorun,
               },
             })
-            .then(function(response) {
+            .then(function (response) {
               if (response.status === 200) {
                 //updateThumbnail(app, 'node' + currentVersion.current, currentVersion)
                 currentVersion.current = parseInt(response.data)
@@ -172,12 +226,12 @@ const Editor = ({ id = 'home', ...rest }: EditorProps & Partial<TldrawProps>) =>
                 //drawInterval()
               }
             })
-            .catch(error => {
+            .catch((error) => {
               console.warn('error selecting current version: ', error)
               return null
             })
         })
-        .then(function() {
+        .then(function () {
           app.setIsLoading(false)
         })
     }
@@ -323,6 +377,9 @@ const Editor = ({ id = 'home', ...rest }: EditorProps & Partial<TldrawProps>) =>
           if (loadFile.current === null) {
             //haven't found a file yet, so keep looking
             console.log('requesting file...')
+            if (checkSettings.current! === false) {
+              getStudyConsent(setStudyPreferenceFromSettings)
+            }
             thumbnailSocket.current.send('/tldrfile')
             loadFileFromProcessing(loadFile, abortFileController)
             updateLoadingTicks(app, loadingTicks)
@@ -350,12 +407,22 @@ const Editor = ({ id = 'home', ...rest }: EditorProps & Partial<TldrawProps>) =>
             //simulation.current.alpha(ALPHA_TARGET_REFRESH)
             drawInterval()
             app.zoomToContent()
+            //app.setSetting('sendUsageData', 'Prompt')
             //app.appState.isLoading = false
             //make new file, do intro experience?
           } else if (loadFile.current !== null && simulation) {
             //we found an existing file
             abortFileController.abort()
-            loadTldrFile(app, graphData, simulation, centerPoint, loadFile, currentVersion)
+            loadTldrFile(
+              app,
+              graphData,
+              simulation,
+              centerPoint,
+              loadFile,
+              currentVersion,
+              setStudyPreferenceFromProject,
+              projectID
+            )
             refreshSim(simulation)
             dataInterval(netData, graphData, simulation)
             drawInterval()
@@ -381,6 +448,8 @@ const Editor = ({ id = 'home', ...rest }: EditorProps & Partial<TldrawProps>) =>
               simulation.current.alpha(),
               centerPoint.current,
               app.document.name,
+              app.settings.sendUsageData,
+              projectID,
               false
             )
           }
@@ -419,6 +488,8 @@ const Editor = ({ id = 'home', ...rest }: EditorProps & Partial<TldrawProps>) =>
         simulation.current.alpha(),
         centerPoint.current,
         app.document.name,
+        app.settings.sendUsageData,
+        projectID,
         false
       )
   }, [])
@@ -432,6 +503,8 @@ const Editor = ({ id = 'home', ...rest }: EditorProps & Partial<TldrawProps>) =>
     loadFile.current = null
     loadedFile.current = false
     simulation.current = d3Sim()
+    userID.current = ''
+    projectID.current = ''
     if (app !== undefined) {
       app.setCurrentProject('')
       app.document.name = 'null'
@@ -494,6 +567,8 @@ const Editor = ({ id = 'home', ...rest }: EditorProps & Partial<TldrawProps>) =>
     // }
   }, [socketState.status])
 
+  React.useEffect(() => {}, [rTldrawApp.current?.settings.sendUsageData])
+
   React.useEffect(() => {
     //https://sparkjava.com/documentation#examples-and-faq
     //https://stackoverflow.com/questions/18206231/saving-and-reloading-a-force-layout-using-d3-js
@@ -505,6 +580,8 @@ const Editor = ({ id = 'home', ...rest }: EditorProps & Partial<TldrawProps>) =>
       connectInterval,
       loadFile,
       netData,
+      userID,
+      setStudyPreferenceFromSettings,
       abortFileController,
       resetState
     )
@@ -525,6 +602,11 @@ const Editor = ({ id = 'home', ...rest }: EditorProps & Partial<TldrawProps>) =>
   const handlePatch = React.useCallback((app: TldrawApp, patch: TldrawPatch, reason?: string) => {
     if (process.env.NODE_ENV !== 'production') {
       console.log(reason)
+      // console.log('usagedata', app.settings.sendUsageData)
+      // console.log('panel', showStudyConsent)
+    }
+    if (rTldrawApp.current?.settings.sendUsageData === 'Prompt') {
+      setShowStudyConsent(true)
     }
     if (networkIntervalRef.current === null) {
       clearInterval(networkIntervalRef.current)
@@ -533,8 +615,15 @@ const Editor = ({ id = 'home', ...rest }: EditorProps & Partial<TldrawProps>) =>
     }
 
     if (loadedFile.current === true && app.document.name !== 'null' && simulation.current) {
+      if (new Date().getTime() - timeSinceLastUsageLog.current > 10 * 60 * 1000) {
+        if (app.settings.sendUsageData == 'Enabled') {
+          sendUsageData(userID, projectID, '', '')
+          timeSinceLastUsageLog.current = new Date().getTime()
+        }
+      }
       if (new Date().getTime() - timeSinceLastSave.current > 5 * 60 * 1000) {
         //every 5 min
+
         console.log('Backing up', new Date().getTime())
         saveToProcessing(
           app.document,
@@ -542,6 +631,8 @@ const Editor = ({ id = 'home', ...rest }: EditorProps & Partial<TldrawProps>) =>
           simulation.current.alpha(),
           centerPoint.current,
           app.document.name,
+          app.settings.sendUsageData,
+          projectID,
           true
         )
         ;(window as any).gtag('event', 'backup')
@@ -567,11 +658,17 @@ const Editor = ({ id = 'home', ...rest }: EditorProps & Partial<TldrawProps>) =>
         rIsDragging.current = true
         lastSelection.current = null
         sendToLog('translate' + app.selectedIds)
+        sendToUsageData('translate' + app.selectedIds)
         break
       }
       case 'set_status:creating': {
         // started translating...
-        sendToLog('creating' + app.pageState.editingId)
+        sendToLog(
+          'creating' +
+            app.pageState.editingId +
+            '| Type:' +
+            app.getShape(app.pageState.editingId).type.toString()
+        )
         rIsDragging.current = true
         lastSelection.current = null
         break
@@ -770,6 +867,10 @@ const Editor = ({ id = 'home', ...rest }: EditorProps & Partial<TldrawProps>) =>
 
   return (
     <div className="tldraw">
+      {showStudyConsent && (
+        <StudyConsentPopup container={undefined} setActive={setStudyPreferenceFromInterface} />
+      )}
+
       <Tldraw
         id={id}
         autofocus

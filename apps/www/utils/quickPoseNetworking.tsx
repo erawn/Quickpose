@@ -1,16 +1,14 @@
 import { ColorStyle, TDDocument, TDFile, TDShapeType, TldrawApp } from '@tldraw/tldraw'
-import FormData from 'form-data'
-import { w3cwebsocket as W3CWebSocket } from 'websocket'
-import axiosRetry from 'axios-retry'
-import deepEqual from 'deep-equal'
-import { MutableRefObject, useCallback } from 'react'
 import axios from 'axios'
-import { nodeRegex } from './quickposeDrawing'
+import axiosRetry from 'axios-retry'
 import * as BSON from 'bson'
-import React from 'react'
-import { quickPoseFile } from './quickPoseTypes'
-
+import FormData from 'form-data'
+import { MutableRefObject, useCallback } from 'react'
+import { w3cwebsocket as W3CWebSocket } from 'websocket'
+import { quickPoseFile, studyConsentResponse } from './quickPoseTypes'
+import { nodeRegex } from './quickposeDrawing'
 export const LOCALHOST_BASE = 'http://127.0.0.1:8080'
+export const ANALYTICS_URL = 'https://analytics.ericrawn.media' //http://172.30.105.142:4000' // 'http://127.0.0.1:4000'
 export const WEBSOCKET = 'ws://127.0.0.1:8080/thumbnail'
 export function getIconImageURLNoTime(id: number) {
   return LOCALHOST_BASE + '/image/' + id //Add Time to avoid Caching so images update properly
@@ -27,6 +25,8 @@ export function connectWebSocket(
   connectInterval: MutableRefObject<any>,
   loadFile: MutableRefObject<quickPoseFile | null>,
   netData: MutableRefObject<any>,
+  userID,
+  setStudyPreferenceFromSettings,
   abortFileController: AbortController,
   resetState: { (app: TldrawApp): void }
 ) {
@@ -54,11 +54,11 @@ export function connectWebSocket(
       //   client.send("/tldrfile")
       // }
     }
-    client.onmessage = (message) => {
+    client.onmessage = message => {
       //console.log('socketmessage',message)
 
       const reader = new FileReader()
-      reader.onload = async function () {
+      reader.onload = async function() {
         const msgarray = new Uint8Array(this.result as ArrayBuffer)
         const msg = BSON.deserialize(msgarray)
         // console.log(msg)
@@ -117,8 +117,36 @@ export function connectWebSocket(
                   }
                   break
                 }
+                case 'userID': {
+                  //console.log(msg[key].toString())
+                  userID.current = msg[key].toString()
+                  break
+                }
+                case 'Consent': {
+                  //console.log('setfromsocket', msg[key])
+                  switch (msg[key]) {
+                    case 'EnabledNoPrompt': {
+                      setStudyPreferenceFromSettings({ preference: 'Enabled', promptAgain: false })
+                      break
+                    }
+
+                    case 'DisabledNoPrompt': {
+                      setStudyPreferenceFromSettings({ preference: 'Disabled', promptAgain: false })
+                      break
+                    }
+                    case 'Prompt': {
+                      //setStudyPreferenceFromSettings({ preference: 'Prompt', promptAgain: true })
+                      break
+                    }
+                    default: {
+                      console.log('unknown consent', key, msg[key])
+                      break
+                    }
+                  }
+                  break
+                }
                 default: {
-                  console.log('Unknown key')
+                  console.log('Unknown key', key, msg[key])
                   break
                 }
               }
@@ -126,9 +154,9 @@ export function connectWebSocket(
           }
         }
       }
-      reader.readAsArrayBuffer(message.data as unknown as Blob)
+      reader.readAsArrayBuffer((message.data as unknown) as Blob)
     }
-    client.onclose = (e) => {
+    client.onclose = e => {
       if (rTldrawApp !== undefined) {
         const app: TldrawApp = rTldrawApp.current!
         if (app !== undefined) {
@@ -146,6 +174,8 @@ export function connectWebSocket(
           connectInterval,
           loadFile,
           netData,
+          userID,
+          setStudyPreferenceFromSettings,
           abortFileController,
           resetState
         )
@@ -166,6 +196,7 @@ export const exportByColor = async (app: TldrawApp, color: ColorStyle) => {
     })
   //console.log(ids.toString())
   sendToLog('exportbycolor -- color:' + color + '| ids: ' + ids.toString())
+  sendToUsageData('exportbycolor -- color:' + color + '| ids: ' + ids.toString())
   axios
     .post(
       LOCALHOST_BASE + '/exportbycolor',
@@ -177,13 +208,13 @@ export const exportByColor = async (app: TldrawApp, color: ColorStyle) => {
         },
       }
     )
-    .then(function (response) {
+    .then(function(response) {
       //console.log(response);
     })
     .finally(() => {
       app.setIsLoading(false)
     })
-    .catch(function (error) {
+    .catch(function(error) {
       console.log(error)
     })
 }
@@ -191,9 +222,11 @@ export const exportByColor = async (app: TldrawApp, color: ColorStyle) => {
 export const saveToProcessing = async (
   document: TDDocument,
   simData: string,
-  alpha: any,
+  alpha: number,
   centerPoint: [number, number],
-  projectName: any,
+  projectName: string,
+  studyConsent: string,
+  projectID: MutableRefObject<string>,
   backup: boolean
 ) => {
   const file: quickPoseFile = {
@@ -207,9 +240,12 @@ export const saveToProcessing = async (
       simData: simData,
       alpha: alpha.toString(),
       centerPoint: JSON.stringify(centerPoint),
+      studyConsent: studyConsent,
+      projectID: projectID.current,
     },
   }
 
+  //console.log(result)
   // Serialize to JSON
   const json = JSON.stringify(file, null, 2)
   // Create blob
@@ -236,10 +272,10 @@ export const saveToProcessing = async (
       },
       //signal: abortController.signal
     })
-    .then(function (response) {
+    .then(function(response) {
       //console.log(response);
     })
-    .catch(function (error) {
+    .catch(function(error) {
       console.log(error)
     })
 
@@ -253,7 +289,7 @@ export const loadFileFromProcessing = async (
     .get(LOCALHOST_BASE + '/tldrfile', {
       // signal: abortFileController.signal
     })
-    .then(function (response) {
+    .then(function(response) {
       const fileStatus = response.status
       const fileData = response.data
       if (fileStatus === 200 && fileData && loadFile.current === null) {
@@ -267,7 +303,7 @@ export const loadFileFromProcessing = async (
         abortFileController.abort()
       }
     })
-    .catch(function (error) {
+    .catch(function(error) {
       //console.log(error);
     })
 }
@@ -278,19 +314,19 @@ export const updateVersions = async (netData: any) => {
     .get(LOCALHOST_BASE + '/versions.json', {
       timeout: 500,
     })
-    .then((response) => {
+    .then(response => {
       if (response.data !== undefined) {
         netData.current = response.data
         //console.log(netData.current)
       }
     })
-    .catch((error) => {
+    .catch(error => {
       //console.error("error fetching: ", error);
     })
 }
 
 const checkImage = (path: any) => {
-  return new Promise((resolve) => {
+  return new Promise(resolve => {
     const img = new Image()
     img.onload = () => resolve({ img, status: 'ok' })
     img.onerror = () => resolve({ img, status: 'error' })
@@ -298,6 +334,75 @@ const checkImage = (path: any) => {
   })
 }
 
+export const postStudyConsent = async (consentPreference: string, remind: string) => {
+  axios
+    .post(
+      LOCALHOST_BASE + '/usageConsent',
+      {},
+      {
+        params: {
+          Consent: consentPreference,
+          Remind: remind,
+        },
+      }
+    )
+    .then(function(response) {
+      //console.log(response);
+    })
+    .finally(() => {})
+    .catch(function(error) {
+      console.log(error)
+    })
+}
+
+export const sendUsageData = async (userID, projectID, graph, code) => {
+  // const result = await axios.get('https://localhost:4000', { httpsAgent })
+  // console.log(result)
+  var usageLogs: string = ''
+  await axios.get(LOCALHOST_BASE + '/usageData').then(function(response) {
+    if (response.data !== undefined) {
+      usageLogs = response.data
+      // console.log(usageLogs)
+    }
+  })
+  axios.post(
+    ANALYTICS_URL + '/analytics',
+    {
+      userID: userID.current,
+      projectID: projectID.current,
+      logs: usageLogs,
+      dataKey: process.env.DATA_KEY,
+    },
+    {
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    }
+  )
+  console.log('sending Usage Data', userID, projectID)
+}
+
+export const getStudyConsent = async (setStudyPreferenceFromSettings: {
+  (pref: studyConsentResponse): void
+}) => {
+  axios
+    .get(LOCALHOST_BASE + '/usageConsent')
+    .then(function(response) {
+      if (response.data !== undefined) {
+        if (response.data === 'Prompt') {
+          //setStudyPreferenceFromSettings({ preference: 'Prompt', promptAgain: true })
+        } else if (response.data === 'EnabledNoPrompt') {
+          setStudyPreferenceFromSettings({ preference: 'Enabled', promptAgain: false })
+        } else if (response.data === 'DisabledNoPrompt') {
+          setStudyPreferenceFromSettings({ preference: 'Disabled', promptAgain: false })
+        }
+      }
+    })
+    .finally(() => {})
+    .catch(function(error) {
+      console.log(error)
+    })
+}
 export const updateThumbnail = async (
   app: TldrawApp,
   shape_id: string,
@@ -334,7 +439,7 @@ export const updateThumbnail = async (
           //setTimeout(()=>{updateThumbnail(app,shape_id,currentVersion)},5000)
         }
       })
-      .catch((e) => {
+      .catch(e => {
         console.log('invalid image', e)
       })
   }
@@ -418,7 +523,7 @@ export function useUploadAssets() {
             'Content-Type': 'multipart/form-data',
           },
         })
-        .catch(function (error) {
+        .catch(function(error) {
           console.error('error uploading image: ', error)
         })
       const res = await client.get(url)
@@ -435,14 +540,14 @@ export function useUploadAssets() {
     const asset = app.assets.find((asset: { id: string }) => asset.id === id)
     await axios
       .delete(asset.src)
-      .then((response) => {
+      .then(response => {
         if (response.status == 200) {
           return true
         } else {
           return false
         }
       })
-      .catch(function (error) {
+      .catch(function(error) {
         console.error('error deleting image: ', id, error)
         return false
       })
@@ -474,10 +579,20 @@ export function useUploadAssets() {
 export const sendToLog = async (message: string) => {
   axios
     .post(LOCALHOST_BASE + '/log', message, {})
-    .then(function (response) {
+    .then(function(response) {
       //console.log(response);
     })
-    .catch(function (error) {
+    .catch(function(error) {
+      console.log(error)
+    })
+}
+export const sendToUsageData = async (message: string) => {
+  axios
+    .post(LOCALHOST_BASE + '/usageData', message, {})
+    .then(function(response) {
+      //console.log(response);
+    })
+    .catch(function(error) {
       console.log(error)
     })
 }

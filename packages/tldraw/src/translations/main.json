@@ -34,6 +34,7 @@
   "preferences.binding.handles": "Binding Handles",
   "preferences.clone.handles": "Clone Handles",
   "preferences.sketchAutorun": "Autorun Sketch",
+  "preferences.sendUsageData": "Send Usage Data",
   "preferences.simulationPause": "Pause Simulation",
   "undo": "Undo",
   "redo": "Redo",
